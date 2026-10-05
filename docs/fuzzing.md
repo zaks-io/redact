@@ -1,7 +1,8 @@
 # Fuzzing specification
 
-Status: planned follow-up to v1 tests. This document defines the harnesses;
-no fuzzing has been run and no harness exists yet.
+Status: all six cargo-fuzz harnesses are implemented in `fuzz/`, with synthetic
+seed corpora and independent disclosure/span oracles. See
+[fuzz campaign results](fuzz-results.md) for bounded runs and their limits.
 
 ## Objective
 
@@ -107,7 +108,8 @@ when a mutated value no longer matches its expected provider format.
 
 ## Running and triaging
 
-When the harness exists, its documented commands will be:
+Install `cargo-fuzz` version `0.13.2` and the pinned `nightly-2026-10-04`
+toolchain. Run from the repository root:
 
 ```sh
 cargo fuzz run dotenv

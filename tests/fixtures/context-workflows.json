@@ -1,0 +1,430 @@
+{
+  "fixture_version": 1,
+  "synthetic_only": true,
+  "cases": [
+    {
+      "id": "pretty-json-newlines",
+      "binary": "rstr",
+      "args": [],
+      "environment": {},
+      "files": {},
+      "stdin_utf8": "{\"password\"\r\n:\r\n\"SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789\",\"status\":401}",
+      "expect": {
+        "exit_code": 0,
+        "stdout_utf8": "{\"password\"\r\n:\r\n\"[REDACTED sha256=9a1b1ca04c5be294]\",\"status\":401}",
+        "stderr_utf8": ""
+      },
+      "hidden_canaries": [
+        "SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789"
+      ]
+    },
+    {
+      "id": "camel-case-field",
+      "binary": "rstr",
+      "args": [],
+      "environment": {},
+      "files": {},
+      "stdin_utf8": "{\"apiToken\":\"SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789\",\"status\":401}",
+      "expect": {
+        "exit_code": 0,
+        "stdout_utf8": "{\"apiToken\":\"[REDACTED sha256=9a1b1ca04c5be294]\",\"status\":401}",
+        "stderr_utf8": ""
+      },
+      "hidden_canaries": [
+        "SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789"
+      ]
+    },
+    {
+      "id": "dotted-field",
+      "binary": "rstr",
+      "args": [],
+      "environment": {},
+      "files": {},
+      "stdin_utf8": "spring.datasource.password=\"SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789\" host=public",
+      "expect": {
+        "exit_code": 0,
+        "stdout_utf8": "spring.datasource.password=\"[REDACTED sha256=9a1b1ca04c5be294]\" host=public",
+        "stderr_utf8": ""
+      },
+      "hidden_canaries": [
+        "SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789"
+      ]
+    },
+    {
+      "id": "python-quoted-field",
+      "binary": "rstr",
+      "args": [],
+      "environment": {},
+      "files": {},
+      "stdin_utf8": "{'password':'SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789','status':401}",
+      "expect": {
+        "exit_code": 0,
+        "stdout_utf8": "{'password':'[REDACTED sha256=9a1b1ca04c5be294]','status':401}",
+        "stderr_utf8": ""
+      },
+      "hidden_canaries": [
+        "SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789"
+      ]
+    },
+    {
+      "id": "embedded-log-field",
+      "binary": "rstr",
+      "args": [],
+      "environment": {},
+      "files": {},
+      "stdin_utf8": "message=\"password=SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789\" host=public",
+      "expect": {
+        "exit_code": 0,
+        "stdout_utf8": "message=\"password=[REDACTED sha256=9a1b1ca04c5be294]\" host=public",
+        "stderr_utf8": ""
+      },
+      "hidden_canaries": [
+        "SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789"
+      ]
+    },
+    {
+      "id": "embedded-json-field",
+      "binary": "rstr",
+      "args": [],
+      "environment": {},
+      "files": {},
+      "stdin_utf8": "{\"message\":\"dbPassword=SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789\",\"status\":401}",
+      "expect": {
+        "exit_code": 0,
+        "stdout_utf8": "{\"message\":\"dbPassword=[REDACTED sha256=9a1b1ca04c5be294]\",\"status\":401}",
+        "stderr_utf8": ""
+      },
+      "hidden_canaries": [
+        "SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789"
+      ]
+    },
+    {
+      "id": "nested-json-value",
+      "binary": "rstr",
+      "args": [],
+      "environment": {},
+      "files": {},
+      "stdin_utf8": "{\"credentials\":{\"public\":\"user\",\"opaque\":\"SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789\"},\"status\":401}",
+      "expect": {
+        "exit_code": 0,
+        "stdout_utf8": "{\"credentials\":[REDACTED sha256=f9f997886375d3ea],\"status\":401}",
+        "stderr_utf8": ""
+      },
+      "hidden_canaries": [
+        "SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789"
+      ]
+    },
+    {
+      "id": "nested-array-value",
+      "binary": "rstr",
+      "args": [],
+      "environment": {},
+      "files": {},
+      "stdin_utf8": "{\"credentials\":[\"public\",\"SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789\"],\"status\":401}",
+      "expect": {
+        "exit_code": 0,
+        "stdout_utf8": "{\"credentials\":[REDACTED sha256=548b2268aac678da],\"status\":401}",
+        "stderr_utf8": ""
+      },
+      "hidden_canaries": [
+        "SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789"
+      ]
+    },
+    {
+      "id": "indented-yaml-block",
+      "binary": "rstr",
+      "args": [],
+      "environment": {},
+      "files": {},
+      "stdin_utf8": "password: |\n  SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789\nstatus: 401\n",
+      "expect": {
+        "exit_code": 0,
+        "stdout_utf8": "password: [REDACTED sha256=8f2d74a5d10598ef]\nstatus: 401\n",
+        "stderr_utf8": ""
+      },
+      "hidden_canaries": [
+        "SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789"
+      ]
+    },
+    {
+      "id": "empty-yaml-indented-value",
+      "binary": "rstr",
+      "args": [],
+      "environment": {},
+      "files": {},
+      "stdin_utf8": "password:\n  SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789\nstatus: 401\n",
+      "expect": {
+        "exit_code": 0,
+        "stdout_utf8": "password:\n  [REDACTED sha256=9a1b1ca04c5be294]\nstatus: 401\n",
+        "stderr_utf8": ""
+      },
+      "hidden_canaries": [
+        "SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789"
+      ]
+    },
+    {
+      "id": "jose-assignment-tail",
+      "binary": "rstr",
+      "args": [],
+      "environment": {},
+      "files": {},
+      "stdin_utf8": "password=eyJhbGciOiJIUzI1NiJ9.e30.c3ludGhldGlj!SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789\n",
+      "expect": {
+        "exit_code": 0,
+        "stdout_utf8": "password=[REDACTED sha256=bc1f73bbf38e0d65]\n",
+        "stderr_utf8": ""
+      },
+      "hidden_canaries": [
+        "SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789"
+      ]
+    },
+    {
+      "id": "semicolon-log-field",
+      "binary": "rstr",
+      "args": [],
+      "environment": {},
+      "files": {},
+      "stdin_utf8": "status=401;password=SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789;host=public",
+      "expect": {
+        "exit_code": 0,
+        "stdout_utf8": "status=401;password=[REDACTED sha256=0fc07b28974dda69]",
+        "stderr_utf8": ""
+      },
+      "hidden_canaries": [
+        "SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789"
+      ]
+    },
+    {
+      "id": "header-in-message",
+      "binary": "rstr",
+      "args": [],
+      "environment": {},
+      "files": {},
+      "stdin_utf8": "{\"message\":\"Authorization: Bearer SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789\",\"status\":401}",
+      "expect": {
+        "exit_code": 0,
+        "stdout_utf8": "{\"message\":\"Authorization: Bearer [REDACTED sha256=9a1b1ca04c5be294]\",\"status\":401}",
+        "stderr_utf8": ""
+      },
+      "hidden_canaries": [
+        "SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789"
+      ]
+    },
+    {
+      "id": "malformed-jwk-discriminator",
+      "binary": "rstr",
+      "args": [],
+      "environment": {},
+      "files": {},
+      "stdin_utf8": "{\"kty\":[\"RSA\"],\"d\":\"SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789\"}",
+      "expect": {
+        "exit_code": 0,
+        "stdout_utf8": "[REDACTED sha256=f4bb93d93e9dafc1]",
+        "stderr_utf8": ""
+      },
+      "hidden_canaries": [
+        "SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789"
+      ]
+    },
+    {
+      "id": "docker-container-discriminator",
+      "binary": "rstr",
+      "args": [],
+      "environment": {},
+      "files": {},
+      "stdin_utf8": "{\"auths\":\"SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789\"}",
+      "expect": {
+        "exit_code": 0,
+        "stdout_utf8": "[REDACTED sha256=e184f6fd011bb2f0]",
+        "stderr_utf8": ""
+      },
+      "hidden_canaries": [
+        "SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789"
+      ]
+    },
+    {
+      "id": "slack-url-port",
+      "binary": "rstr",
+      "args": [],
+      "environment": {},
+      "files": {},
+      "stdin_utf8": "status=401 https://hooks.slack.com:443/services/SYNTHETIC/LOCAL/SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789 retry=2",
+      "expect": {
+        "exit_code": 0,
+        "stdout_utf8": "status=401 [REDACTED sha256=43e01d202f231d72] retry=2",
+        "stderr_utf8": ""
+      },
+      "hidden_canaries": [
+        "SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789"
+      ]
+    },
+    {
+      "id": "truncated-sensitive-string",
+      "binary": "rstr",
+      "args": [],
+      "environment": {},
+      "files": {},
+      "stdin_utf8": "password=\"SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789",
+      "expect": {
+        "exit_code": 2,
+        "stdout_utf8": "",
+        "stderr_contains": [
+          "rstr:",
+          "unterminated",
+          "retry."
+        ]
+      },
+      "hidden_canaries": [
+        "SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789"
+      ]
+    },
+    {
+      "id": "truncated-sensitive-array",
+      "binary": "rstr",
+      "args": [],
+      "environment": {},
+      "files": {},
+      "stdin_utf8": "{\"credentials\":[\"SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789\"",
+      "expect": {
+        "exit_code": 2,
+        "stdout_utf8": "",
+        "stderr_contains": [
+          "rstr:",
+          "unterminated",
+          "retry."
+        ]
+      },
+      "hidden_canaries": [
+        "SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789"
+      ]
+    },
+    {
+      "id": "header-in-single-quoted-log",
+      "binary": "rstr",
+      "args": [],
+      "environment": {},
+      "files": {},
+      "stdin_utf8": "message='Authorization: Bearer SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789' status=401",
+      "expect": {
+        "exit_code": 0,
+        "stdout_utf8": "message='Authorization: Bearer [REDACTED sha256=9a1b1ca04c5be294]' status=401",
+        "stderr_utf8": ""
+      },
+      "hidden_canaries": [
+        "SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789"
+      ]
+    },
+    {
+      "id": "oauth-fragment-token",
+      "binary": "rstr",
+      "args": [],
+      "environment": {},
+      "files": {},
+      "stdin_utf8": "https://app.example.test/cb#access_token=SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789&state=public",
+      "expect": {
+        "exit_code": 0,
+        "stdout_utf8": "https://app.example.test/cb#access_token=[REDACTED sha256=9a1b1ca04c5be294]&state=public",
+        "stderr_utf8": ""
+      },
+      "hidden_canaries": [
+        "SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789"
+      ]
+    },
+    {
+      "id": "camelcase-url-query",
+      "binary": "rstr",
+      "args": [],
+      "environment": {},
+      "files": {},
+      "stdin_utf8": "https://api.example.test/items?apiToken=SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789&status=401",
+      "expect": {
+        "exit_code": 0,
+        "stdout_utf8": "https://api.example.test/items?apiToken=[REDACTED sha256=9a1b1ca04c5be294]&status=401",
+        "stderr_utf8": ""
+      },
+      "hidden_canaries": [
+        "SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789"
+      ]
+    },
+    {
+      "id": "apostrophe-before-python-field",
+      "binary": "rstr",
+      "args": [],
+      "environment": {},
+      "files": {},
+      "stdin_utf8": "error: can't authenticate {'password': 'SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789'}",
+      "expect": {
+        "exit_code": 0,
+        "stdout_utf8": "error: can't authenticate {'password': '[REDACTED sha256=9a1b1ca04c5be294]'}",
+        "stderr_utf8": ""
+      },
+      "hidden_canaries": [
+        "SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789"
+      ]
+    },
+    {
+      "id": "space-in-sensitive-name",
+      "binary": "rstr",
+      "args": [],
+      "environment": {},
+      "files": {},
+      "stdin_utf8": "{\"Admin Password\":\"SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789\",\"status\":401}",
+      "expect": {
+        "exit_code": 0,
+        "stdout_utf8": "{\"Admin Password\":\"[REDACTED sha256=9a1b1ca04c5be294]\",\"status\":401}",
+        "stderr_utf8": ""
+      },
+      "hidden_canaries": [
+        "SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789"
+      ]
+    },
+    {
+      "id": "bracket-leading-password",
+      "binary": "rstr",
+      "args": [],
+      "environment": {},
+      "files": {},
+      "stdin_utf8": "DB_PASSWORD={synthetic}SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789",
+      "expect": {
+        "exit_code": 0,
+        "stdout_utf8": "DB_PASSWORD=[REDACTED sha256=2fca4227564b527d]",
+        "stderr_utf8": ""
+      },
+      "hidden_canaries": [
+        "SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789"
+      ]
+    },
+    {
+      "id": "sequence-yaml-block",
+      "binary": "rstr",
+      "args": [],
+      "environment": {},
+      "files": {},
+      "stdin_utf8": "- password: |\n    SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789\nstatus: 401\n",
+      "expect": {
+        "exit_code": 0,
+        "stdout_utf8": "- password: [REDACTED sha256=8f8533c6743dc988]\nstatus: 401\n",
+        "stderr_utf8": ""
+      },
+      "hidden_canaries": [
+        "SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789"
+      ]
+    },
+    {
+      "id": "escaped-certificate-and-private-key",
+      "binary": "rstr",
+      "args": [],
+      "environment": {},
+      "files": {},
+      "stdin_utf8": "{\"certificate\":\"-----BEGIN CERTIFICATE-----\\nSYNTHETIC_PUBLIC_CERTIFICATE\\n-----END CERTIFICATE-----\\n\",\"private_key\":\"-----BEGIN ANY PRIVATE KEY-----\\nSYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789\\n-----END ANY PRIVATE KEY-----\"}",
+      "expect": {
+        "exit_code": 0,
+        "stdout_utf8": "{\"certificate\":\"-----BEGIN CERTIFICATE-----\\nSYNTHETIC_PUBLIC_CERTIFICATE\\n-----END CERTIFICATE-----\\n\",\"private_key\":\"[REDACTED sha256=7ba0658f1eb32938]\"}",
+        "stderr_utf8": ""
+      },
+      "hidden_canaries": [
+        "SYNTHETIC_CONTEXT_CREDENTIAL_CANARY_0123456789"
+      ]
+    }
+  ]
+}

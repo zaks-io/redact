@@ -1,7 +1,8 @@
 # Secret-format acceptance requirements
 
-Status: requirements for future detectors/classification, not executable test
-results. Use only synthetic credentials constructed locally for the documented
+Status: detector requirements are exercised by `tests/format_regressions.rs`,
+`tests/provider_evolution.rs`, and `tests/structured.rs`. Format classification
+annotations remain a future interface decision. Use only synthetic credentials constructed locally for the documented
 version. Never copy complete real keys or plausible live-looking examples from
 provider documentation into fixtures.
 

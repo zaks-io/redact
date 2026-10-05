@@ -1,12 +1,12 @@
 # Agent workflow test contracts
 
-Status: synthetic test inputs and expected results, written before the Rust
-scaffold. There is no binary test runner yet. These fixtures have not established
-that either CLI works. They must become real executable integration tests during
-scaffolding/implementation, not ignored or automatically skipped placeholders.
+Status: executable integration tests run all synthetic cases against the Cargo
+binaries. `scripts/acceptance.py` replays the same fixtures against release
+executables and records one-command correctness and reproducible timing.
 
 - [rprintenv cases](fixtures/rprintenv-workflows.json)
 - [rstr cases](fixtures/rstr-workflows.json)
+- [Context and review regressions](fixtures/context-workflows.json)
 - [Behavior requirements](../docs/agent-usability.md)
 
 ## Fixture format

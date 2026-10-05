@@ -1,6 +1,8 @@
 # rprintenv and rstr specifications
 
-Status: proposed implementation contract. No implementation exists yet.
+Status: implemented local Rust tools. The CLI and disclosure contracts below are
+covered by executable regression and property tests. See the
+[coverage ledger](secret-formats/coverage.md) for supported format paths.
 
 `rprintenv` is a Rust command line tool that lets agents inspect environment
 variables and `.env` files without accidentally copying full secrets into logs
@@ -52,9 +54,8 @@ cryptographic proof that two values are equal.
 - [Agent usability acceptance](agent-usability.md): required workflows and
   [synthetic test fixtures](../tests/README.md).
 
-Defaults and edge cases below are proposed v1 decisions that make the agreed
-behavior implementable. Changes to these contracts should update the specs and
-acceptance coverage together.
+Defaults and edge cases below define the implemented v1 behavior. Changes to
+these contracts should update the specs and acceptance coverage together.
 
 ## Scope
 

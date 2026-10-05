@@ -1,7 +1,7 @@
 # rstr: stdin text redaction
 
-Status: proposed implementation contract. The executable is named `rstr`;
-package registry availability has not been checked. No implementation exists.
+Status: implemented as the local `rstr` executable. Install from the repository
+with `cargo install --locked --path .`; no registry publication is claimed.
 
 ## Purpose
 

@@ -1,0 +1,63 @@
+[package]
+name = "redact-fuzz"
+version = "0.0.0"
+publish = false
+license = "MIT"
+edition = "2024"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4.10"
+redact = { path = "..", version = "0.1.0" }
+serde_json = "1.0"
+sha2 = "0.10.9"
+
+[workspace]
+members = ["."]
+
+[lib]
+path = "support.rs"
+
+[[bin]]
+name = "dotenv"
+path = "fuzz_targets/dotenv.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "disclosure"
+path = "fuzz_targets/disclosure.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "rendering"
+path = "fuzz_targets/rendering.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "pipeline"
+path = "fuzz_targets/pipeline.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "detectors"
+path = "fuzz_targets/detectors.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "text_filter"
+path = "fuzz_targets/text_filter.rs"
+test = false
+doc = false
+bench = false

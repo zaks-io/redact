@@ -1,8 +1,9 @@
 # Secret format inventory
 
 Research checked against online sources on 2026-10-04. This is a documented
-coverage inventory for future implementation, not a claim that detectors exist
-or that every possible secret format is known. Sources can change; preserve
+coverage inventory. The [coverage ledger](coverage.md) maps every row to
+implemented recognition, contextual protection, or a stated limitation. It does
+not claim that every possible secret format is known. Sources can change; preserve
 version-specific evidence when turning an entry into a rule.
 
 ## Purpose

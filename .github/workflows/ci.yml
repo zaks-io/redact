@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  CARGO_BUILD_JOBS: 2
+  RUST_TEST_THREADS: 2
+
+jobs:
+  quality:
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d
+        with:
+          toolchain: '1.99.0'
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c # v2
+        with:
+          shared-key: quality-1.99.0
+      - run: cargo fmt --check
+      - run: cargo fmt --manifest-path fuzz/Cargo.toml --check
+      - run: cargo clippy --locked --all-targets --all-features -- -D warnings
+      - run: cargo install cargo-deny --version 0.18.9 --locked
+      - run: cargo deny --locked check
+      - run: cargo deny --manifest-path fuzz/Cargo.toml --locked check
+
+  acceptance:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [blacksmith-2vcpu-ubuntu-2404, blacksmith-6vcpu-macos-26]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d
+        with:
+          toolchain: '1.99.0'
+      - uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c # v2
+        with:
+          shared-key: acceptance-1.99.0
+      - run: cargo test --locked
+      - run: cargo build --locked --release
+      - run: python3 scripts/acceptance.py --bin-dir target/release
+
+  fuzz:
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d
+        with:
+          toolchain: nightly-2026-10-04
+      - uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c # v2
+        with:
+          shared-key: fuzz-nightly-2026-10-04
+          workspaces: fuzz
+      - run: cargo install cargo-fuzz --version 0.13.2 --locked
+      - run: cargo +nightly-2026-10-04 fuzz build
+      - name: Run bounded synthetic campaigns
+        shell: bash
+        run: |
+          for target in dotenv disclosure rendering pipeline detectors text_filter; do
+            cargo +nightly-2026-10-04 fuzz run "$target" -- \
+              -max_total_time=10 -max_len=65536 -rss_limit_mb=1024 \
+              -timeout=5 -seed=20261005
+          done

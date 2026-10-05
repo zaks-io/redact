@@ -1,7 +1,8 @@
 # CI specification
 
-Status: required setup for the Rust scaffold. No workflow or Rust implementation
-exists yet; these requirements do not claim a passing hosted run.
+Status: `.github/workflows/ci.yml` implements the Blacksmith platform matrix
+and required checks. Local Linux validation is recorded in the handoff; a hosted
+run and macOS runner access have not been verified in this task.
 
 ## Platforms and runners
 
@@ -48,7 +49,10 @@ this initial matrix does not certify them.
 
 Fuzz regression tests are normal CI tests. Coverage-guided campaigns use the
 separate nightly harness and explicit time/resource budgets from [fuzzing.md](fuzzing.md).
-They must not make the stable application build depend on nightly.
+A separate Linux fuzz job builds all six targets on `nightly-2026-10-04`
+and runs ten-second, synthetic-only campaigns per target with a 1 GiB RSS
+limit and five-second per-input timeout. The stable application build remains
+independent of nightly.
 
 ## Agent workflow smoke checks
 

@@ -1,0 +1,21 @@
+[graph]
+all-features = true
+
+[advisories]
+version = 2
+
+[licenses]
+version = 2
+# NCSA is libfuzzer-sys's bundled LLVM license, reviewed against SPDX NCSA.
+# Fuzz binaries are separate from the shipped tools; retain its notices on redistribution.
+allow = ["MIT", "Apache-2.0", "Unicode-3.0", "NCSA"]
+confidence-threshold = 0.95
+
+[bans]
+multiple-versions = "warn"
+wildcards = "deny"
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
