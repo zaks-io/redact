@@ -50,8 +50,8 @@ Fuzz regression tests are normal CI tests. Coverage-guided campaigns use the
 separate nightly harness and explicit time/resource budgets from [fuzzing.md](fuzzing.md).
 They must not make the stable application build depend on nightly.
 The Linux fuzz-harness job independently validates its oracles and builds all six
-sanitizer-enabled targets with the pinned nightly toolchain. Campaigns remain
-explicit local runs. cargo-fuzz lacks a locked build flag, so CI validates the
+sanitizer-enabled targets with the pinned nightly toolchain. It also runs ten-second synthetic campaigns per target with a 1 GiB RSS limit
+and five-second per-input timeout. cargo-fuzz lacks a locked build flag, so CI validates the
 lockfile before the build and rejects any resulting lockfile change.
 
 ## Agent workflow smoke checks

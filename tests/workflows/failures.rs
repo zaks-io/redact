@@ -127,11 +127,8 @@ fn interactive_stdin_fails_promptly() {
 #[test]
 fn closed_output_pipe_reports_safe_error() {
     for binary in ["rprintenv", "rstr"] {
-        let mut fds = [-1; 2];
-        // The private pipe has no readers, making the child's write fail.
-        assert_eq!(unsafe { libc::pipe(fds.as_mut_ptr()) }, 0);
-        let read = unsafe { OwnedFd::from_raw_fd(fds[0]) };
-        let write = unsafe { OwnedFd::from_raw_fd(fds[1]) };
+        // Close-on-exec prevents parallel subprocess tests from keeping a reader alive.
+        let (read, write) = std::io::pipe().unwrap_or_else(|_| panic!("output pipe setup failed"));
         drop(read);
         let temp = tempfile::tempfile().unwrap_or_else(|_| panic!("fixture setup failed"));
         use std::io::{Seek, Write};

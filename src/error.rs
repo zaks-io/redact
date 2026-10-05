@@ -1,7 +1,8 @@
 use std::fmt;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ErrorKind {
+    Category(&'static str),
     Usage,
     Encoding,
     Nul,
@@ -18,17 +19,19 @@ pub enum ErrorKind {
     UnterminatedKey,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SafeError {
+    source: Option<String>,
     pub kind: ErrorKind,
     pub line: Option<usize>,
     pub previous_line: Option<usize>,
 }
 
 impl SafeError {
-    pub fn new(kind: ErrorKind) -> Self {
+    pub fn new(kind: impl Into<ErrorKind>) -> Self {
         Self {
-            kind,
+            source: None,
+            kind: kind.into(),
             line: None,
             previous_line: None,
         }
@@ -36,15 +39,31 @@ impl SafeError {
 
     pub fn at(kind: ErrorKind, line: usize) -> Self {
         Self {
+            source: None,
             kind,
             line: Some(line),
             previous_line: None,
         }
     }
+    pub fn at_line(category: &'static str, line: usize) -> Self {
+        Self::at(ErrorKind::Category(category), line)
+    }
+    pub fn with_source(mut self, source: &str) -> Self {
+        self.source = Some(source.to_owned());
+        self
+    }
+    pub fn with_related_line(mut self, line: usize) -> Self {
+        self.previous_line = Some(line);
+        self
+    }
 }
 
 impl fmt::Display for SafeError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if let Some(source) = &self.source {
+            let escaped = serde_json::to_string(source).map_err(|_| fmt::Error)?;
+            write!(f, "{escaped}, ")?;
+        }
         if let Some(line) = self.line {
             write!(f, "line {line}: ")?;
         }
@@ -52,14 +71,15 @@ impl fmt::Display for SafeError {
             write!(f, "previous definition on line {line}: ")?;
         }
         f.write_str(match self.kind {
+            ErrorKind::Category(category) => category,
             ErrorKind::Usage => "invalid arguments. Use --help for supported syntax.",
             ErrorKind::Encoding => "input is not UTF-8. Supply UTF-8 input and retry.",
             ErrorKind::Nul => "input contains NUL bytes. Supply text without NUL bytes and retry.",
             ErrorKind::Input => {
-                "could not read input. Check the selected source and its permissions."
+                "could not read input: input read failed. Check the selected source and its permissions."
             }
             ErrorKind::Output => {
-                "could not write output. Check the destination; do not retry with raw input."
+                "could not write output: output write failed. Check the destination; do not retry with raw input."
             }
             ErrorKind::InvalidAssignment => "invalid assignment. Use NAME=VALUE syntax and retry.",
             ErrorKind::DuplicateName => {
@@ -89,3 +109,9 @@ impl fmt::Display for SafeError {
 }
 
 impl std::error::Error for SafeError {}
+
+impl From<&'static str> for ErrorKind {
+    fn from(category: &'static str) -> Self {
+        Self::Category(category)
+    }
+}

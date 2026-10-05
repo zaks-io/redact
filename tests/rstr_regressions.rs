@@ -14,18 +14,18 @@ fn m(secret: &str) -> String {
 
 /// Assert the library and the real binary (cleared environment) agree on exact output.
 fn assert_filters(cases: &[(String, String)]) {
-    for (input, expected) in cases {
+    for (index, (input, expected)) in cases.iter().enumerate() {
         let library = filter(input.as_bytes())
             .unwrap_or_else(|_| panic!("synthetic regression input rejected"));
         assert!(
             &library == expected,
-            "library output differs for a synthetic regression"
+            "library output differs for synthetic regression {index}"
         );
         let output = support::capture(&mut support::command("rstr"), input.as_bytes());
         assert_eq!(output.status.code(), Some(0));
         assert!(
             output.stdout == expected.as_bytes(),
-            "binary output differs for a synthetic regression"
+            "binary output differs for synthetic regression {index}"
         );
         assert!(output.stderr.is_empty());
         assert!(!String::from_utf8_lossy(&output.stdout).contains(CANARY));
@@ -82,7 +82,11 @@ fn jwt_inside_dotted_runs_is_redacted_without_neighbors() {
     .map(|(before, after)| {
         (
             format!("{before}{token}{after}"),
-            format!("{before}{}{after}", m(&token)),
+            if *after == ".extra" {
+                format!("{before}{}", m(&format!("{token}{after}")))
+            } else {
+                format!("{before}{}{after}", m(&token))
+            },
         )
     })
     .collect();
@@ -176,12 +180,12 @@ fn camel_case_and_provider_field_spellings_are_sensitive() {
             format!("https://app.test/cb?accessToken={CANARY}&state=ok"),
             format!("https://app.test/cb?accessToken={}&state=ok", m(CANARY)),
         ),
-        // Unquoted connection-string values stay conservative through the line ending.
+        // Parsed Azure connection fields preserve their following diagnostic fields.
         (
             format!("AccountName=public;AccountKey={CANARY};EndpointSuffix=core.windows.net\n"),
             format!(
-                "AccountName=public;AccountKey={}\n",
-                m(&format!("{CANARY};EndpointSuffix=core.windows.net"))
+                "AccountName=public;AccountKey={};EndpointSuffix=core.windows.net\n",
+                m(CANARY)
             ),
         ),
         (

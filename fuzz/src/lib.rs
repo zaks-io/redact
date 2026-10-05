@@ -1,5 +1,7 @@
+pub mod inventory;
 pub mod jwt;
 pub mod policy;
+pub mod providers;
 pub mod text;
 
 use redact::error::SafeError;
@@ -17,10 +19,16 @@ pub fn hash(bytes: &[u8]) -> String {
 pub fn check_error(error: &SafeError) {
     let diagnostic = format!("{error} {error:?}");
     assert!(
-        !diagnostic.contains(CANARY),
+        !diagnostic.contains(CANARY)
+            && !diagnostic.contains("SYNTHETIC_FUZZ_CANARY_")
+            && !diagnostic.contains("CREDENTIAL_CANARY_"),
         "error exposed synthetic value"
     );
     assert!(error.line.is_none_or(|line| line > 0), "invalid error line");
+    assert!(
+        std::error::Error::source(error).is_none(),
+        "raw error source retained"
+    );
 }
 
 pub fn valid_name(name: &str) -> bool {

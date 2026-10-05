@@ -31,9 +31,9 @@ and tested. Unknown formats in recognized sensitive fields remain redacted.
 | Provider credentials | Recognize documented token formats for OpenAI, Anthropic, GitHub, GitLab, Slack, Stripe secret/restricted keys, and AWS access key IDs. Apply maintained format rules, not invented length assumptions. |
 | Authentication headers | Detect case-insensitive `Authorization` and `Proxy-Authorization` headers with Bearer or Basic credentials. Remove the credential payload, retaining the header name and authentication scheme. |
 | Sensitive assignments | Detect values assigned to sensitive names in dotenv-style lines, JSON string fields, and common `name=value` or `name: value` log fields. |
-| URL credentials | Detect user information before `@` in a URI authority and sensitive query parameter values. Remove the entire user-information span, including username and password when both are present. |
+| URL credentials | Detect user information before `@` in a URI authority and sensitive query or fragment parameters, including explicit comma/semicolon fields. Remove the entire user-information span, including username and password when both are present. |
 | Private keys | Detect PEM private-key blocks, including RSA, EC, encrypted, and OpenSSH variants. Remove the full block from its BEGIN marker through its END marker. Do not redact public certificates solely because they use PEM framing. |
-| JWTs | Detect three-segment compact tokens with valid Base64url JSON header and payload objects and an `alg` header. Redact the complete token without validating its signature or expiry. |
+| JWTs | Detect three-segment compact JWS with a bounded Base64url JSON header containing `alg`, and five-segment JWE with `alg` and `enc`. JWS payloads need not be JSON. Protect full candidates including unknown extension segments, without validating signatures, claims, or expiry. |
 
 An AWS secret access key alone has no unique recognizable format. Contextual
 assignment rules may detect it; the AWS access key ID rule must not claim to
@@ -42,13 +42,13 @@ change. The bundled rules have finite, versioned coverage.
 
 ## Sensitive names and contexts
 
-For contextual detection only, match names case-insensitively, normalize
-hyphens to underscores, and split camelCase and acronym boundaries with an
-underscore before comparing. Start with these complete names and
-underscore-delimited suffixes: `password`, `passwd`, `pwd`, `secret`, `token`,
-`api_key`, `apikey`, `access_key`, `secret_key`, `private_key`, `client_secret`,
-`credential`, `credentials`, `authorization`, `account_key`,
-`shared_access_signature`, and `private_key_data`.
+For contextual detection only, match names case-insensitively, normalize dots,
+hyphens, spaces, and tabs to underscores, and split camelCase and acronym word
+boundaries before comparing. Start with these complete names and underscore-delimited
+suffixes: `password`, `passwd`, `pwd`, `secret`, `token`, `api_key`, `apikey`,
+`access_key`, `secret_key`, `private_key`, `client_secret`, `credential`,
+`credentials`, `authorization`, `account_key`, `shared_access_signature`,
+and `private_key_data`.
 
 Thus `DATABASE_PASSWORD`, `accessToken`, `SecretAccessKey`, `_authToken`,
 `APIKey`, and Azure `AccountKey` are sensitive while `tokenizer` and `maxTokens`
@@ -56,6 +56,14 @@ are not. A field name may follow a separator, a label such as `DEBUG:`, or
 command-line dashes such as `--password=`. Contextual name
 normalization belongs to `rstr` detection. `rprintenv` independently uses its
 exact-name allowlist and does not run these detectors.
+
+Quoted log messages and JSON strings are also checked for embedded recognizable
+credentials and assignments. Decoded detections map back to their exact original
+escape bytes for hashing. Nested quoting is bounded to 32 levels; nested sensitive
+object/array values are bounded to 1 MiB and 64 levels. Proven indented sensitive
+YAML blocks, sequence values, and plain-scalar continuations are removed as
+complete spans; this is not a general YAML validator. Unquoted assignment values
+that begin with brackets retain their full opaque value, including any suffix.
 
 For JSON string fields, understand string escapes so an escaped quote cannot
 terminate the match early. Redact the entire string contents while preserving

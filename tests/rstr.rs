@@ -160,9 +160,10 @@ fn each_provider_prefix_uses_whole_candidate_and_preserves_neighbors() {
     ] {
         assert_eq!(filter(token.as_bytes()).must(), marker(token.as_bytes()));
     }
+    // Recognizable access-ID candidates retain opaque format extensions in their protected span.
     assert_eq!(
         filter(b"AKIAsynthetic12345678_tail").must(),
-        "AKIAsynthetic12345678_tail"
+        marker(b"AKIAsynthetic12345678_tail")
     );
     let long = format!("ghs_12345_{}", "synthetic".repeat(80));
     assert_eq!(filter(long.as_bytes()).must(), marker(long.as_bytes()));
@@ -229,11 +230,11 @@ fn jwt_requires_json_objects_and_alg_without_eyj_or_signature_assumptions() {
     for token in ["abc.def.ghi", "e30.e30.", "e30.W10."] {
         assert_eq!(filter(token.as_bytes()).must(), token);
     }
-    // A trailing segment does not turn a valid JWS into a different JOSE structure.
+    // Unknown nonempty extension segments remain inside the protected container.
     let jws = format!("{header}.{payload}.c3ludGhldGlj");
     assert_eq!(
         filter(format!("{jws}.extra").as_bytes()).must(),
-        format!("{}.extra", marker(jws.as_bytes()))
+        marker(format!("{jws}.extra").as_bytes())
     );
 }
 
@@ -454,8 +455,21 @@ fn coverage_ledger_maps_every_researched_family_and_shipped_evidence() {
             for test in entry["tests"].as_array().must() {
                 let name = format!("fn {}(", test.as_str().must());
                 assert!(
-                    include_str!("rstr.rs").contains(&name)
-                        || include_str!("rstr_regressions.rs").contains(&name)
+                    [
+                        include_str!("rstr.rs"),
+                        include_str!("rstr_regressions.rs"),
+                        include_str!("format_regressions.rs"),
+                        include_str!("provider_evolution.rs"),
+                        include_str!("provider_review.rs"),
+                        include_str!("structured.rs"),
+                        include_str!("structured_review.rs"),
+                        include_str!("context.rs"),
+                        include_str!("context_review.rs"),
+                        include_str!("private_blocks_review.rs"),
+                        include_str!("rstr_cli.rs"),
+                    ]
+                    .iter()
+                    .any(|source| source.contains(&name))
                 );
             }
         }

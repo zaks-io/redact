@@ -51,6 +51,7 @@ cargo fmt --check
 cargo clippy --locked --all-targets --all-features -- -D warnings
 cargo test --locked -- --test-threads=2
 cargo build --locked --release
+python3 scripts/acceptance.py
 cargo test --locked --release --test workflows --test rstr --test rstr_regressions -- --test-threads=2 --nocapture
 cargo install cargo-deny --version 0.18.9 --locked --jobs 2
 cargo deny --locked check
@@ -65,8 +66,9 @@ Blacksmith Linux and Apple Silicon macOS with immutable action revisions.
 
 See the [specifications](docs/README.md),
 [agent guide](docs/agent-usage.md), and [rule coverage](docs/rules.md). The research
-inventory describes candidates beyond the implemented detector coverage. Those
-additional formats have explicit coverage limits in the ledger. Property
+inventory now has executable coverage for all 61 entries in the
+[format coverage ledger](docs/secret-formats/coverage.md). Context-only families
+still require recognizable fields or structures. Property
 tests run in normal validation; six coverage-guided fuzz targets have a separate
 pinned nightly toolchain and explicit campaign budgets.
 Hosted CI and macOS results require an

@@ -1,51 +1,58 @@
 # Bundled rstr rules
 
-Version 1 ships the machine-readable [provider inventory](../rules/providers.json)
-and [catalogue coverage ledger](../rules/coverage.json).
-Patterns are original conservative adaptations of the primary sources listed
-there and the format research dated 2026-10-04. No Gitleaks or TruffleHog code
-or patterns were copied. The rules use the project's MIT license. Provider
-sources describe recognition evidence, not credential validation.
+The [provider inventory](../rules/providers.json), [coverage ledger](../rules/coverage.json),
+and [synthetic span fixtures](../tests/fixtures/secret-formats.json) describe all
+61 researched entries. The ledger names each implementation path, evidence
+class, source retrieval date, supported scope, exact fixture IDs, and limits.
+[Detailed coverage](secret-formats/coverage.md) records contextual and public forms.
+These records describe built-in rules, not runtime configuration.
 
-Provider candidates consume the complete supported lexical body, including
-new longer GitHub installation tokens and Slack rotation prefixes. No historical
-fixed token length or checksum gates disclosure. The generic `sk-` candidate
-is deliberately ambiguous. Bodies use the precise pattern in the inventory;
-punctuation in that alphabet can cause conservative false positives. A prefix
-alone does not match. Every prefix occurrence at a token boundary is a candidate,
-so a rejected occurrence inside another word cannot hide a later credential.
-Tokens directly after `.`, `_`, or `-` remain outside the boundary rule. Unknown alphabets and customized GitLab prefixes need
-sensitive context. The AWS rule covers alphanumeric access-ID candidates with at
-least 16 characters overall. It does not identify standalone secret-access keys.
-Public Stripe publishable prefixes do not match.
+The rules are original implementations of the inventory's primary sources,
+retrieved 2026-10-04, and use the project MIT license. No Gitleaks or TruffleHog
+code or rule data was copied. Recognition is local format evidence, never
+validity, ownership, authorization, or a reason to reveal unknown data.
+Current CLI output remains the specified fingerprint marker and JSON schema.
 
-Structured rules run on the original input:
+`src/providers.rs` compiles documented or example-backed prefixes for source
+control, registries, AI, payments, messaging, secret managers, developer services,
+and current cloud keys. The provider inventory gives every supported prefix and
+complete pattern. Bodies have no inferred historical length or checksum gate.
+The Unicode-aware preceding boundary rejects letters, numbers, underscore, dot,
+plus, and hyphen before an ordinary prefix. URL path separators can establish a
+boundary, and an invalid outer hint cannot conceal a later credential. Dollar
+markers establish verifier boundaries independently, including immediately
+adjacent provider credentials. Prefix and boundary checks precede open-ended
+body scans, so large invalid near matches make bounded progress.
 
-| Internal identifier | Parser and removed span | Evidence and limitation |
+AWS recognition requires the common access-ID prefix and 16 following
+alphanumeric characters, then conservatively protects the complete supported
+suffix. It does not identify a standalone secret access key or authenticate a
+key. SendGrid covers both components without the obsolete 69-character limit.
+Generic `sk-` and `secret_` matches stay ambiguous. Short Resend `re_`, legacy
+Vault markers, uncertain Grafana `glsa` grammar, custom instance prefixes, opaque
+credentials, and uncertain Azure DevOps marker offsets need sensitive context.
+No checksum algorithm or undocumented body grammar is invented.
+
+Structured detectors operate on original input:
+
+| Structure | Removed span and preserved context | Limits |
 | --- | --- | --- |
-| sensitive-assignment | Case-insensitive complete names and underscore suffixes from detection.md; hyphens and camelCase boundaries normalize to underscores. Names may follow labels, separators, or command-line dashes. Quoted contents exclude framing quotes. Unquoted values continue to the physical line ending. | Context-only. Single quotes are literal; double quotes validate the documented backslash, quote, n, r, and t escapes. Ambiguous unquoted log fields may hide following diagnostic fields. |
-| json-string-field | Lexical JSON string boundaries plus serde_json string escape validation; remove sensitive field string contents. | Context-only. Preserves neighboring fields. Sensitive assignments within ordinary JSON diagnostic strings use the enclosing string boundary. Escaped contents are inspected as raw bytes rather than recursively decoded; non-string JSON values have no contextual rule in v1. |
-| http-auth | Case-insensitive Authorization and Proxy-Authorization with Basic/Bearer; remove line payload excluding trailing framing spaces/tabs. | RFC 7617/6750. Preserves scheme. Opaque malformed payloads are still hidden. Other schemes need sensitive-assignment context. |
-| uri-credentials | Scheme/authority parser removes all user information before the last authority @; when `user:` precedes an unencoded `/`, `?`, or `#` that is not a numeric port or bracketed IPv6 host, user information runs to the next @. Query parser removes complete raw sensitive parameter values. | URI container evidence. A digits-only password before a delimiter reads as a port, and a later @ inside such a password ends the span early. Parameter names undergo one percent-decoding pass. Invalid encodings and provider-specific parameter names outside the sensitive-name contract are deferred. |
-| pem-private | Matching BEGIN/END label for PRIVATE KEY, ENCRYPTED PRIVATE KEY, RSA/DSA/EC/OPENSSH PRIVATE KEY, PGP PRIVATE KEY BLOCK; remove full armor. | RFC 7468, OpenSSL/OpenSSH/OpenPGP inventory references. Unclosed recognized armor fails safely; public containers remain unchanged. |
-| jws-jwt | Any three consecutive segments of a dotted Base64url run; decoded header/payload must be JSON objects, with string alg in header. Remove that compact token and keep dotted labels or trailing segments around it. Empty signature supported. | RFC 7515/7519. No signature decoding, validation, or expiry check. Decoded header/payload JSON nesting above 64 fails with a fixed detector error and no output. JSON numeric magnitudes do not gate recognition. Arbitrary JWS payloads and five-segment JWE are deferred. |
+| Sensitive fields | Supported assignments, JSON strings/objects/arrays, Python quoted names, dotted/CamelCase names, and YAML blocks remove complete raw value spans. JSON framing and provable neighboring diagnostic fields remain. | Unknown provider values remain hidden under recognized context. Unsupported ambiguous unquoted forms may conservatively hide the physical line. Recognized incomplete constructs fail safely. |
+| Authentication | Basic, Bearer, and Bot credential payloads under case-insensitive Authorization/Proxy-Authorization retain scheme/header framing. Provider-specific credential headers have explicit mappings. | Scheme recognition does not identify or validate an issuer. Malformed sensitive header values stay protected. |
+| URLs | Userinfo, sensitive query/fragment values, AWS signature/credential/session-token fields, contextual Azure SAS signatures, Telegram bot paths, and Slack capability URLs use structural raw-byte boundaries. | Parameter names decode once. Nested schemes scan original text. Unencoded `/`, `?`, and `#` password recovery preserves numeric-port/IPv6 safeguards. No recursive decoding or issuer requests. Generic userinfo handling conservatively hides public Sentry DSN userinfo. |
+| Connection dialects | PostgreSQL, MongoDB, and Redis URI credentials retain host/status context; libpq password quoting and Azure semicolon fields have dialect-specific boundaries. | Bare hosts, public identifiers, and unrelated query fields remain visible. |
+| JOSE | Valid compact JWS/JWT and JWE shapes remove complete credentials without signature verification. Empty standards-permitted segments and evolving outer suffixes are covered. | Untrusted claims do not establish provider or privilege. Supabase anon JWTs may conservatively redact. Decoded header/payload nesting above 64 fails safely; large JSON numbers do not gate recognition. |
+| Private armor | Matching private PEM, traditional RSA/DSA/EC, OpenSSH, and OpenPGP blocks remove complete BEGIN/END framing. | Public keys and certificates remain distinct. Recognized missing END or mismatched framing fails with no unchecked output. |
+| Private JSON and encoded configuration | Private RSA/EC/OKP/symmetric JWK objects, Docker auths objects, and Kubernetes Secret containers are hidden as whole recognized objects/documents. | Bounded structural parsing, no arbitrary recursive Base64 decoding. Duplicate discriminator fields and recognized malformed credential objects fail safely. |
+| Password verifiers | Supported bcrypt `$2b$` and Argon2 PHC shapes remove salt/hash payload together. | Verifier evidence identifies a stored verifier, not plaintext or a provider. Unverified historical markers need context. |
 
-A recognized sensitive opening quote without a close fails with no output.
-Malformed JSON escapes in recognized sensitive string fields also fail safely.
-All errors use fixed categories and line numbers without parser diagnostics.
-Spans are checked for bounds and Unicode boundaries, and overlapping spans are
-merged before hashing their full union. Adjacent spans remain separate.
+Spans must be in bounds and on UTF-8 boundaries. Overlapping matches merge into
+their full union; adjacent non-overlapping spans stay separate. Fingerprints
+hash exact original removed bytes, including encoding and merged structures.
+Render once from validated spans and never rescan generated markers.
 
-Every additional catalogue entry is deferred as a standalone lexical rule:
-Azure DevOps, npm, PyPI, Hugging Face, Docker, Gemini, Slack webhook URLs,
-Resend, SendGrid, Twilio, Discord-specific Bot headers, Telegram URLs, Vault,
-1Password, Vercel, Linear, Notion, DigitalOcean, Pulumi, Grafana, New Relic,
-Datadog-specific headers, Sentry-specific formats, Shopify-specific headers,
-Google service-account encoded containers, Azure connection strings and SAS,
-AWS signed URLs with provider-specific names, Cloudflare, Supabase opaque keys,
-JWE, JWK, encoded configuration, and password verifiers. Ordinary recognized
-sensitive fields, Basic/Bearer headers, URI credentials, private armor, and JWTs
-still protect those families where their required context is present. Supabase
-legacy JWTs use generic JWT coverage without provider or privilege inference.
-Standalone ordinary passwords and recursively encoded secrets remain outside
-recognizable coverage. A zero-match result does not prove safety.
+`rprintenv` independently hides unknown values regardless of these patterns.
+Public publishable keys and resource IDs do not expand its allowlist. Arbitrary
+standalone passwords, unrecognized provider generations, binary containers, and
+unsupported encodings remain outside `rstr` recognition unless sensitive context
+establishes their role. A zero-match result does not prove that text is safe.

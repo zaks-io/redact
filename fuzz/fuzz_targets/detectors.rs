@@ -14,4 +14,6 @@ fuzz_target!(|data: &[u8]| {
         }
     }
     generated_credentials(data);
+    redact_fuzz::providers::generated_credentials(data);
+    redact_fuzz::inventory::check_fixture_oracles(data);
 });

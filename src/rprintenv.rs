@@ -9,7 +9,9 @@ use policy::{Policy, Source, State, disclose};
 use std::collections::{BTreeMap, BTreeSet};
 use std::ffi::OsString;
 use std::fmt;
-use std::io::Write;
+use std::io::{Read, Write};
+
+pub const MAX_FILE_BYTES: usize = 16_777_216;
 
 #[derive(Parser)]
 #[command(
@@ -129,9 +131,9 @@ pub fn run(
     }
     for path in args.file {
         let source = Source::File { path: path.clone() };
-        let contents = std::fs::read(&path).map_err(|_| Failure {
+        let contents = read_file(&path).map_err(|error| Failure {
             source: Some(source.clone()),
-            error: SafeError::new(ErrorKind::Input),
+            error,
         })?;
         let entries = parser::parse_dotenv(&contents).map_err(|error| Failure {
             source: Some(source.clone()),
@@ -164,4 +166,35 @@ pub fn run(
         render::render(&records, args.json, output)?;
     }
     Ok(u8::from(missing))
+}
+
+fn read_file(path: &str) -> Result<Vec<u8>, SafeError> {
+    let read_error = || {
+        SafeError::new(
+            "file read failed. Check the explicit path and read permissions, then retry.",
+        )
+    };
+    let regular_file_error = || {
+        SafeError::new(
+            "source is not a regular file. Supply an explicit UTF-8 .env file and retry.",
+        )
+    };
+    let metadata = std::fs::metadata(path).map_err(|_| read_error())?;
+    if !metadata.is_file() {
+        return Err(regular_file_error());
+    }
+    let file = std::fs::File::open(path).map_err(|_| read_error())?;
+    if !file.metadata().map_err(|_| read_error())?.is_file() {
+        return Err(regular_file_error());
+    }
+    let mut bytes = Vec::new();
+    file.take((MAX_FILE_BYTES + 1) as u64)
+        .read_to_end(&mut bytes)
+        .map_err(|_| read_error())?;
+    if bytes.len() > MAX_FILE_BYTES {
+        return Err(SafeError::new(
+            "file exceeds 16 MiB. Supply a smaller .env file and retry.",
+        ));
+    }
+    Ok(bytes)
 }

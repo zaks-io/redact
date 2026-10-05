@@ -2,7 +2,7 @@
 
 Status: implemented Rust CLIs with executable acceptance fixtures, property tests,
 and a pinned CI workflow. Hosted platform validation is not implied by this
-document. See the [implementation guide](../README.md) and [rule coverage](rules.md).
+document. See the [implementation guide](../README.md) and [rule coverage](rules.md) and the [format ledger](secret-formats/coverage.md).
 
 `rprintenv` is a Rust command line tool that lets agents inspect environment
 variables and `.env` files without accidentally copying full secrets into logs

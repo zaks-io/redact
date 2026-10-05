@@ -1,0 +1,1 @@
+host=example.invalid user=synthetic password='SYNTHETIC_CREDENTIAL_CANARY_0123456789\'tail' dbname=example

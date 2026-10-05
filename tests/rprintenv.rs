@@ -244,14 +244,9 @@ fn non_unicode_environment_and_arguments_fail_without_echo() {
 #[cfg(unix)]
 #[test]
 fn closed_output_pipe_returns_safe_output_failure() {
-    use std::fs::File;
-    use std::os::fd::FromRawFd;
     use std::process::Stdio;
-    let mut descriptors = [0; 2];
-    // Both descriptors are new resources owned by this test.
-    assert_eq!(unsafe { libc::pipe(descriptors.as_mut_ptr()) }, 0);
-    let reader = unsafe { File::from_raw_fd(descriptors[0]) };
-    let writer = unsafe { File::from_raw_fd(descriptors[1]) };
+    // Close-on-exec prevents parallel subprocess tests from keeping a reader alive.
+    let (reader, writer) = std::io::pipe().unwrap_or_else(|_| panic!("output pipe setup failed"));
     drop(reader);
     let mut command = support::command("rprintenv");
     command

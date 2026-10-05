@@ -2,7 +2,8 @@
 
 Status: implemented as the `rstr` binary in the local `redact` package. Registry
 publication is disabled; package-name availability has not been checked. The
-[rule ledger](rules.md) distinguishes shipped coverage from deferred research.
+[rule ledger](rules.md) records shipped rules; the [format ledger](secret-formats/coverage.md) records
+contextual limits for the complete inventory.
 
 ## Purpose
 

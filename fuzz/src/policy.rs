@@ -111,7 +111,9 @@ pub fn outputs_match(record: &Record, value: Option<&str>, policy: &Policy) -> b
         "empty" => "[EMPTY]".to_owned(),
         "redacted" => format!(
             "[REDACTED sha256={}]",
-            fingerprint.as_str().unwrap_or_default()
+            fingerprint
+                .as_str()
+                .unwrap_or_else(|| panic!("synthetic fingerprint oracle missing"))
         ),
         _ => value.to_string(),
     };

@@ -18,7 +18,7 @@ pub fn check_spans(text: &str, spans: &[Span]) {
     }
 }
 
-// Connected overlap components provide an independent union oracle.
+// Independent endpoint counts preserve overlap union and separate adjacency.
 pub fn union_oracle(text: &str, spans: &[Span]) -> Option<Vec<Span>> {
     if spans.iter().any(|span| {
         span.start > span.end
@@ -28,24 +28,28 @@ pub fn union_oracle(text: &str, spans: &[Span]) -> Option<Vec<Span>> {
     }) {
         return None;
     }
-    let mut remaining: Vec<_> = spans
-        .iter()
-        .filter(|span| !span.is_empty())
-        .cloned()
-        .collect();
-    let mut result = Vec::new();
-    while let Some(mut component) = remaining.pop() {
-        while let Some(index) = remaining
-            .iter()
-            .position(|span| span.start < component.end && component.start < span.end)
-        {
-            let joined = remaining.swap_remove(index);
-            component = component.start.min(joined.start)..component.end.max(joined.end);
-        }
-        result.push(component);
+    let mut begins = vec![0usize; text.len() + 1];
+    let mut ends = vec![0usize; text.len() + 1];
+    for span in spans.iter().filter(|span| !span.is_empty()) {
+        begins[span.start] += 1;
+        ends[span.end] += 1;
     }
-    result.sort_by_key(|span| span.start);
-    Some(result)
+    let mut output = Vec::new();
+    let mut active = 0;
+    let mut start = None;
+    for index in 0..=text.len() {
+        active -= ends[index];
+        if active == 0
+            && let Some(begin) = start.take()
+        {
+            output.push(begin..index);
+        }
+        if begins[index] > 0 && start.is_none() {
+            start = Some(index);
+        }
+        active += begins[index];
+    }
+    Some(output)
 }
 
 pub fn replacement_oracle(text: &str, spans: &[Span]) -> String {

@@ -74,7 +74,10 @@ injection.
 
 ## .env input
 
-Files are UTF-8 text. Accept an optional leading UTF-8 BOM and LF or CRLF record
+Sources must be regular files, including symlinks to regular files, at most
+16 MiB each. Reject devices, directories, and FIFOs before reading; detect
+size overflow with a bounded read and fail before stdout. Files are UTF-8 text.
+Accept an optional leading UTF-8 BOM and LF or CRLF record
 endings. Strip the BOM as file framing; never trim decoded values for hashing.
 All selected files are fully validated, including unselected variables.
 

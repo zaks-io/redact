@@ -12,6 +12,8 @@ cargo test --locked --release --test workflows -- --test-threads=2 --nocapture
 
 - [rprintenv cases](fixtures/rprintenv-workflows.json)
 - [rstr cases](fixtures/rstr-workflows.json)
+- [Context and review cases](fixtures/context-workflows.json)
+- [Complete secret inventory](fixtures/secret-formats.json)
 - [Behavior requirements](../docs/agent-usability.md)
 
 ## Fixture format

@@ -4,9 +4,11 @@ use std::collections::BTreeMap;
 
 /// Parse only the documented literal dotenv dialect, without interpolation.
 pub fn parse_dotenv(bytes: &[u8]) -> Result<BTreeMap<String, SecretString>, SafeError> {
-    let text = std::str::from_utf8(bytes).map_err(|_| SafeError::new(ErrorKind::Encoding))?;
-    if text.contains('\0') {
-        return Err(SafeError::new(ErrorKind::Nul));
+    let text = std::str::from_utf8(bytes).map_err(|failure| {
+        SafeError::at(ErrorKind::Encoding, line_at(bytes, failure.valid_up_to()))
+    })?;
+    if let Some(offset) = text.find('\0') {
+        return Err(SafeError::at(ErrorKind::Nul, line_at(bytes, offset)));
     }
     let text = text
         .strip_prefix('\u{feff}')
@@ -104,6 +106,14 @@ pub fn parse_dotenv(bytes: &[u8]) -> Result<BTreeMap<String, SecretString>, Safe
         values.insert(name.to_owned(), SecretString::new(value));
     }
     Ok(values)
+}
+
+fn line_at(bytes: &[u8], offset: usize) -> usize {
+    bytes[..offset]
+        .iter()
+        .filter(|byte| **byte == b'\n')
+        .count()
+        + 1
 }
 
 fn valid_name(name: &str) -> bool {

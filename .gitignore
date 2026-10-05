@@ -6,4 +6,3 @@
 .env
 .env.*
 !/tests/fixtures/**
-

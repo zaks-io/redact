@@ -1,16 +1,394 @@
 {
   "version": 1,
   "synthetic_only_tests": true,
-  "provenance": "Original conservative lexical rules derived from the primary-source inventory researched 2026-10-04. No scanner patterns or code copied.",
+  "provenance": "Original rules derived from the primary-source inventory retrieved 2026-10-04; no upstream scanner code or rules copied. Project MIT license.",
+  "implementation": "src/providers.rs::detect. This file records the bundled patterns; it is not a user configuration or downloaded rule source.",
   "body_pattern": "[A-Za-z0-9_./+~=-]+",
-  "boundary": "Start of input or preceding character outside ASCII alphanumeric, underscore, hyphen, and dot; consume the full candidate body without fixed historical lengths.",
+  "boundary": "(?:^|[^\\p{Alphabetic}\\p{Number}_.+-])",
   "rules": [
-    {"id":"openai-key", "prefixes":["sk-proj-","sk-admin-","sk-"], "evidence":"example-backed", "scope":"Current project/admin and ambiguous legacy secret-key candidates; generic sk- does not attribute an issuer", "source":"https://developers.openai.com/api/reference/resources/organization/subresources/projects/subresources/service_accounts/methods/create"},
-    {"id":"anthropic-key", "prefixes":["sk-ant-api03-","sk-ant-admin"], "evidence":"documented admin; example-backed API03", "scope":"Admin/API03 lexical candidates", "source":"https://docs.anthropic.com/en/api/administration-api"},
-    {"id":"github-access", "prefixes":["github_pat_","ghp_","gho_","ghu_","ghs_","ghr_"], "evidence":"documented", "scope":"Legacy/current tokens including variable-length outer installation tokens; checksums are not validated", "source":"https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/about-authentication-to-github#githubs-token-formats"},
-    {"id":"gitlab-access", "prefixes":["glpat-","gloas-","gldt-","glrt-","glrtr-","glcbt-","glptt-","glft-","glimt-","glagent-","glwt-","glsoat-","glffct-"], "evidence":"documented", "scope":"Default prefixes only; administrator-customized prefixes need context", "source":"https://docs.gitlab.com/security/tokens/#token-prefixes"},
-    {"id":"slack-token", "prefixes":["xoxe.xapp-","xoxe.xoxb-","xoxe.xoxp-","xoxe-","xoxb-","xoxp-","xwfp-","xapp-"], "evidence":"documented and example-backed rotation", "scope":"Full outer current/rotation token candidate", "source":"https://docs.slack.dev/authentication/tokens/"},
-    {"id":"stripe-key", "prefixes":["sk_test_","sk_live_","rk_test_","rk_live_","sk_org_","whsec_"], "evidence":"documented", "scope":"Secret/restricted/organization keys and webhook signing secrets; publishable prefixes excluded", "source":"https://docs.stripe.com/keys"}
+    {
+      "id": "github-access",
+      "prefixes": [
+        "github_pat_",
+        "ghp_",
+        "gho_",
+        "ghu_",
+        "ghs_",
+        "ghr_"
+      ],
+      "evidence": "documented",
+      "scope": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "sources": [
+        "https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/about-authentication-to-github#githubs-token-formats"
+      ],
+      "source": "https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/about-authentication-to-github#githubs-token-formats"
+    },
+    {
+      "id": "gitlab-access",
+      "prefixes": [
+        "glpat-"
+      ],
+      "evidence": "documented",
+      "scope": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "sources": [
+        "https://docs.gitlab.com/security/tokens/#token-prefixes",
+        "https://docs.gitlab.com/administration/settings/account_and_limit_settings/#personal-access-token-prefix"
+      ],
+      "source": "https://docs.gitlab.com/security/tokens/#token-prefixes"
+    },
+    {
+      "id": "gitlab-other",
+      "prefixes": [
+        "gloas-",
+        "gldt-",
+        "glrt-",
+        "glrtr-",
+        "glcbt-",
+        "glptt-",
+        "glft-",
+        "glimt-",
+        "glagent-",
+        "glwt-",
+        "glsoat-",
+        "glffct-"
+      ],
+      "evidence": "documented",
+      "scope": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "sources": [
+        "https://docs.gitlab.com/security/tokens/#token-prefixes",
+        "https://docs.gitlab.com/administration/settings/account_and_limit_settings/#instance-token-prefix"
+      ],
+      "source": "https://docs.gitlab.com/security/tokens/#token-prefixes"
+    },
+    {
+      "id": "npm-token",
+      "prefixes": [
+        "npm_"
+      ],
+      "evidence": "documented",
+      "scope": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "sources": [
+        "https://github.blog/security/announcing-npms-new-access-token-format/"
+      ],
+      "source": "https://github.blog/security/announcing-npms-new-access-token-format/"
+    },
+    {
+      "id": "pypi-token",
+      "prefixes": [
+        "pypi-"
+      ],
+      "evidence": "documented",
+      "scope": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "sources": [
+        "https://pypi.org/help/#apitoken"
+      ],
+      "source": "https://pypi.org/help/#apitoken"
+    },
+    {
+      "id": "huggingface-token",
+      "prefixes": [
+        "hf_"
+      ],
+      "evidence": "example-backed",
+      "scope": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "sources": [
+        "https://huggingface.co/docs/hub/en/security-tokens"
+      ],
+      "source": "https://huggingface.co/docs/hub/en/security-tokens"
+    },
+    {
+      "id": "openai-key",
+      "prefixes": [
+        "sk-proj-",
+        "sk-admin-",
+        "sk-"
+      ],
+      "evidence": "example-backed",
+      "scope": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "sources": [
+        "https://developers.openai.com/cookbook/examples/agents_sdk/evaluate_agents",
+        "https://developers.openai.com/api/reference/resources/organization/subresources/projects/subresources/service_accounts/methods/create",
+        "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/admin_api_keys/methods/create"
+      ],
+      "source": "https://developers.openai.com/cookbook/examples/agents_sdk/evaluate_agents"
+    },
+    {
+      "id": "anthropic-key",
+      "prefixes": [
+        "sk-ant-admin",
+        "sk-ant-api03-"
+      ],
+      "evidence": "example-backed",
+      "scope": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "sources": [
+        "https://docs.anthropic.com/en/api/administration-api",
+        "https://docs.anthropic.com/en/api/admin-api/apikeys/get-api-key"
+      ],
+      "source": "https://docs.anthropic.com/en/api/administration-api"
+    },
+    {
+      "id": "stripe-key",
+      "prefixes": [
+        "sk_test_",
+        "sk_live_",
+        "sk_org_",
+        "rk_test_",
+        "rk_live_"
+      ],
+      "evidence": "documented",
+      "scope": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "sources": [
+        "https://docs.stripe.com/keys"
+      ],
+      "source": "https://docs.stripe.com/keys"
+    },
+    {
+      "id": "stripe-webhook",
+      "prefixes": [
+        "whsec_"
+      ],
+      "evidence": "documented",
+      "scope": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "sources": [
+        "https://docs.stripe.com/webhooks/signature"
+      ],
+      "source": "https://docs.stripe.com/webhooks/signature"
+    },
+    {
+      "id": "slack-token",
+      "prefixes": [
+        "xoxb-",
+        "xoxp-",
+        "xwfp-",
+        "xapp-",
+        "xoxe.xapp-"
+      ],
+      "evidence": "documented",
+      "scope": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "sources": [
+        "https://docs.slack.dev/authentication/tokens/"
+      ],
+      "source": "https://docs.slack.dev/authentication/tokens/"
+    },
+    {
+      "id": "slack-rotation",
+      "prefixes": [
+        "xoxe.xoxb-",
+        "xoxe.xoxp-",
+        "xoxe-"
+      ],
+      "evidence": "example-backed",
+      "scope": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "sources": [
+        "https://docs.slack.dev/authentication/using-token-rotation/"
+      ],
+      "source": "https://docs.slack.dev/authentication/using-token-rotation/"
+    },
+    {
+      "id": "vault-token",
+      "prefixes": [
+        "hvs.",
+        "hvb.",
+        "hvr."
+      ],
+      "evidence": "documented",
+      "scope": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "sources": [
+        "https://developer.hashicorp.com/vault/docs/concepts/tokens#token-prefixes"
+      ],
+      "source": "https://developer.hashicorp.com/vault/docs/concepts/tokens#token-prefixes"
+    },
+    {
+      "id": "onepassword-service",
+      "prefixes": [
+        "ops_"
+      ],
+      "evidence": "documented",
+      "scope": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "sources": [
+        "https://developer.1password.com/docs/service-accounts/security/"
+      ],
+      "source": "https://developer.1password.com/docs/service-accounts/security/"
+    },
+    {
+      "id": "vercel-token",
+      "prefixes": [
+        "vcp_"
+      ],
+      "evidence": "documented",
+      "scope": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "sources": [
+        "https://vercel.com/docs/accounts/access-tokens"
+      ],
+      "source": "https://vercel.com/docs/accounts/access-tokens"
+    },
+    {
+      "id": "linear-token",
+      "prefixes": [
+        "lin_api_",
+        "lin_oauth_"
+      ],
+      "evidence": "documented",
+      "scope": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "sources": [
+        "https://linear.app/changelog/2021-08-19-github-secret-scanning",
+        "https://linear.app/developers/graphql"
+      ],
+      "source": "https://linear.app/changelog/2021-08-19-github-secret-scanning"
+    },
+    {
+      "id": "notion-token",
+      "prefixes": [
+        "ntn_",
+        "secret_"
+      ],
+      "evidence": "documented",
+      "scope": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "sources": [
+        "https://developers.notion.com/page/changelog#september-11-2024"
+      ],
+      "source": "https://developers.notion.com/page/changelog#september-11-2024"
+    },
+    {
+      "id": "digitalocean-token",
+      "prefixes": [
+        "dop_v1_",
+        "doo_v1_",
+        "dor_v1_"
+      ],
+      "evidence": "documented",
+      "scope": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "sources": [
+        "https://www.digitalocean.com/blog/updated-api-tokens-new-management-features"
+      ],
+      "source": "https://www.digitalocean.com/blog/updated-api-tokens-new-management-features"
+    },
+    {
+      "id": "pulumi-token",
+      "prefixes": [
+        "pul-"
+      ],
+      "evidence": "documented",
+      "scope": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "sources": [
+        "https://www.pulumi.com/registry/packages/pulumiservice/api-docs/api/tokens/personaltoken/"
+      ],
+      "source": "https://www.pulumi.com/registry/packages/pulumiservice/api-docs/api/tokens/personaltoken/"
+    },
+    {
+      "id": "grafana-token",
+      "prefixes": [
+        "glc_"
+      ],
+      "evidence": "documented",
+      "scope": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "glc_ supported lexically; glsa and legacy Base64 require credential context; no invented glsa_ grammar.",
+      "sources": [
+        "https://grafana.com/blog/new-in-grafana-9-1-service-accounts-are-now-ga/",
+        "https://grafana.com/docs/learning-paths/private-data-source-connect/generate-token/"
+      ],
+      "source": "https://grafana.com/blog/new-in-grafana-9-1-service-accounts-are-now-ga/"
+    },
+    {
+      "id": "newrelic-key",
+      "prefixes": [
+        "NRAK"
+      ],
+      "evidence": "documented",
+      "scope": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "sources": [
+        "https://docs.newrelic.com/docs/apis/intro-apis/new-relic-api-keys/",
+        "https://docs.newrelic.com/eol/2025/01/deprecation-notice-rest-api-keys/"
+      ],
+      "source": "https://docs.newrelic.com/docs/apis/intro-apis/new-relic-api-keys/"
+    },
+    {
+      "id": "cloudflare-current",
+      "prefixes": [
+        "cfk_",
+        "cfut_",
+        "cfat_"
+      ],
+      "evidence": "documented",
+      "scope": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "sources": [
+        "https://developers.cloudflare.com/fundamentals/api/get-started/token-formats/"
+      ],
+      "source": "https://developers.cloudflare.com/fundamentals/api/get-started/token-formats/"
+    },
+    {
+      "id": "supabase-current",
+      "prefixes": [
+        "sb_secret_"
+      ],
+      "evidence": "documented",
+      "scope": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "sources": [
+        "https://supabase.com/docs/guides/getting-started/api-keys",
+        "https://supabase.com/docs/guides/self-hosting/self-hosted-auth-keys"
+      ],
+      "source": "https://supabase.com/docs/guides/getting-started/api-keys"
+    }
   ],
-  "aws": {"id":"aws-access-id", "pattern":"(?:AKIA|ASIA)[A-Za-z0-9]{12,}", "evidence":"documented", "scope":"Conservative complete alphanumeric candidates, including common 20-character IDs; no secret-access-key coverage", "source":"https://docs.aws.amazon.com/STS/latest/APIReference/API_GetAccessKeyInfo.html"}
+  "aws": {
+    "id": "aws-access-id",
+    "pattern": "(?:AKIA|ASIA)[A-Za-z0-9]{16}[A-Za-z0-9_./+~=-]*",
+    "evidence": "documented common 20-character shape, conservative evolving suffix",
+    "scope": "Access ID only, not paired secret access key. STS input constraints do not define every issued shape.",
+    "source": "https://docs.aws.amazon.com/STS/latest/APIReference/API_GetAccessKeyInfo.html",
+    "boundary_pattern": "(?:^|[^\\p{Alphabetic}\\p{Number}_.+-])"
+  },
+  "patterns": [
+    {
+      "id": "sendgrid-key",
+      "pattern": "SG\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_./+~=-]+",
+      "boundary": "(?:^|[^\\p{Alphabetic}\\p{Number}_.+-])",
+      "sources": [
+        "https://www.twilio.com/docs/sendgrid/api-reference/api-keys/create-api-keys",
+        "https://www.twilio.com/docs/sendgrid/ui/account-and-settings/api-keys"
+      ],
+      "boundary_pattern": "(?:^|[^\\p{Alphabetic}\\p{Number}_.+-])"
+    },
+    {
+      "id": "bcrypt-verifier",
+      "pattern": "\\$2b\\$[A-Za-z0-9$=,./+_-]+",
+      "boundary": "Intrinsic dollar marker, including immediately adjacent credentials",
+      "sources": [
+        "https://man.openbsd.org/crypt"
+      ],
+      "boundary_pattern": ""
+    },
+    {
+      "id": "phc-verifier",
+      "pattern": "\\$argon2(?:id|i|d)\\$[A-Za-z0-9$=,./+_-]+",
+      "boundary": "Intrinsic dollar marker, including immediately adjacent credentials",
+      "sources": [
+        "https://github.com/P-H-C/phc-string-format/blob/master/phc-sf-spec.md",
+        "https://docs.rs/argon2/latest/argon2/"
+      ],
+      "boundary_pattern": ""
+    }
+  ]
 }
