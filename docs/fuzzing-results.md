@@ -94,3 +94,23 @@ No final replay or smoke findings remained. All six targets rebuilt after
 this delta. The three oracle tests, formatting, strict all-target Clippy, and
 fuzz dependency policy checks passed. The policy check reports an informational
 `syn` version duplication from the upstream derive dependencies.
+
+The 2026-10-05 review found that every detector call re-parsed the bundled
+inventory and recompiled its regular expressions, which limited the two
+detector targets to a few hundred executions per budget. Patterns now compile
+once per process. The same review fixed log fields after labels or flag dashes,
+JWTs inside dotted runs, rejected provider prefixes hiding later candidates,
+camelCase sensitive names, and unencoded URI password delimiters. The generated
+exact-span oracle gained four contexts for those shapes (13 in total).
+
+| Target | Stage | Seed files | Executions | Coverage counters | Features | Engine seconds | Wall seconds | Outcome |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| detectors | review-seed-replay | 113 | 156 | 2999 | 6763 | 0 | n/a | Passed |
+| detectors | review-smoke | 113 | 20,685 | 3793 | 11509 | 11 | 11.32 | Passed |
+| text_filter | review-seed-replay | 114 | 158 | 3056 | 6881 | 0 | n/a | Passed |
+| text_filter | review-smoke | 114 | 21,506 | 3837 | 11391 | 11 | 11.36 | Passed |
+
+Throughput rose roughly 50 to 130 times over the earlier smoke rows. Counters
+fell because regex compilation no longer executes for each input; they are
+libFuzzer feedback, not a measure of detector coverage. The three library
+oracle tests passed. These remain smoke runs, not release campaigns.

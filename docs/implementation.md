@@ -21,12 +21,28 @@ containers are outside the claimed coverage.
 ## Local evidence
 
 Validation on 2026-10-05 used Linux x86-64, pinned Rust 1.99.0, two Cargo build
-jobs, and two test threads. The implementation remains an uncommitted change
-based on `b74d71d37a60a8073b59ed4cb0f26c1aad3cf41a`.
+jobs, and two test threads. The first pass is commit `497fb7f`; review fixes
+follow it on the `feat/v1-implementation` branch.
 
 - Formatting and Clippy pass with warnings denied across all targets/features.
-- All 78 unit, fixed-seed property, subprocess, and workflow tests pass.
-- Both optimized binaries build, and 51 detector/workflow tests pass against them.
+- All 84 unit, fixed-seed property, subprocess, workflow, and regression tests pass.
+- Both optimized binaries build, and 57 detector/workflow/regression tests pass
+  against them.
+- A 2026-10-05 review replayed six confirmed `rstr` disclosure shapes as
+  deterministic subprocess regressions (`tests/rstr_regressions.rs`): log fields
+  after labels or flag dashes, JWTs inside dotted runs, rejected provider
+  prefixes hiding later candidates, camelCase field names, and unencoded URI
+  password delimiters, plus a linear-time guard. Five of the six fail against
+  `497fb7f` and pass after the fixes.
+- Cross-family review of those fixes used Codex (session
+  `01a10d15-fd6f-7ff0-ac01-eca9c98cd695`) on code and synthetic reproductions only.
+  It found mixed-case names such as `PassWord` broken by camelCase splitting,
+  IPv6 hosts mistaken for user information, and a pre-existing JWT payload shape
+  hidden by serde_json's arbitrary-precision number marker. All three are fixed
+  and replayed in the regression suite.
+- The first hosted CI run failed to compile the pseudo-terminal test on macOS
+  because `openpty` takes mutable pointers there; it now passes `null_mut` on
+  both platforms.
 - All 17 named fixtures run against real binaries with cleared environments.
 - Failure checks cover arguments, input encoding, NUL, parser and detector
   errors, read/write errors, the exact 16 MiB boundary, and interactive stdin.
@@ -56,6 +72,12 @@ with shared sandbox load. The measured small fixed fixtures took approximately
 0.3 to 0.5 ms for `rprintenv` and 0.8 to 1.4 ms for `rstr` in one local run.
 The workflow runner records each case's actual duration and output byte count.
 These measurements are a local baseline, not a performance promise or CI gate.
+
+Release builds strip symbols and use fat LTO with one codegen unit. On Linux
+x86-64 this reduced `rprintenv` from 1.31 MiB to 777 KiB and `rstr` from 3.45 MiB
+to 2.15 MiB. With those builds, `rstr` filtered a 12 MiB synthetic mixed log in
+about 0.5 s; the slowest adversarial 16 MiB shapes took about 2.3 s. Peak
+resident memory stayed below 100 MiB at the input limit. macOS is unmeasured.
 
 ## Remaining platform evidence
 

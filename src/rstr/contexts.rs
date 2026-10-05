@@ -1,10 +1,57 @@
+use regex::Regex;
 use std::collections::BTreeMap;
+use std::sync::LazyLock;
 
-use super::{Span, line_number, pattern};
+use super::{Compiled, Span, compiled, line_number, pattern};
 use crate::error::{ErrorKind, SafeError};
 
+static ARMOR: Compiled<Regex> = LazyLock::new(|| {
+    pattern(
+        r"-----((?:BEGIN|END)) (PRIVATE KEY|ENCRYPTED PRIVATE KEY|RSA PRIVATE KEY|DSA PRIVATE KEY|EC PRIVATE KEY|OPENSSH PRIVATE KEY|PGP PRIVATE KEY BLOCK)-----",
+    )
+});
+static HEADER: Compiled<Regex> = LazyLock::new(|| {
+    pattern(
+        r"(?im)(?:^|\b)(?:proxy-authorization|authorization)[ \t]*:[ \t]*(?:bearer|basic)[ \t]+",
+    )
+});
+static SCHEME: Compiled<Regex> = LazyLock::new(|| pattern(r"[A-Za-z][A-Za-z0-9+.-]*://"));
+static PARAMETER: Compiled<Regex> = LazyLock::new(|| pattern(r#"[?&]([^\s<>"'{}?&#=]*)="#));
+// The leading boundary is checked in code: consuming it here let a preceding
+// `label:` field swallow the separator that the following sensitive name needs.
+static ASSIGNMENT: Compiled<Regex> =
+    LazyLock::new(|| pattern(r"([A-Za-z_][A-Za-z0-9_-]*)[ \t]*[=:]"));
+
+/// Lowercase snake_case form: hyphens become underscores and camelCase or
+/// acronym boundaries gain one, so `accessToken` and `APIKey` reach the suffix rules.
+fn normalized(name: &str) -> String {
+    let chars: Vec<char> = name.chars().collect();
+    let mut output = String::with_capacity(name.len() + 4);
+    for (index, &ch) in chars.iter().enumerate() {
+        if ch.is_ascii_uppercase() && index > 0 {
+            let previous = chars[index - 1];
+            let lower_follows = chars.get(index + 1).is_some_and(char::is_ascii_lowercase);
+            if previous.is_ascii_lowercase()
+                || previous.is_ascii_digit()
+                || (previous.is_ascii_uppercase() && lower_follows)
+            {
+                output.push('_');
+            }
+        }
+        output.push(if ch == '-' {
+            '_'
+        } else {
+            ch.to_ascii_lowercase()
+        });
+    }
+    output
+}
+
+// Both forms are checked: camelCase splitting finds `accessToken`, while the plain
+// lowercase form keeps arbitrary casing such as `PassWord` matching `password`.
 pub(super) fn sensitive(name: &str) -> bool {
-    let name = name.to_ascii_lowercase().replace('-', "_");
+    let plain = name.to_ascii_lowercase().replace('-', "_");
+    let split = normalized(name);
     [
         "password",
         "passwd",
@@ -20,9 +67,16 @@ pub(super) fn sensitive(name: &str) -> bool {
         "credential",
         "credentials",
         "authorization",
+        "account_key",
+        "shared_access_signature",
+        "private_key_data",
     ]
     .iter()
-    .any(|suffix| name == *suffix || name.ends_with(&format!("_{suffix}")))
+    .any(|suffix| {
+        [&plain, &split]
+            .iter()
+            .any(|name| *name == suffix || name.ends_with(&format!("_{suffix}")))
+    })
 }
 
 pub(super) fn detect(text: &str) -> Result<Vec<Span>, SafeError> {
@@ -74,9 +128,7 @@ fn private_keys(
     spans: &mut Vec<Span>,
     structured: &mut BTreeMap<usize, usize>,
 ) -> Result<(), SafeError> {
-    let armor = pattern(
-        r"-----((?:BEGIN|END)) (PRIVATE KEY|ENCRYPTED PRIVATE KEY|RSA PRIVATE KEY|DSA PRIVATE KEY|EC PRIVATE KEY|OPENSSH PRIVATE KEY|PGP PRIVATE KEY BLOCK)-----",
-    )?;
+    let armor = compiled(&ARMOR)?;
     let mut beginnings = Vec::new();
     let mut endings: BTreeMap<&str, Vec<Span>> = BTreeMap::new();
     for captures in armor.captures_iter(text) {
@@ -202,9 +254,7 @@ fn headers(
     structured: &mut BTreeMap<usize, usize>,
     json_contents: &BTreeMap<usize, usize>,
 ) -> Result<(), SafeError> {
-    let header = pattern(
-        r"(?im)(?:^|\b)(?:proxy-authorization|authorization)[ \t]*:[ \t]*(?:bearer|basic)[ \t]+",
-    )?;
+    let header = compiled(&HEADER)?;
     let endings: Vec<_> = text
         .bytes()
         .enumerate()
@@ -249,11 +299,12 @@ fn urls(
     spans: &mut Vec<Span>,
     structured: &mut BTreeMap<usize, usize>,
 ) -> Result<(), SafeError> {
-    let scheme = pattern(r"[A-Za-z][A-Za-z0-9+.-]*://")?;
+    let scheme = compiled(&SCHEME)?;
     let mut boundaries = Vec::new();
     let mut value_boundaries = Vec::new();
     let mut questions = Vec::new();
     let mut fragments = Vec::new();
+    let mut ats = Vec::new();
     for (position, ch) in text.char_indices() {
         let boundary = ch.is_whitespace() || matches!(ch, '<' | '>' | '"' | '\'' | '{' | '}');
         if boundary {
@@ -268,6 +319,9 @@ fn urls(
         if ch == '#' {
             fragments.push(position);
         }
+        if ch == '@' {
+            ats.push(position);
+        }
     }
     let next = |positions: &[usize], start: usize| {
         positions
@@ -279,14 +333,22 @@ fn urls(
     for found in scheme.find_iter(text) {
         let end = next(&boundaries, found.end());
         let authority_start = found.end();
-        let authority_end = text[authority_start..end]
+        let delimiter = text[authority_start..end]
             .find(['/', '?', '#'])
             .map_or(end, |i| authority_start + i);
-        if let Some(at) = text[authority_start..authority_end].rfind('@') {
-            spans.push(authority_start..authority_start + at);
+        let userinfo_end = text[authority_start..delimiter]
+            .rfind('@')
+            .map(|at| authority_start + at)
+            .or_else(|| {
+                let at = next(&ats, delimiter);
+                unencoded_userinfo(text, authority_start..delimiter, (at < end).then_some(at))
+            });
+        if let Some(at) = userinfo_end {
+            spans.push(authority_start..at);
         }
-        let fragment = next(&fragments, found.end()).min(end);
-        let query = next(&questions, found.end());
+        let host_start = userinfo_end.map_or(authority_start, |at| at + 1);
+        let fragment = next(&fragments, host_start).min(end);
+        let query = next(&questions, host_start);
         if query < fragment {
             protect(&mut queries, query..fragment);
         }
@@ -294,7 +356,7 @@ fn urls(
     }
     // Every scheme and query-name start is visited independently on original text.
     // Indexed boundaries avoid repeatedly scanning the suffix of nested URLs.
-    let parameter = pattern(r#"[?&]([^\s<>"'{}?&#=]*)="#)?;
+    let parameter = compiled(&PARAMETER)?;
     for captures in parameter.captures_iter(text) {
         let (Some(full), Some(name)) = (captures.get(0), captures.get(1)) else {
             return Err(SafeError::new(ErrorKind::Detector));
@@ -308,6 +370,21 @@ fn urls(
     Ok(())
 }
 
+// Hand-written URIs often leave `/`, `?` or `#` unencoded inside a password. When
+// `user:` precedes the first delimiter and is not a numeric port, user information
+// runs to the first later `@`. A digits-only password before a delimiter still
+// reads as a port. A bracketed IPv6 host has no user information before it. The
+// caller supplies the indexed `@` so nested URIs stay linear.
+fn unencoded_userinfo(text: &str, authority: Span, at: Option<usize>) -> Option<usize> {
+    if text[authority.clone()].starts_with('[') {
+        return None;
+    }
+    let colon = authority.start + text[authority.clone()].find(':')?;
+    let after = &text[colon + 1..authority.end];
+    let port = !after.is_empty() && after.bytes().all(|byte| byte.is_ascii_digit());
+    if port { None } else { at }
+}
+
 fn assignments(
     text: &str,
     spans: &mut Vec<Span>,
@@ -319,19 +396,27 @@ fn assignments(
         .enumerate()
         .filter_map(|(i, byte)| matches!(byte, b'\r' | b'\n').then_some(i))
         .collect();
-    let assignment = pattern(r"(?:^|[^A-Za-z0-9_-])([A-Za-z_][A-Za-z0-9_-]*)[ \t]*[=:][ \t]*")?;
+    let assignment = compiled(&ASSIGNMENT)?;
     let mut quoted_regions = BTreeMap::new();
     for captures in assignment.captures_iter(text) {
         let (Some(full), Some(name)) = (captures.get(0), captures.get(1)) else {
             return Err(SafeError::new(ErrorKind::Detector));
         };
-        if !sensitive(name.as_str())
+        // A leading `-` or `--` marks a flag name; only a preceding word character
+        // means the match began inside a longer identifier.
+        let inside_word = name.start() > 0 && {
+            let previous = text.as_bytes()[name.start() - 1];
+            previous.is_ascii_alphanumeric() || previous == b'_'
+        };
+        if inside_word
+            || !sensitive(name.as_str())
             || protected(name.start(), structured)
             || protected(name.start(), &quoted_regions)
         {
             continue;
         }
-        let start = full.end();
+        let start = full.end() + text[full.end()..].len()
+            - text[full.end()..].trim_start_matches([' ', '\t']).len();
         let boundary = content_end(json_contents, name.start()).unwrap_or(text.len());
         if start >= boundary {
             continue;

@@ -42,13 +42,18 @@ change. The bundled rules have finite, versioned coverage.
 
 ## Sensitive names and contexts
 
-For contextual detection only, match names case-insensitively and normalize
-hyphens to underscores. Start with these complete names and underscore-delimited
-suffixes: `password`, `passwd`, `pwd`, `secret`, `token`, `api_key`, `apikey`,
-`access_key`, `secret_key`, `private_key`, `client_secret`, `credential`,
-`credentials`, and `authorization`.
+For contextual detection only, match names case-insensitively, normalize
+hyphens to underscores, and split camelCase and acronym boundaries with an
+underscore before comparing. Start with these complete names and
+underscore-delimited suffixes: `password`, `passwd`, `pwd`, `secret`, `token`,
+`api_key`, `apikey`, `access_key`, `secret_key`, `private_key`, `client_secret`,
+`credential`, `credentials`, `authorization`, `account_key`,
+`shared_access_signature`, and `private_key_data`.
 
-Thus `DATABASE_PASSWORD` is sensitive while `tokenizer` is not. Contextual name
+Thus `DATABASE_PASSWORD`, `accessToken`, `SecretAccessKey`, `_authToken`,
+`APIKey`, and Azure `AccountKey` are sensitive while `tokenizer` and `maxTokens`
+are not. A field name may follow a separator, a label such as `DEBUG:`, or
+command-line dashes such as `--password=`. Contextual name
 normalization belongs to `rstr` detection. `rprintenv` independently uses its
 exact-name allowlist and does not run these detectors.
 
