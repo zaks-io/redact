@@ -1,3 +1,8 @@
+#[allow(dead_code, reason = "shared synthetic assertions across test suites")]
+#[path = "support/synthetic.rs"]
+mod synthetic;
+use synthetic::*;
+
 use serde::Deserialize;
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -36,35 +41,35 @@ struct Expectation {
 }
 
 fn capture(mut child: Child, input: &[u8]) -> Output {
-    let mut stdout = child.stdout.take().unwrap();
-    let mut stderr = child.stderr.take().unwrap();
+    let mut stdout = child.stdout.take().must();
+    let mut stderr = child.stderr.take().must();
     let out = std::thread::spawn(move || {
         let mut data = Vec::new();
-        stdout.read_to_end(&mut data).unwrap();
+        stdout.read_to_end(&mut data).must();
         data
     });
     let err = std::thread::spawn(move || {
         let mut data = Vec::new();
-        stderr.read_to_end(&mut data).unwrap();
+        stderr.read_to_end(&mut data).must();
         data
     });
-    child.stdin.take().unwrap().write_all(input).ok();
+    child.stdin.take().must().write_all(input).ok();
     let deadline = Instant::now() + Duration::from_secs(10);
     let status = loop {
-        if let Some(status) = child.try_wait().unwrap() {
+        if let Some(status) = child.try_wait().must() {
             break status;
         }
         if Instant::now() >= deadline {
-            child.kill().unwrap();
-            child.wait().unwrap();
+            child.kill().must();
+            child.wait().must();
             panic!("synthetic rstr subprocess exceeded ten-second budget");
         }
         std::thread::sleep(Duration::from_millis(2));
     };
     Output {
         status,
-        stdout: out.join().unwrap(),
-        stderr: err.join().unwrap(),
+        stdout: out.join().must(),
+        stderr: err.join().must(),
     }
 }
 
@@ -76,7 +81,7 @@ fn execute(input: &[u8], args: &[&str]) -> Output {
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
-        .unwrap();
+        .must();
     capture(child, input)
 }
 
@@ -86,7 +91,7 @@ fn workflow_fixtures_exercise_real_binary() {
         include_str!("fixtures/rstr-workflows.json"),
         include_str!("fixtures/context-workflows.json"),
     ] {
-        let fixture: Fixtures = serde_json::from_str(source).unwrap();
+        let fixture: Fixtures = serde_json::from_str(source).must();
         assert_eq!(fixture.fixture_version, 1);
         assert!(fixture.synthetic_only);
         let mut ids = BTreeSet::new();
@@ -97,7 +102,7 @@ fn workflow_fixtures_exercise_real_binary() {
                 case.expect.stderr_utf8.is_some(),
                 case.expect.stderr_contains.is_some()
             );
-            let directory = tempfile::tempdir().unwrap();
+            let directory = tempfile::tempdir().must();
             for (path, contents) in &case.files {
                 assert!(
                     !path.is_empty()
@@ -107,8 +112,8 @@ fn workflow_fixtures_exercise_real_binary() {
                     "unsafe fixture path"
                 );
                 let path = directory.path().join(path);
-                std::fs::create_dir_all(path.parent().unwrap()).unwrap();
-                std::fs::write(path, contents).unwrap();
+                std::fs::create_dir_all(path.parent().must()).must();
+                std::fs::write(path, contents).must();
             }
             let child = Command::new(env!("CARGO_BIN_EXE_rstr"))
                 .env_clear()
@@ -119,10 +124,10 @@ fn workflow_fixtures_exercise_real_binary() {
                 .stdout(Stdio::piped())
                 .stderr(Stdio::piped())
                 .spawn()
-                .unwrap();
+                .must();
             let output = capture(child, case.stdin_utf8.as_bytes());
-            let stdout = String::from_utf8(output.stdout).unwrap();
-            let stderr = String::from_utf8(output.stderr).unwrap();
+            let stdout = String::from_utf8(output.stdout).must();
+            let stderr = String::from_utf8(output.stderr).must();
             assert_eq!(
                 output.status.code(),
                 Some(case.expect.exit_code),
@@ -155,7 +160,7 @@ fn rejected_arguments_and_input_never_echo_canaries() {
     let output = execute(b"", &[canary]);
     assert_eq!(output.status.code(), Some(2));
     assert!(output.stdout.is_empty());
-    assert!(!String::from_utf8(output.stderr).unwrap().contains(canary));
+    assert!(!String::from_utf8(output.stderr).must().contains(canary));
     for input in [
         b"password=synthetic-secret-cli-error-canary\xff".to_vec(),
         b"password=synthetic-secret-cli-error-canary\0".to_vec(),
@@ -164,7 +169,7 @@ fn rejected_arguments_and_input_never_echo_canaries() {
         let output = execute(&input, &[]);
         assert_eq!(output.status.code(), Some(2));
         assert!(output.stdout.is_empty());
-        assert!(!String::from_utf8(output.stderr).unwrap().contains(canary));
+        assert!(!String::from_utf8(output.stderr).must().contains(canary));
     }
     for flag in ["--help", "--version"] {
         let output = execute(b"\xff", &[flag]);
@@ -176,46 +181,46 @@ fn rejected_arguments_and_input_never_echo_canaries() {
 #[cfg(target_os = "linux")]
 #[test]
 fn input_and_output_failures_are_sanitized() {
-    let directory = std::fs::File::open(".").unwrap();
+    let directory = std::fs::File::open(".").must();
     let output = Command::new(env!("CARGO_BIN_EXE_rstr"))
         .env_clear()
         .stdin(Stdio::from(directory))
         .output()
-        .unwrap();
+        .must();
     assert_eq!(output.status.code(), Some(2));
     assert!(output.stdout.is_empty());
     assert!(
         String::from_utf8(output.stderr)
-            .unwrap()
+            .must()
             .contains("input read failed")
     );
     let full = std::fs::OpenOptions::new()
         .write(true)
         .open("/dev/full")
-        .unwrap();
+        .must();
     let mut child = Command::new(env!("CARGO_BIN_EXE_rstr"))
         .env_clear()
         .stdin(Stdio::piped())
         .stdout(Stdio::from(full))
         .stderr(Stdio::piped())
         .spawn()
-        .unwrap();
+        .must();
     child
         .stdin
         .take()
-        .unwrap()
+        .must()
         .write_all(b"password=synthetic-secret-output-canary\n")
-        .unwrap();
-    let output = child.wait_with_output().unwrap();
+        .must();
+    let output = child.wait_with_output().must();
     assert_eq!(output.status.code(), Some(2));
-    let error = String::from_utf8(output.stderr).unwrap();
+    let error = String::from_utf8(output.stderr).must();
     assert!(error.contains("output write failed"));
     assert!(!error.contains("synthetic-secret-output-canary"));
 }
 
 #[test]
 fn nested_safe_errors_never_retain_input() {
-    let error = redact::filter(b"password=\"synthetic-secret-formatting-canary").unwrap_err();
+    let error = redact::filter(b"password=\"synthetic-secret-formatting-canary").must_err();
     for message in [
         format!("{error}"),
         format!("{error:?}"),
@@ -234,7 +239,7 @@ fn rejected_prefix_near_matches_have_bounded_processing() {
     assert!(output.status.success());
     assert!(output.stderr.is_empty());
     assert_eq!(
-        String::from_utf8(output.stdout).unwrap(),
+        String::from_utf8(output.stdout).must(),
         format!(
             "{ordinary}\npassword=[REDACTED sha256={}]\n",
             redact::fingerprint(canary)

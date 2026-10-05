@@ -56,7 +56,7 @@ fn authentication(
     contexts: &mut Vec<Span>,
 ) -> Result<(), SafeError> {
     let matcher = pattern!(
-        r"(?im)\b(?:proxy-)?authorization[ \t]*:[ \t]*(?:bearer|basic|bot)[ \t]+([^\r\n]+)"
+        r"(?im)\b(?:proxy-)?authorization[ \t]*:[ \t]*(?:bearer|basic|bot)[ \t]+([^\r\n]*)"
     )?;
     let mut quoted = Vec::new();
     let mut at = 0;
@@ -77,11 +77,14 @@ fn authentication(
     }
     for capture in matcher.captures_iter(input) {
         if let Some(value) = capture.get(1) {
+            let Some(header) = capture.get(0) else {
+                continue;
+            };
             let mut end = value.start() + value.as_str().trim_end_matches([' ', '\t']).len();
             if let Some(region) =
-                quoted.get(quoted.partition_point(|region| region.end <= value.start()))
-                && region.start < value.start()
-                && value.start() < region.end
+                quoted.get(quoted.partition_point(|region| region.end <= header.start()))
+                && region.start < header.start()
+                && header.start() < region.end
             {
                 end = end.min(region.end);
             }
@@ -90,13 +93,11 @@ fn authentication(
                     start: value.start(),
                     end,
                 });
-                if let Some(header) = capture.get(0) {
-                    contexts.push(Span {
-                        start: header.start(),
-                        end,
-                    });
-                }
             }
+            contexts.push(Span {
+                start: header.start(),
+                end: end.max(value.start()),
+            });
         }
     }
     Ok(())
@@ -104,16 +105,24 @@ fn authentication(
 
 fn private_blocks(input: &str, spans: &mut Vec<Span>) -> Result<(), SafeError> {
     let matcher = pattern!(r"-----BEGIN ([A-Z0-9 ]*?PRIVATE KEY(?: BLOCK)?)-----")?;
-    let mut covered_until = 0;
+    let end_matcher = pattern!(r"-----END ([A-Z0-9 ]*?PRIVATE KEY(?: BLOCK)?)-----")?;
+    let mut endings = std::collections::HashMap::<&str, Vec<(usize, usize)>>::new();
+    for capture in end_matcher.captures_iter(input) {
+        if let (Some(marker), Some(label)) = (capture.get(0), capture.get(1)) {
+            endings
+                .entry(label.as_str())
+                .or_default()
+                .push((marker.start(), marker.end()));
+        }
+    }
     for capture in matcher.captures_iter(input) {
         let (Some(begin), Some(label)) = (capture.get(0), capture.get(1)) else {
             continue;
         };
-        if begin.start() < covered_until {
-            continue;
-        }
-        let marker = format!("-----END {}-----", label.as_str());
-        let Some(relative_end) = input[begin.end()..].find(&marker) else {
+        let end = endings.get(label.as_str()).and_then(|markers| {
+            markers.get(markers.partition_point(|marker| marker.0 < begin.end()))
+        });
+        let Some((_, end)) = end else {
             let line = input[..begin.start()]
                 .bytes()
                 .filter(|byte| *byte == b'\n')
@@ -124,11 +133,11 @@ fn private_blocks(input: &str, spans: &mut Vec<Span>) -> Result<(), SafeError> {
                 line,
             ));
         };
-        covered_until = begin.end() + relative_end + marker.len();
         spans.push(Span {
             start: begin.start(),
-            end: covered_until,
+            end: *end,
         });
     }
+
     Ok(())
 }

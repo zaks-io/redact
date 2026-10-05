@@ -1,3 +1,8 @@
+#[allow(dead_code, reason = "shared synthetic assertions across test suites")]
+#[path = "support/synthetic.rs"]
+mod synthetic;
+use synthetic::*;
+
 use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
 use redact::{filter, fingerprint};
 
@@ -15,7 +20,7 @@ fn headers_keep_schemes_and_neighbors() {
             "Proxy-Authorization: {scheme} {}\nX-Request-ID: public\n",
             replacement("synthetic+opaque/~.payload==")
         );
-        assert_eq!(filter(input.as_bytes()).unwrap(), expected);
+        assert_eq!(filter(input.as_bytes()).must(), expected);
     }
 }
 
@@ -26,7 +31,7 @@ fn assignments_preserve_json_escapes_and_neighboring_fields() {
         r#"{{"pass\u0077ord":"{}","status":401}}"#,
         replacement(r#"synthetic\"secret"#)
     );
-    assert_eq!(filter(input.as_bytes()).unwrap(), expected);
+    assert_eq!(filter(input.as_bytes()).must(), expected);
     for name in [
         "AccountKey",
         "privateKeyData",
@@ -39,7 +44,7 @@ fn assignments_preserve_json_escapes_and_neighboring_fields() {
             "{name}=\"{}\" host=public\n",
             replacement("synthetic-secret")
         );
-        assert_eq!(filter(input.as_bytes()).unwrap(), expected);
+        assert_eq!(filter(input.as_bytes()).must(), expected);
     }
 }
 
@@ -51,9 +56,9 @@ fn urls_decode_names_once_and_keep_public_context() {
         replacement("user:synthetic%40secret"),
         replacement("synthetic%2Fsecret")
     );
-    assert_eq!(filter(input.as_bytes()).unwrap(), expected);
+    assert_eq!(filter(input.as_bytes()).must(), expected);
     assert_eq!(
-        filter(b"https://host.example/?sig=public&status=401").unwrap(),
+        filter(b"https://host.example/?sig=public&status=401").must(),
         "https://host.example/?sig=public&status=401"
     );
     let sas = "https://host.example/blob?sv=2026&sp=r&sig=synthetic%2Fsignature&se=expiry";
@@ -61,7 +66,7 @@ fn urls_decode_names_once_and_keep_public_context() {
         "https://host.example/blob?sv=2026&sp=r&sig={}&se=expiry",
         replacement("synthetic%2Fsignature")
     );
-    assert_eq!(filter(sas.as_bytes()).unwrap(), expected);
+    assert_eq!(filter(sas.as_bytes()).must(), expected);
 }
 
 #[test]
@@ -71,13 +76,13 @@ fn connection_dialects_preserve_fields() {
         "host=public dbname=public password='{}' port=5432",
         replacement("synthetic\\'secret")
     );
-    assert_eq!(filter(input.as_bytes()).unwrap(), expected);
+    assert_eq!(filter(input.as_bytes()).must(), expected);
     let input = "AccountName=public;AccountKey=synthetic-secret;EndpointSuffix=public";
     let expected = format!(
         "AccountName=public;AccountKey={};EndpointSuffix=public",
         replacement("synthetic-secret")
     );
-    assert_eq!(filter(input.as_bytes()).unwrap(), expected);
+    assert_eq!(filter(input.as_bytes()).must(), expected);
 }
 
 #[test]
@@ -89,14 +94,14 @@ fn jose_supports_nonstandard_header_prefix_and_empty_segments() {
     );
     let input = format!("value ({jws}), status=200");
     assert_eq!(
-        filter(input.as_bytes()).unwrap(),
+        filter(input.as_bytes()).must(),
         format!("value ({}), status=200", replacement(&jws))
     );
     let jwe = format!(
         "{}..aXY..dGFn",
         URL_SAFE_NO_PAD.encode(br#"{"alg":"dir","enc":"A256GCM"}"#)
     );
-    assert_eq!(filter(jwe.as_bytes()).unwrap(), replacement(&jwe));
+    assert_eq!(filter(jwe.as_bytes()).must(), replacement(&jwe));
 }
 
 #[test]
@@ -112,21 +117,18 @@ fn private_containers_are_complete_and_public_containers_survive() {
     ] {
         let container =
             format!("-----BEGIN {label}-----\nsynthetic-private-material\n-----END {label}-----");
-        assert_eq!(
-            filter(container.as_bytes()).unwrap(),
-            replacement(&container)
-        );
+        assert_eq!(filter(container.as_bytes()).must(), replacement(&container));
         let broken = format!("-----BEGIN {label}-----\nsynthetic-private-material");
-        let error = filter(broken.as_bytes()).unwrap_err();
+        let error = filter(broken.as_bytes()).must_err();
         assert!(!format!("{error:?} {error}").contains("synthetic-private-material"));
     }
     let public =
         "-----BEGIN CERTIFICATE-----\nsynthetic-public-material\n-----END CERTIFICATE-----";
-    assert_eq!(filter(public.as_bytes()).unwrap(), public);
+    assert_eq!(filter(public.as_bytes()).must(), public);
     let jwk = r#"{"kty":"RSA","n":"public","e":"AQAB"}"#;
-    assert_eq!(filter(jwk.as_bytes()).unwrap(), jwk);
+    assert_eq!(filter(jwk.as_bytes()).must(), jwk);
     let private = r#"{"kty":"EC","x":"public","d":"synthetic-private"}"#;
-    assert_eq!(filter(private.as_bytes()).unwrap(), replacement(private));
+    assert_eq!(filter(private.as_bytes()).must(), replacement(private));
 }
 
 #[test]
@@ -138,7 +140,7 @@ fn malformed_recognized_containers_fail_without_secret_diagnostics() {
         r#"{"auths":{"registry":{"auth":"synthetic-private"}},}"#,
         "password=\"synthetic-private",
     ] {
-        let error = filter(input.as_bytes()).unwrap_err();
+        let error = filter(input.as_bytes()).must_err();
         assert!(!format!("{error:?} {error}").contains("synthetic-private"));
     }
 }
@@ -150,7 +152,7 @@ fn encoded_configs_protect_whole_containers() {
         r#"{"auths":{"registry":{"auth":"c3ludGhldGljOnNlY3JldA=="}}}"#,
         "apiVersion: v1\nkind: Secret\nmetadata:\n  name: public\ndata:\n  custom: c3ludGhldGljLXNlY3JldA==\n",
     ] {
-        assert_eq!(filter(input.as_bytes()).unwrap(), replacement(input));
+        assert_eq!(filter(input.as_bytes()).must(), replacement(input));
     }
 }
 
@@ -161,7 +163,7 @@ fn adversarial_structures_fail_safely_or_remove_complete_spans() {
         "-----BEGIN PRIVATE KEY-----\n".repeat(2048)
     );
     assert_eq!(
-        filter(nested_begins.as_bytes()).unwrap(),
+        filter(nested_begins.as_bytes()).must(),
         replacement(&nested_begins)
     );
     let oversized_token = format!(
@@ -169,9 +171,9 @@ fn adversarial_structures_fail_safely_or_remove_complete_spans() {
         URL_SAFE_NO_PAD.encode(br#"{"alg":"none"}"#),
         "A".repeat(1_048_576)
     );
-    let error = filter(oversized_token.as_bytes()).unwrap_err();
+    let error = filter(oversized_token.as_bytes()).must_err();
     assert!(error.to_string().contains("parsing limit"));
-    assert_eq!(filter("{".repeat(65).as_bytes()).unwrap(), "{".repeat(65));
+    assert_eq!(filter("{".repeat(65).as_bytes()).must(), "{".repeat(65));
 }
 
 #[test]
@@ -180,11 +182,11 @@ fn uri_wrappers_do_not_change_credential_fingerprints() {
     for (open, close) in [("[", "]"), ("(", "),"), ("{", "};")] {
         let input = format!("before {open}{url}{close} after");
         let expected = format!("before {open}{}{close} after", replacement(url));
-        assert_eq!(filter(input.as_bytes()).unwrap(), expected);
+        assert_eq!(filter(input.as_bytes()).must(), expected);
     }
     let input = "https://[::1]/?token=synthetic),.";
     assert_eq!(
-        filter(input.as_bytes()).unwrap(),
+        filter(input.as_bytes()).must(),
         format!("https://[::1]/?token={}", replacement("synthetic),."))
     );
 }
@@ -192,11 +194,11 @@ fn uri_wrappers_do_not_change_credential_fingerprints() {
 #[test]
 fn yaml_document_separators_require_complete_markers() {
     let input = "kind: Secret\ndata:\n  value: synthetic-secret\n---synthetic-secret-suffix\n";
-    assert_eq!(filter(input.as_bytes()).unwrap(), replacement(input));
+    assert_eq!(filter(input.as_bytes()).must(), replacement(input));
     let first = "kind: Secret\ndata:\n  value: synthetic-secret\n";
     let input = format!("{first}--- # public document\nkind: ConfigMap\ndata:\n  value: public\n");
     assert_eq!(
-        filter(input.as_bytes()).unwrap(),
+        filter(input.as_bytes()).must(),
         format!(
             "{}--- # public document\nkind: ConfigMap\ndata:\n  value: public\n",
             replacement(first)
@@ -208,10 +210,10 @@ fn yaml_document_separators_require_complete_markers() {
 fn evolved_jose_segments_are_not_released_as_unknown_suffixes() {
     let header = URL_SAFE_NO_PAD.encode(br#"{"alg":"HS256"}"#);
     let token = format!("{header}.c3ludGhldGlj.c2ln.extra.synthetic.secret.suffix");
-    assert_eq!(filter(token.as_bytes()).unwrap(), replacement(&token));
+    assert_eq!(filter(token.as_bytes()).must(), replacement(&token));
     let framed = format!("({token}.)");
     assert_eq!(
-        filter(framed.as_bytes()).unwrap(),
+        filter(framed.as_bytes()).must(),
         format!("({}.)", replacement(&token))
     );
 }
@@ -259,14 +261,9 @@ fn reviewed_boundaries_protect_cli_canaries() {
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()
-            .unwrap();
-        child
-            .stdin
-            .take()
-            .unwrap()
-            .write_all(input.as_bytes())
-            .unwrap();
-        let output = child.wait_with_output().unwrap();
+            .must();
+        child.stdin.take().must().write_all(input.as_bytes()).must();
+        let output = child.wait_with_output().must();
         assert_eq!(output.status.code(), Some(0));
         assert_eq!(output.stdout, expected.as_bytes());
         assert!(output.stderr.is_empty());
@@ -279,7 +276,7 @@ fn reviewed_boundaries_protect_cli_canaries() {
     }
     // Unquoted assignments retain their physical-line boundaries.
     assert_eq!(
-        filter(b"password=\npublic-context\n").unwrap(),
+        filter(b"password=\npublic-context\n").must(),
         "password=\npublic-context\n"
     );
 }
@@ -327,14 +324,9 @@ fn recognized_context_survives_malformed_container_shapes() {
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()
-            .unwrap();
-        child
-            .stdin
-            .take()
-            .unwrap()
-            .write_all(input.as_bytes())
-            .unwrap();
-        let output = child.wait_with_output().unwrap();
+            .must();
+        child.stdin.take().must().write_all(input.as_bytes()).must();
+        let output = child.wait_with_output().must();
         assert_eq!(output.status.code(), Some(0));
         assert_eq!(output.stdout, expected.as_bytes());
         assert!(output.stderr.is_empty());
@@ -354,36 +346,31 @@ fn unterminated_escaped_quotes_have_bounded_cli_processing() {
         "\\\"".repeat((redact::MAX_INPUT_BYTES - 128) / 2)
     );
     assert!(input.len() < redact::MAX_INPUT_BYTES);
-    let stdout_file = tempfile::NamedTempFile::new().unwrap();
+    let stdout_file = tempfile::NamedTempFile::new().must();
     let mut child = Command::new(env!("CARGO_BIN_EXE_rstr"))
         .env_clear()
         .stdin(Stdio::piped())
-        .stdout(stdout_file.reopen().unwrap())
+        .stdout(stdout_file.reopen().must())
         .stderr(Stdio::piped())
         .spawn()
-        .unwrap();
+        .must();
     let started = Instant::now();
-    child
-        .stdin
-        .take()
-        .unwrap()
-        .write_all(input.as_bytes())
-        .unwrap();
+    child.stdin.take().must().write_all(input.as_bytes()).must();
     loop {
-        if child.try_wait().unwrap().is_some() {
+        if child.try_wait().must().is_some() {
             break;
         }
         if started.elapsed() > Duration::from_secs(10) {
-            child.kill().unwrap();
+            child.kill().must();
             let _ = child.wait();
             panic!("unterminated quoted input exceeded its finite processing bound");
         }
         std::thread::sleep(Duration::from_millis(10));
     }
-    let output = child.wait_with_output().unwrap();
+    let output = child.wait_with_output().must();
     assert_eq!(output.status.code(), Some(0));
     assert!(output.stderr.is_empty());
-    let stdout = std::fs::read_to_string(stdout_file.path()).unwrap();
+    let stdout = std::fs::read_to_string(stdout_file.path()).must();
     let expected = format!(
         "\"{} password={}",
         "\\\"".repeat((redact::MAX_INPUT_BYTES - 128) / 2),
@@ -402,13 +389,13 @@ fn structured_review_delta_preserves_real_framing() {
         let secret = format!("{jwt}{separator}{canary}");
         let input = format!("password={secret}");
         assert_eq!(
-            filter(input.as_bytes()).unwrap(),
+            filter(input.as_bytes()).must(),
             format!("password={}", replacement(&secret))
         );
     }
     let input = format!(r#"{{"message":"Authorization: Bearer {canary}", "status":401}}"#);
     assert_eq!(
-        filter(input.as_bytes()).unwrap(),
+        filter(input.as_bytes()).must(),
         format!(
             r#"{{"message":"Authorization: Bearer {}", "status":401}}"#,
             replacement(canary)
@@ -416,7 +403,7 @@ fn structured_review_delta_preserves_real_framing() {
     );
     let input = format!("https://api.telegram.org/file/bot123:{canary}/documents/public.txt");
     assert_eq!(
-        filter(input.as_bytes()).unwrap(),
+        filter(input.as_bytes()).must(),
         format!(
             "https://api.telegram.org/file/bot{}/documents/public.txt",
             replacement(&format!("123:{canary}"))
@@ -424,7 +411,7 @@ fn structured_review_delta_preserves_real_framing() {
     );
     let input = format!(r#"{{"url":"postgres:\/\/app:{canary}@example.test/db"}}"#);
     assert_eq!(
-        filter(input.as_bytes()).unwrap(),
+        filter(input.as_bytes()).must(),
         format!(
             r#"{{"url":"postgres:\/\/{}@example.test/db"}}"#,
             replacement(&format!("app:{canary}"))
@@ -432,13 +419,13 @@ fn structured_review_delta_preserves_real_framing() {
     );
     let input =
         format!("-----BEGIN FUTURE PRIVATE KEY-----\n{canary}\n-----END FUTURE PRIVATE KEY-----");
-    assert_eq!(filter(input.as_bytes()).unwrap(), replacement(&input));
+    assert_eq!(filter(input.as_bytes()).must(), replacement(&input));
     assert_eq!(
-        filter(br#"ordinary {"kind":"Pod",} diagnostic"#).unwrap(),
+        filter(br#"ordinary {"kind":"Pod",} diagnostic"#).must(),
         r#"ordinary {"kind":"Pod",} diagnostic"#
     );
     assert_eq!(
-        filter(b"ordinary log: she said \"hello").unwrap(),
+        filter(b"ordinary log: she said \"hello").must(),
         "ordinary log: she said \"hello"
     );
 }

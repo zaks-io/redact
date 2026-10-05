@@ -1,7 +1,9 @@
 # rstr: stdin text redaction
 
-Status: implemented as the local `rstr` executable. Install from the repository
-with `cargo install --locked --path .`; no registry publication is claimed.
+Status: implemented as the `rstr` binary in the local `redact` package. Registry
+publication is disabled; package-name availability has not been checked. The
+[rule ledger](rules.md) records shipped rules; the [format ledger](secret-formats/coverage.md) records
+contextual limits for the complete inventory.
 
 ## Purpose
 

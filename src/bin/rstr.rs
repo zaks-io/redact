@@ -1,54 +1,45 @@
-use redact::{MAX_INPUT_BYTES, error::SafeError, filter};
-use std::io::{self, IsTerminal, Read, Write};
+use std::io::{self, IsTerminal, Write};
+use std::process::ExitCode;
 
-const HELP: &str = "rstr: filter recognizable secrets from stdin\n\nUsage: command 2>&1 | rstr\n       rstr < application.log\n\nOptions: -h, --help; -V, --version\n\nReads stdin only, never the environment or .env files. Input must be UTF-8,\nwithout NUL bytes, and at most 16 MiB. No matches does not prove text is safe;\narbitrary standalone passwords and unsupported encodings may go undetected.\nFingerprints are stable SHA-256 truncated to 16 lowercase hex characters, over\nthe exact removed bytes. Escaping, encoding, and merged spans affect comparisons.\nUse shell pipefail to retain producer failures.\n";
+use clap::{Command, error::ErrorKind as ClapErrorKind};
+use redact::error::{ErrorKind, SafeError};
+
+fn command() -> Command {
+    Command::new("rstr").bin_name("rstr").version(env!("CARGO_PKG_VERSION"))
+        .about("Filter recognizable secrets from bounded UTF-8 stdin")
+        .after_help("Pipe text or redirect a file. Input limit: 16 MiB. No environment or file lookup.\nDetection needs recognizable structure or context; arbitrary passwords can remain.\nMarkers use the first 16 lowercase SHA-256 hex characters of removed bytes.\nEncoded values and merged or compound credentials hash their original removed bytes.\nExit 0 and zero matches do not prove text is safe. Use command 2>&1 | rstr to include stderr.\nUse shell pipefail when producer failures must affect pipeline status.\nFingerprints permit correlation and dictionary guesses; they are not authentication.")
+}
 
 fn run() -> Result<(), SafeError> {
-    let args: Vec<_> = std::env::args_os().skip(1).collect();
-    if args.len() == 1 && (args[0] == "-h" || args[0] == "--help") {
-        return write_output(HELP.as_bytes());
-    }
-    if args.len() == 1 && (args[0] == "-V" || args[0] == "--version") {
-        return write_output(concat!("rstr ", env!("CARGO_PKG_VERSION"), "\n").as_bytes());
-    }
-    if !args.is_empty() {
-        return Err(SafeError::new(
-            "invalid arguments. Use --help and pipe text through stdin.",
-        ));
+    match command().try_get_matches() {
+        Ok(_) => (),
+        Err(error)
+            if matches!(
+                error.kind(),
+                ClapErrorKind::DisplayHelp | ClapErrorKind::DisplayVersion
+            ) =>
+        {
+            io::stdout()
+                .lock()
+                .write_all(error.to_string().as_bytes())
+                .map_err(|_| SafeError::new(ErrorKind::Output))?;
+            return Ok(());
+        }
+        Err(_) => return Err(SafeError::new(ErrorKind::Usage)),
     }
     let stdin = io::stdin();
     if stdin.is_terminal() {
-        return Err(SafeError::new(
-            "interactive stdin is unsupported. Pipe text or redirect a file into stdin.",
-        ));
+        return Err(SafeError::new(ErrorKind::Interactive));
     }
-    let mut bytes = Vec::new();
-    stdin
-        .lock()
-        .take((MAX_INPUT_BYTES + 1) as u64)
-        .read_to_end(&mut bytes)
-        .map_err(|_| {
-            SafeError::new("input read failed. Check the producer or redirected input and retry.")
-        })?;
-    let output = filter(&bytes)?;
-    write_output(output.as_bytes())
+    redact::rstr::filter_to_writer(stdin.lock(), io::stdout().lock())
 }
 
-fn write_output(bytes: &[u8]) -> Result<(), SafeError> {
-    let mut stdout = io::stdout().lock();
-    stdout
-        .write_all(bytes)
-        .and_then(|_| stdout.flush())
-        .map_err(|_| {
-            SafeError::new(
-                "output write failed. Check the receiving pipe or output destination and retry.",
-            )
-        })
-}
-
-fn main() {
-    if let Err(error) = run() {
-        let _ = writeln!(io::stderr().lock(), "rstr: {error}");
-        std::process::exit(2);
+fn main() -> ExitCode {
+    match run() {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(error) => {
+            let _ = writeln!(io::stderr().lock(), "rstr: {error}");
+            ExitCode::from(2)
+        }
     }
 }

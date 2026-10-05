@@ -1,3 +1,8 @@
+#[allow(dead_code, reason = "shared synthetic assertions across test suites")]
+#[path = "support/synthetic.rs"]
+mod synthetic;
+use synthetic::*;
+
 use std::process::Command;
 
 #[cfg(unix)]
@@ -20,7 +25,7 @@ finally:
         .env("PATH", "/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin")
         .args(["-c", script, env!("CARGO_BIN_EXE_rstr")])
         .output()
-        .unwrap();
+        .must();
     assert!(
         output.status.success(),
         "{}",
@@ -47,7 +52,7 @@ assert b'SYNTHETIC_PIPE_CANARY' not in output.stdout
         .env("PATH", "/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin")
         .args(["-c", script, env!("CARGO_BIN_EXE_rstr")])
         .output()
-        .unwrap();
+        .must();
     assert!(
         output.status.success(),
         "{}",

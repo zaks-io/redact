@@ -1,3 +1,8 @@
+#[allow(dead_code, reason = "shared synthetic assertions across test suites")]
+#[path = "support/synthetic.rs"]
+mod synthetic;
+use synthetic::*;
+
 use serde::Deserialize;
 use std::collections::BTreeSet;
 use std::io::{Read, Write};
@@ -50,7 +55,7 @@ struct ExpectedSpan {
 }
 
 fn fixtures() -> Fixtures {
-    serde_json::from_str(include_str!("fixtures/secret-formats.json")).unwrap()
+    serde_json::from_str(include_str!("fixtures/secret-formats.json")).must()
 }
 
 fn run(command: Command, input: &[u8]) -> Output {
@@ -67,36 +72,36 @@ fn run_synthetic(mut command: Command, input: &[u8], value: Option<&str>) -> Out
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
-        .expect("synthetic subprocess starts");
-    let mut stdout = child.stdout.take().unwrap();
-    let mut stderr = child.stderr.take().unwrap();
+        .must();
+    let mut stdout = child.stdout.take().must();
+    let mut stderr = child.stderr.take().must();
     let out = std::thread::spawn(move || {
         let mut bytes = Vec::new();
-        stdout.read_to_end(&mut bytes).unwrap();
+        stdout.read_to_end(&mut bytes).must();
         bytes
     });
     let err = std::thread::spawn(move || {
         let mut bytes = Vec::new();
-        stderr.read_to_end(&mut bytes).unwrap();
+        stderr.read_to_end(&mut bytes).must();
         bytes
     });
-    child.stdin.take().unwrap().write_all(input).unwrap();
+    child.stdin.take().must().write_all(input).must();
     let deadline = Instant::now() + Duration::from_secs(10);
     let status = loop {
-        if let Some(status) = child.try_wait().unwrap() {
+        if let Some(status) = child.try_wait().must() {
             break status;
         }
         if Instant::now() >= deadline {
-            child.kill().unwrap();
-            child.wait().unwrap();
+            child.kill().must();
+            child.wait().must();
             panic!("synthetic subprocess exceeded 10-second budget");
         }
         std::thread::sleep(Duration::from_millis(2));
     };
     Output {
         status,
-        stdout: out.join().unwrap(),
-        stderr: err.join().unwrap(),
+        stdout: out.join().must(),
+        stderr: err.join().must(),
     }
 }
 
@@ -118,7 +123,7 @@ fn inventory_rows_have_executable_coverage_and_literal_span_oracles() {
         include_str!("../docs/secret-formats/structures.md"),
     ] {
         for line in doc.lines().filter(|line| line.starts_with("| ")) {
-            let id = line.split('|').nth(1).unwrap().trim();
+            let id = line.split('|').nth(1).must().trim();
             if id.chars().next().is_some_and(|c| c.is_ascii_lowercase()) {
                 documented.insert(id);
             }
@@ -245,7 +250,7 @@ fn fuzz_leak_oracle_rejects_deliberately_defective_outputs() {
     let secret = "SYNTHETIC_FUZZ_CANARY_0123456789\\\"suffix";
     assert!(fuzz_oracle::leaks_canary(secret, secret));
     assert!(fuzz_oracle::leaks_canary(
-        &serde_json::to_string(secret).unwrap(),
+        &serde_json::to_string(secret).must(),
         secret
     ));
     assert!(fuzz_oracle::leaks_canary(
@@ -282,7 +287,7 @@ fn all_format_spans_remain_hidden_by_rprintenv_independent_of_family() {
                 "{} environment diagnostics",
                 case.id
             );
-            let actual: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+            let actual: serde_json::Value = serde_json::from_slice(&output.stdout).must();
             let expected = serde_json::json!({
                 "schema_version": 1,
                 "records": [{"source":{"kind":"environment"}, "name":"SYNTHETIC_FORMAT_VALUE", "state":"redacted", "value":null, "fingerprint":span.fingerprint}]
@@ -306,13 +311,13 @@ proptest::proptest! {
         let case = &fixtures.cases[index % fixtures.cases.len()];
         let original = case.spans.first().map(|span| &case.input[span.start..span.end]).unwrap_or("unknown_future_format");
         let mutated = format!("SYNTHETIC_CREDENTIAL_CANARY_{original}_{suffix}");
-        let encoded = serde_json::to_string(&mutated).unwrap();
+        let encoded = serde_json::to_string(&mutated).must();
         let input = format!("{{\"client_secret\":{encoded},\"status\":\"failed\"}}");
         use sha2::{Digest, Sha256};
         let digest = Sha256::digest(&encoded.as_bytes()[1..encoded.len()-1]);
         let hash: String = digest[..8].iter().map(|b| format!("{b:02x}")).collect();
         let expected = format!("{{\"client_secret\":\"[REDACTED sha256={hash}]\",\"status\":\"failed\"}}");
-        proptest::prop_assert_eq!(redact::filter(input.as_bytes()).unwrap(), expected);
+        proptest::prop_assert_eq!(redact::filter(input.as_bytes()).must(), expected);
     }
 }
 
@@ -331,8 +336,8 @@ fn fuzz_render_oracle_accepts_canary_metadata_and_rejects_extra_hidden_data() {
         )]),
     }];
     let records = redact::environment::sanitize(&snapshots, &Default::default());
-    let text = redact::environment::render_text(&records).unwrap();
-    let json = redact::environment::render_json(&records).unwrap();
+    let text = redact::environment::render_text(&records).must();
+    let json = redact::environment::render_json(&records).must();
     use sha2::{Digest, Sha256};
     let hash: String = Sha256::digest(secret.as_bytes())[..8]
         .iter()
@@ -346,7 +351,7 @@ fn fuzz_render_oracle_accepts_canary_metadata_and_rejects_extra_hidden_data() {
         &text,
         &json
     ));
-    let mut defective: serde_json::Value = serde_json::from_str(&json).unwrap();
+    let mut defective: serde_json::Value = serde_json::from_str(&json).must();
     defective["records"][0]["debug_value"] = secret.into();
     assert!(!render_oracle::matches_record(
         name,

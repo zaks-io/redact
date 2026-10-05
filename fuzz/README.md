@@ -1,16 +1,17 @@
 # Coverage-guided fuzzing
 
-Install the pinned prerequisites once:
+The six cargo-fuzz targets call the production dotenv parser, disclosure policy,
+renderers, detectors, and stdin filter. They do not read process environment,
+open unrelated files, or contact credential issuers. Both implementations' seed
+sets remain synthetic and checked in.
+
+Install the pinned tools, then run commands from this directory:
 
 ```sh
-rustup toolchain install nightly-2026-10-04 --profile minimal --component rust-src,llvm-tools-preview
+rustup toolchain install nightly-2026-10-05 --profile minimal --component rust-src,llvm-tools-preview
 cargo install cargo-fuzz --version 0.13.2 --locked
-```
-
-From this directory, build all six targets and replay the synthetic corpus:
-
-```sh
 CARGO_BUILD_JOBS=2 cargo fuzz build
+cargo test --locked --lib
 cargo fuzz run dotenv -- -runs=0 -max_len=65536 -rss_limit_mb=1024 -timeout=10
 cargo fuzz run disclosure -- -runs=0 -max_len=4096 -rss_limit_mb=1024 -timeout=10
 cargo fuzz run rendering -- -runs=0 -max_len=4096 -rss_limit_mb=1024 -timeout=10
@@ -19,34 +20,46 @@ cargo fuzz run detectors -- -runs=0 -max_len=65536 -rss_limit_mb=1024 -timeout=1
 cargo fuzz run text_filter -- -runs=0 -max_len=65536 -rss_limit_mb=1024 -timeout=10
 ```
 
-For a bounded campaign, replace `-runs=0` with `-max_total_time=30`.
-Run one campaign at a time on the shared sandbox. Set `CARGO_BUILD_JOBS=2`
-for builds. To keep generated mutations separate from the reviewed seeds, copy
-a target corpus to a temporary directory and pass its absolute path after the
-target name. These caps control campaigns,
-not production input acceptance. The application retains its documented
-16 MiB stdin limit and stable toolchain.
+For a bounded campaign, replace `-runs=0` with `-max_total_time=20`.
+Run targets sequentially and limit Cargo builds to two jobs. Copy each corpus
+to a temporary directory before a mutation campaign so generated inputs do not
+replace reviewed seeds. These caps control campaigns, not application limits.
+The stable binaries accept the documented bounded input independently of nightly.
 
-The corpora contain locally constructed synthetic inventory shapes, versioned
-provider prefixes, malformed private blocks, public forms, workflow fixtures,
-dotenv dialect failures, and allow/redact conflicts. No provider verification,
-network call, process environment read, or external command runs in a target.
-`detectors` mutates supported prefix families and tests format drift under
-sensitive provider fields. Both `detectors` and `text_filter` sample independent
-inventory and context-workflow output/status oracles on every iteration and
-check exact known corpus seeds against their own fixture oracles. `text_filter`
-uses an independent endpoint-count span-union oracle, exact original-byte
-hashing, and context preservation. The first four targets call production
-dotenv parsing, policy decisions, and both renderers.
+`disclosure` and `rendering` decode one flags byte followed by UTF-8 name,
+value, and file path separated by NUL. Flags 1 and 2 set exact allow/redact;
+4 selects missing; 8 and 16 add deliberately different allow/redact names;
+32 selects a file source. Metadata can include Unicode or control characters.
+Invalid structured UTF-8 may be rejected, while arbitrary dotenv and stdin bytes
+reach production input validation.
 
-The policy oracle is a separate decision table. Canary checks account for
-escaped output and recognizable partial leaks. A normal regression test proves
-that the shared canary oracle rejects deliberate raw, escaped, and partial
-output defects without modifying production code.
+The independent policy table and complete text/JSON oracle check missing and
+empty states, exact matching, redact precedence, escaping, and fingerprints.
+Hidden-value mutation and source/name changes preserve the specified output
+relationships. Library tests inject a deliberately visible synthetic value into
+a record that policy requires hidden and verify that the oracle rejects it.
+Normal regression tests also reject raw, escaped, partial, and extra-field
+leaks, while permitting synthetic canaries in approved metadata.
 
-Keep crash artifacts local. Diagnose with synthetic reproductions, minimize a
-confirmed finding, add a normal regression, fix production, replay all seeds,
-and rerun the affected target. Never send raw artifacts to a service or agent.
-Report target, pinned toolchain, commit/tree, seed set, budgets, elapsed time,
-executions, coverage where available, and results. A short clean campaign is
-limited evidence and does not certify every possible input.
+Both text targets check the 61-row inventory and contextual workflow fixtures
+against independent literal output/status expectations. Every iteration samples
+both fixture sets, and an exact corpus input checks its own oracle. Generated
+provider shapes cover every supported prefix; context mutations retain hiding
+when provider grammar changes. Structured generated cases cover Unicode,
+nested URLs, separate JSON auth schemes, empty fields, private armor, and JSON
+quote boundaries. Fixed JOSE seeds exercise large JSON numbers, escaped brackets,
+and safe errors beyond the documented nesting budget.
+
+The text filter also uses arbitrary structured spans and an independent
+endpoint-count union oracle. It checks Unicode boundaries, overlapping unions,
+separate adjacency, exact original-byte hashing, and preserved unmatched bytes.
+All corpus fixtures contain synthetic data; never add host environment snapshots
+or real credential material.
+
+Keep artifacts local. Minimize a confirmed finding, add a normal regression,
+fix production, replay seeds, and rerun the affected target. Do not weaken an
+oracle or bypass the redactor. Report the toolchain, tested revision or tree
+digest, seed set, budgets, executions, coverage counters where available, and
+findings. [Previous campaign results](../docs/fuzz-results.md) apply only to
+the recorded pre-integration sources; rerun after meaningful changes. A finite
+clean campaign is limited evidence, not exhaustive secret detection.

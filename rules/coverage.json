@@ -1,0 +1,1859 @@
+{
+  "version": 1,
+  "source": "tests/fixtures/secret-formats.json, validated against every researched inventory row",
+  "entries": {
+    "github-access": {
+      "status": "shipped-lexical",
+      "inventory": "docs/secret-formats/providers.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/providers.rs::detect: ghp_, github_pat_, gho_, ghu_, ghs_, ghr_",
+      "implementation": "src/providers.rs::detect",
+      "span_boundary": "Whole boundary-delimited raw candidate; lexical tails use [A-Za-z0-9_./+~=-]+ without fixed length. Sensitive fields protect unknown/malformed values.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": true,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "github-access-positive-0",
+        "github-access-positive-1",
+        "github-access-positive-2",
+        "github-access-positive-3",
+        "github-access-positive-4",
+        "github-access-delimiter",
+        "github-access-negative",
+        "github-access-malformed-context",
+        "github-access-encoding"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "github-installation": {
+      "status": "shipped-lexical",
+      "inventory": "docs/secret-formats/providers.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/providers.rs::detect: ghs_ including variable-length APPID_JWT outer tokens",
+      "implementation": "src/providers.rs::detect",
+      "span_boundary": "Whole boundary-delimited raw candidate; lexical tails use [A-Za-z0-9_./+~=-]+ without fixed length. Sensitive fields protect unknown/malformed values.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": false,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "github-installation-positive-0",
+        "github-installation-delimiter",
+        "github-installation-negative",
+        "github-installation-malformed-context",
+        "github-installation-encoding"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "github-checksummed-legacy": {
+      "status": "shipped-lexical",
+      "inventory": "docs/secret-formats/providers.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/providers.rs::detect: ghp_/gho_/ghu_/ghs_/ghr_ without checksum validity gating",
+      "implementation": "src/providers.rs::detect",
+      "span_boundary": "Whole boundary-delimited raw candidate; lexical tails use [A-Za-z0-9_./+~=-]+ without fixed length. Sensitive fields protect unknown/malformed values.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": false,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "github-checksummed-legacy-positive-0",
+        "github-checksummed-legacy-delimiter",
+        "github-checksummed-legacy-negative",
+        "github-checksummed-legacy-malformed-context",
+        "github-checksummed-legacy-encoding"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "gitlab-access": {
+      "status": "shipped-lexical",
+      "inventory": "docs/secret-formats/providers.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/providers.rs::detect: glpat-; custom prefixes require sensitive context",
+      "implementation": "src/providers.rs::detect",
+      "span_boundary": "Whole boundary-delimited raw candidate; lexical tails use [A-Za-z0-9_./+~=-]+ without fixed length. Sensitive fields protect unknown/malformed values.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": true,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "gitlab-access-positive-0",
+        "gitlab-access-delimiter",
+        "gitlab-access-negative",
+        "gitlab-access-malformed-context",
+        "gitlab-access-encoding",
+        "gitlab-access-legacy-350"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "gitlab-other": {
+      "status": "shipped-lexical",
+      "inventory": "docs/secret-formats/providers.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/providers.rs::detect: gloas-, gldt-, glrt-, glrtr-, glcbt-, glptt-, glft-, glimt-, glagent-, glwt-, glsoat-, glffct-",
+      "implementation": "src/providers.rs::detect",
+      "span_boundary": "Whole boundary-delimited raw candidate; lexical tails use [A-Za-z0-9_./+~=-]+ without fixed length. Sensitive fields protect unknown/malformed values.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": false,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "gitlab-other-positive-0",
+        "gitlab-other-positive-1",
+        "gitlab-other-positive-2",
+        "gitlab-other-positive-3",
+        "gitlab-other-positive-4",
+        "gitlab-other-positive-5",
+        "gitlab-other-positive-6",
+        "gitlab-other-positive-7",
+        "gitlab-other-positive-8",
+        "gitlab-other-positive-9",
+        "gitlab-other-positive-10",
+        "gitlab-other-positive-11",
+        "gitlab-other-delimiter",
+        "gitlab-other-negative",
+        "gitlab-other-malformed-context",
+        "gitlab-other-encoding"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "azure-devops-pat": {
+      "status": "context-only",
+      "inventory": "docs/secret-formats/providers.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Sensitive PAT context supported; AZDO placement ambiguity remains unresolved, so no standalone length or offset rule.",
+      "rule": "src/context/names.rs + src/context.rs: PAT / *_PAT fields; no standalone AZDO offset rule",
+      "implementation": "src/context/* and src/structured/*",
+      "span_boundary": "Whole raw sensitive field contents, preserving proven quotes/structured framing; unknown formats stay hidden.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": false,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "azure-devops-pat-positive",
+        "azure-devops-pat-negative",
+        "azure-devops-pat-malformed-context",
+        "azure-devops-pat-encoding",
+        "azure-devops-pat-delimiter"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "npm-token": {
+      "status": "shipped-lexical",
+      "inventory": "docs/secret-formats/providers.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/providers.rs::detect: npm_; legacy UUIDs require registry auth context",
+      "implementation": "src/providers.rs::detect",
+      "span_boundary": "Whole boundary-delimited raw candidate; lexical tails use [A-Za-z0-9_./+~=-]+ without fixed length. Sensitive fields protect unknown/malformed values.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": false,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "npm-token-positive-0",
+        "npm-token-delimiter",
+        "npm-token-negative",
+        "npm-token-malformed-context",
+        "npm-token-encoding",
+        "npm-token-legacy-351"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "pypi-token": {
+      "status": "shipped-lexical",
+      "inventory": "docs/secret-formats/providers.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/providers.rs::detect: pypi-",
+      "implementation": "src/providers.rs::detect",
+      "span_boundary": "Whole boundary-delimited raw candidate; lexical tails use [A-Za-z0-9_./+~=-]+ without fixed length. Sensitive fields protect unknown/malformed values.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": false,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "pypi-token-positive-0",
+        "pypi-token-delimiter",
+        "pypi-token-negative",
+        "pypi-token-malformed-context",
+        "pypi-token-encoding"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "huggingface-token": {
+      "status": "shipped-lexical",
+      "inventory": "docs/secret-formats/providers.md",
+      "retrieved": "2026-10-04",
+      "evidence": "example-backed",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/providers.rs::detect: hf_",
+      "implementation": "src/providers.rs::detect",
+      "span_boundary": "Whole boundary-delimited raw candidate; lexical tails use [A-Za-z0-9_./+~=-]+ without fixed length. Sensitive fields protect unknown/malformed values.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": false,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "huggingface-token-positive-0",
+        "huggingface-token-delimiter",
+        "huggingface-token-negative",
+        "huggingface-token-malformed-context",
+        "huggingface-token-encoding"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "docker-token": {
+      "status": "context-only",
+      "inventory": "docs/secret-formats/providers.md",
+      "retrieved": "2026-10-04",
+      "evidence": "context-only",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/context/names.rs + src/context.rs: Docker credential fields, authentication headers, or auths containers",
+      "implementation": "src/context/* and src/structured/*",
+      "span_boundary": "Whole raw sensitive field contents, preserving proven quotes/structured framing; unknown formats stay hidden.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": false,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "docker-token-positive",
+        "docker-token-negative",
+        "docker-token-malformed-context",
+        "docker-token-encoding",
+        "docker-token-delimiter"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "openai-key": {
+      "status": "shipped-lexical",
+      "inventory": "docs/secret-formats/providers.md",
+      "retrieved": "2026-10-04",
+      "evidence": "example-backed",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/providers.rs::detect: sk-proj-, sk-admin-; shared sk- is generic",
+      "implementation": "src/providers.rs::detect",
+      "span_boundary": "Whole boundary-delimited raw candidate; lexical tails use [A-Za-z0-9_./+~=-]+ without fixed length. Sensitive fields protect unknown/malformed values.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": true,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "openai-key-positive-0",
+        "openai-key-positive-1",
+        "openai-key-positive-2",
+        "openai-key-delimiter",
+        "openai-key-negative",
+        "openai-key-malformed-context",
+        "openai-key-encoding"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "anthropic-key": {
+      "status": "shipped-lexical",
+      "inventory": "docs/secret-formats/providers.md",
+      "retrieved": "2026-10-04",
+      "evidence": "example-backed",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/providers.rs::detect: sk-ant-admin, sk-ant-api03-",
+      "implementation": "src/providers.rs::detect",
+      "span_boundary": "Whole boundary-delimited raw candidate; lexical tails use [A-Za-z0-9_./+~=-]+ without fixed length. Sensitive fields protect unknown/malformed values.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": true,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "anthropic-key-positive-0",
+        "anthropic-key-positive-1",
+        "anthropic-key-delimiter",
+        "anthropic-key-negative",
+        "anthropic-key-malformed-context",
+        "anthropic-key-encoding",
+        "anthropic-key-public-361"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "gemini-key": {
+      "status": "context-only",
+      "inventory": "docs/secret-formats/providers.md",
+      "retrieved": "2026-10-04",
+      "evidence": "context-only",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/context/names.rs + src/context.rs: GEMINI_API_KEY and auth headers; no unverified AQ./AIza exhaustiveness",
+      "implementation": "src/context/* and src/structured/*",
+      "span_boundary": "Whole raw sensitive field contents, preserving proven quotes/structured framing; unknown formats stay hidden.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": false,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "gemini-key-positive",
+        "gemini-key-negative",
+        "gemini-key-malformed-context",
+        "gemini-key-encoding",
+        "gemini-key-delimiter"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "stripe-key": {
+      "status": "shipped-lexical",
+      "inventory": "docs/secret-formats/providers.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/providers.rs::detect: sk_test_, sk_live_, sk_org_, rk_test_, rk_live_; pk_test_/pk_live_ stay public",
+      "implementation": "src/providers.rs::detect",
+      "span_boundary": "Whole boundary-delimited raw candidate; lexical tails use [A-Za-z0-9_./+~=-]+ without fixed length. Sensitive fields protect unknown/malformed values.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": true,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "stripe-key-positive-0",
+        "stripe-key-positive-1",
+        "stripe-key-positive-2",
+        "stripe-key-positive-3",
+        "stripe-key-positive-4",
+        "stripe-key-delimiter",
+        "stripe-key-negative",
+        "stripe-key-malformed-context",
+        "stripe-key-encoding",
+        "stripe-key-public-356",
+        "stripe-key-public-357"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "stripe-webhook": {
+      "status": "shipped-lexical",
+      "inventory": "docs/secret-formats/providers.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/providers.rs::detect: whsec_",
+      "implementation": "src/providers.rs::detect",
+      "span_boundary": "Whole boundary-delimited raw candidate; lexical tails use [A-Za-z0-9_./+~=-]+ without fixed length. Sensitive fields protect unknown/malformed values.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": false,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "stripe-webhook-positive-0",
+        "stripe-webhook-delimiter",
+        "stripe-webhook-negative",
+        "stripe-webhook-malformed-context",
+        "stripe-webhook-encoding"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "slack-token": {
+      "status": "shipped-lexical",
+      "inventory": "docs/secret-formats/providers.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/providers.rs::detect: xoxb-, xoxp-, xwfp-, xapp-, xoxe.xapp-",
+      "implementation": "src/providers.rs::detect",
+      "span_boundary": "Whole boundary-delimited raw candidate; lexical tails use [A-Za-z0-9_./+~=-]+ without fixed length. Sensitive fields protect unknown/malformed values.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": true,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "slack-token-positive-0",
+        "slack-token-positive-1",
+        "slack-token-positive-2",
+        "slack-token-positive-3",
+        "slack-token-positive-4",
+        "slack-token-delimiter",
+        "slack-token-negative",
+        "slack-token-malformed-context",
+        "slack-token-encoding"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "slack-rotation": {
+      "status": "shipped-lexical",
+      "inventory": "docs/secret-formats/providers.md",
+      "retrieved": "2026-10-04",
+      "evidence": "example-backed",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/providers.rs::detect: xoxe.xoxb-, xoxe.xoxp-, xoxe.xapp-, xoxe-",
+      "implementation": "src/providers.rs::detect",
+      "span_boundary": "Whole boundary-delimited raw candidate; lexical tails use [A-Za-z0-9_./+~=-]+ without fixed length. Sensitive fields protect unknown/malformed values.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": false,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "slack-rotation-positive-0",
+        "slack-rotation-positive-1",
+        "slack-rotation-positive-2",
+        "slack-rotation-delimiter",
+        "slack-rotation-negative",
+        "slack-rotation-malformed-context",
+        "slack-rotation-encoding"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "slack-webhook": {
+      "status": "shipped-structured",
+      "inventory": "docs/secret-formats/providers.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/structured/urls.rs::urls: hooks.slack.com or hooks.slack-gov.com /services/ capability with three components",
+      "implementation": "src/context/* and src/structured/*",
+      "span_boundary": "Whole raw capability URL; scheme/host/port framing recognized.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": false,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "slack-webhook-positive-0",
+        "slack-webhook-positive-1",
+        "slack-webhook-delimiter",
+        "slack-webhook-negative",
+        "slack-webhook-malformed-context",
+        "slack-webhook-encoding"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "resend-key": {
+      "status": "context-only",
+      "inventory": "docs/secret-formats/providers.md",
+      "retrieved": "2026-10-04",
+      "evidence": "example-backed",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Short re_ prefix alone is ambiguous; supported sensitive assignment context required.",
+      "rule": "src/context/names.rs + src/context.rs: RESEND_API_KEY/auth headers; no standalone short re_ rule",
+      "implementation": "src/context/* and src/structured/*",
+      "span_boundary": "Whole raw sensitive field contents, preserving proven quotes/structured framing; unknown formats stay hidden.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": false,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "resend-key-positive",
+        "resend-key-negative",
+        "resend-key-malformed-context",
+        "resend-key-encoding",
+        "resend-key-delimiter"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "sendgrid-key": {
+      "status": "shipped-lexical",
+      "inventory": "docs/secret-formats/providers.md",
+      "retrieved": "2026-10-04",
+      "evidence": "example-backed",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/providers.rs::detect: SG.<component>.<component>, without historical length truncation",
+      "implementation": "src/providers.rs::detect",
+      "span_boundary": "Whole raw token candidate, including longer tails.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": false,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "sendgrid-key-positive-0",
+        "sendgrid-key-delimiter",
+        "sendgrid-key-negative",
+        "sendgrid-key-malformed-context",
+        "sendgrid-key-encoding"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "twilio-credentials": {
+      "status": "context-only",
+      "inventory": "docs/secret-formats/providers.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/context/names.rs + src/context.rs: TWILIO_AUTH_TOKEN, API secret fields; AC/SK IDs stay public",
+      "implementation": "src/context/* and src/structured/*",
+      "span_boundary": "Whole raw sensitive field contents, preserving proven quotes/structured framing; unknown formats stay hidden.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": false,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "twilio-credentials-positive",
+        "twilio-credentials-negative",
+        "twilio-credentials-malformed-context",
+        "twilio-credentials-encoding",
+        "twilio-credentials-delimiter",
+        "twilio-credentials-public-359",
+        "twilio-credentials-public-360"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "discord-token": {
+      "status": "context-only",
+      "inventory": "docs/secret-formats/providers.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/context/names.rs + src/context.rs: Authorization: Bot/Bearer/Basic and sensitive token fields",
+      "implementation": "src/context/* and src/structured/*",
+      "span_boundary": "Whole raw sensitive field contents, preserving proven quotes/structured framing; unknown formats stay hidden.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": false,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "discord-token-positive",
+        "discord-token-negative",
+        "discord-token-malformed-context",
+        "discord-token-encoding",
+        "discord-token-delimiter",
+        "discord-token-malformed-scheme"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "telegram-token": {
+      "status": "shipped-structured",
+      "inventory": "docs/secret-formats/providers.md",
+      "retrieved": "2026-10-04",
+      "evidence": "example-backed",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/structured/urls.rs::urls: api.telegram.org /bot<id>:<token> or /file/bot<id>:<token>",
+      "implementation": "src/context/* and src/structured/*",
+      "span_boundary": "Whole raw path token, retaining host and method/file context; bare numeric colon strings need sensitive context.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": false,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "telegram-token-positive",
+        "telegram-token-negative",
+        "telegram-token-malformed-context",
+        "telegram-token-encoding",
+        "telegram-token-delimiter"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "vault-token": {
+      "status": "shipped-lexical",
+      "inventory": "docs/secret-formats/providers.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/providers.rs::detect: hvs., hvb., hvr.; s./b./r. require sensitive context",
+      "implementation": "src/providers.rs::detect",
+      "span_boundary": "Whole boundary-delimited raw candidate; lexical tails use [A-Za-z0-9_./+~=-]+ without fixed length. Sensitive fields protect unknown/malformed values.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": false,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "vault-token-positive-0",
+        "vault-token-positive-1",
+        "vault-token-positive-2",
+        "vault-token-delimiter",
+        "vault-token-negative",
+        "vault-token-malformed-context",
+        "vault-token-encoding",
+        "vault-token-legacy-347",
+        "vault-token-legacy-348",
+        "vault-token-legacy-349"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "onepassword-service": {
+      "status": "shipped-lexical",
+      "inventory": "docs/secret-formats/providers.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/providers.rs::detect: ops_",
+      "implementation": "src/providers.rs::detect",
+      "span_boundary": "Whole boundary-delimited raw candidate; lexical tails use [A-Za-z0-9_./+~=-]+ without fixed length. Sensitive fields protect unknown/malformed values.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": false,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "onepassword-service-positive-0",
+        "onepassword-service-delimiter",
+        "onepassword-service-negative",
+        "onepassword-service-malformed-context",
+        "onepassword-service-encoding"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "vercel-token": {
+      "status": "shipped-lexical",
+      "inventory": "docs/secret-formats/providers.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/providers.rs::detect: vcp_; legacy opaque values require context",
+      "implementation": "src/providers.rs::detect",
+      "span_boundary": "Whole boundary-delimited raw candidate; lexical tails use [A-Za-z0-9_./+~=-]+ without fixed length. Sensitive fields protect unknown/malformed values.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": false,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "vercel-token-positive-0",
+        "vercel-token-delimiter",
+        "vercel-token-negative",
+        "vercel-token-malformed-context",
+        "vercel-token-encoding",
+        "vercel-token-legacy-355"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "linear-token": {
+      "status": "shipped-lexical",
+      "inventory": "docs/secret-formats/providers.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/providers.rs::detect: lin_api_, lin_oauth_",
+      "implementation": "src/providers.rs::detect",
+      "span_boundary": "Whole boundary-delimited raw candidate; lexical tails use [A-Za-z0-9_./+~=-]+ without fixed length. Sensitive fields protect unknown/malformed values.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": false,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "linear-token-positive-0",
+        "linear-token-positive-1",
+        "linear-token-delimiter",
+        "linear-token-negative",
+        "linear-token-malformed-context",
+        "linear-token-encoding"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "notion-token": {
+      "status": "shipped-lexical",
+      "inventory": "docs/secret-formats/providers.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/providers.rs::detect: ntn_; shared secret_ stays generic",
+      "implementation": "src/providers.rs::detect",
+      "span_boundary": "Whole boundary-delimited raw candidate; lexical tails use [A-Za-z0-9_./+~=-]+ without fixed length. Sensitive fields protect unknown/malformed values.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": false,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "notion-token-positive-0",
+        "notion-token-positive-1",
+        "notion-token-delimiter",
+        "notion-token-negative",
+        "notion-token-malformed-context",
+        "notion-token-encoding",
+        "notion-token-legacy-354"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "digitalocean-token": {
+      "status": "shipped-lexical",
+      "inventory": "docs/secret-formats/providers.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/providers.rs::detect: dop_v1_, doo_v1_, dor_v1_",
+      "implementation": "src/providers.rs::detect",
+      "span_boundary": "Whole boundary-delimited raw candidate; lexical tails use [A-Za-z0-9_./+~=-]+ without fixed length. Sensitive fields protect unknown/malformed values.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": false,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "digitalocean-token-positive-0",
+        "digitalocean-token-positive-1",
+        "digitalocean-token-positive-2",
+        "digitalocean-token-delimiter",
+        "digitalocean-token-negative",
+        "digitalocean-token-malformed-context",
+        "digitalocean-token-encoding"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "pulumi-token": {
+      "status": "shipped-lexical",
+      "inventory": "docs/secret-formats/providers.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/providers.rs::detect: pul-",
+      "implementation": "src/providers.rs::detect",
+      "span_boundary": "Whole boundary-delimited raw candidate; lexical tails use [A-Za-z0-9_./+~=-]+ without fixed length. Sensitive fields protect unknown/malformed values.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": false,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "pulumi-token-positive-0",
+        "pulumi-token-delimiter",
+        "pulumi-token-negative",
+        "pulumi-token-malformed-context",
+        "pulumi-token-encoding"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "grafana-token": {
+      "status": "shipped-lexical",
+      "inventory": "docs/secret-formats/providers.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "glc_ supported lexically; glsa and legacy Base64 require credential context; no invented glsa_ grammar.",
+      "rule": "src/providers.rs::detect: glc_; glsa/legacy encoded values require sensitive context",
+      "implementation": "src/providers.rs::detect",
+      "span_boundary": "Whole boundary-delimited raw candidate; lexical tails use [A-Za-z0-9_./+~=-]+ without fixed length. Sensitive fields protect unknown/malformed values.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": false,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "grafana-token-positive-0",
+        "grafana-token-delimiter",
+        "grafana-token-negative",
+        "grafana-token-malformed-context",
+        "grafana-token-encoding",
+        "grafana-token-legacy-353"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "newrelic-key": {
+      "status": "shipped-lexical",
+      "inventory": "docs/secret-formats/providers.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/providers.rs::detect: NRAK; 40-hex license keys require LICENSE_KEY context",
+      "implementation": "src/providers.rs::detect",
+      "span_boundary": "Whole boundary-delimited raw candidate; lexical tails use [A-Za-z0-9_./+~=-]+ without fixed length. Sensitive fields protect unknown/malformed values.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": false,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "newrelic-key-positive-0",
+        "newrelic-key-delimiter",
+        "newrelic-key-negative",
+        "newrelic-key-malformed-context",
+        "newrelic-key-encoding"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "datadog-key": {
+      "status": "context-only",
+      "inventory": "docs/secret-formats/providers.md",
+      "retrieved": "2026-10-04",
+      "evidence": "context-only",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/context/names.rs + src/context.rs: DD-API-KEY and DD-APPLICATION-KEY headers/fields",
+      "implementation": "src/context/* and src/structured/*",
+      "span_boundary": "Whole raw sensitive field contents, preserving proven quotes/structured framing; unknown formats stay hidden.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": false,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "datadog-key-positive",
+        "datadog-key-negative",
+        "datadog-key-malformed-context",
+        "datadog-key-encoding",
+        "datadog-key-delimiter"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "sentry-credentials": {
+      "status": "context-only",
+      "inventory": "docs/secret-formats/providers.md",
+      "retrieved": "2026-10-04",
+      "evidence": "context-only",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Auth tokens supported contextually; generic URI redaction conservatively hides public DSN userinfo without labeling it an auth token.",
+      "rule": "src/context/names.rs + src/context.rs: SENTRY_AUTH_TOKEN; URI userinfo conservatively includes public DSNs",
+      "implementation": "src/context/* and src/structured/*",
+      "span_boundary": "Whole raw sensitive field contents, preserving proven quotes/structured framing; unknown formats stay hidden.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": false,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "sentry-credentials-positive",
+        "sentry-credentials-negative",
+        "sentry-credentials-malformed-context",
+        "sentry-credentials-encoding",
+        "sentry-credentials-delimiter",
+        "sentry-credentials-public-dsn-conservative"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "shopify-token": {
+      "status": "context-only",
+      "inventory": "docs/secret-formats/providers.md",
+      "retrieved": "2026-10-04",
+      "evidence": "context-only",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/context/names.rs + src/context.rs: X-Shopify-Access-Token and sensitive fields; no unverified shpat_ grammar",
+      "implementation": "src/context/* and src/structured/*",
+      "span_boundary": "Whole raw sensitive field contents, preserving proven quotes/structured framing; unknown formats stay hidden.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": false,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "shopify-token-positive",
+        "shopify-token-negative",
+        "shopify-token-malformed-context",
+        "shopify-token-encoding",
+        "shopify-token-delimiter"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "aws-access-id": {
+      "status": "shipped-lexical",
+      "inventory": "docs/secret-formats/cloud.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/providers.rs::detect: AKIA/ASIA plus at least 16 alphanumeric tail bytes; complete extended candidate",
+      "implementation": "src/providers.rs::detect",
+      "span_boundary": "Whole raw access-ID candidate, not its separate secret access key.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": true,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "aws-access-id-positive-0",
+        "aws-access-id-positive-1",
+        "aws-access-id-delimiter",
+        "aws-access-id-negative",
+        "aws-access-id-malformed-context",
+        "aws-access-id-encoding"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "aws-secret-key": {
+      "status": "context-only",
+      "inventory": "docs/secret-formats/cloud.md",
+      "retrieved": "2026-10-04",
+      "evidence": "context-only",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/context/names.rs + src/context.rs: AWS_SECRET_ACCESS_KEY / SecretAccessKey fields",
+      "implementation": "src/context/* and src/structured/*",
+      "span_boundary": "Whole raw sensitive field contents, preserving proven quotes/structured framing; unknown formats stay hidden.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": false,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "aws-secret-key-positive",
+        "aws-secret-key-negative",
+        "aws-secret-key-malformed-context",
+        "aws-secret-key-encoding",
+        "aws-secret-key-delimiter"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "aws-session-token": {
+      "status": "context-only",
+      "inventory": "docs/secret-formats/cloud.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/context/names.rs + src/context.rs: AWS_SESSION_TOKEN / sessionToken fields",
+      "implementation": "src/context/* and src/structured/*",
+      "span_boundary": "Whole raw sensitive field contents, preserving proven quotes/structured framing; unknown formats stay hidden.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": false,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "aws-session-token-positive",
+        "aws-session-token-negative",
+        "aws-session-token-malformed-context",
+        "aws-session-token-encoding",
+        "aws-session-token-delimiter",
+        "aws-session-token-provider-spelling"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "aws-signed-url": {
+      "status": "shipped-structured",
+      "inventory": "docs/secret-formats/cloud.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/structured/urls.rs::urls: X-Amz-Credential, X-Amz-Signature, X-Amz-Security-Token query fields",
+      "implementation": "src/context/* and src/structured/*",
+      "span_boundary": "Entire raw query values; percent-decode names once, preserve other URL context.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": false,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "aws-signed-url-positive",
+        "aws-signed-url-negative",
+        "aws-signed-url-malformed-context",
+        "aws-signed-url-encoding",
+        "aws-signed-url-delimiter"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "google-service-account": {
+      "status": "context-only",
+      "inventory": "docs/secret-formats/cloud.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Private JWK whole JSON object and service-account private fields supported; structural JSON scanning bounded to 1 MiB; no decoded material emitted.",
+      "rule": "src/context/names.rs + src/context.rs: private_key / privateKeyData fields; metadata is preserved",
+      "implementation": "src/context/* and src/structured/*",
+      "span_boundary": "Whole raw sensitive field contents, preserving proven quotes/structured framing; unknown formats stay hidden.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": false,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "google-service-account-positive",
+        "google-service-account-negative",
+        "google-service-account-malformed-context",
+        "google-service-account-encoding",
+        "google-service-account-delimiter",
+        "google-service-account-provider-spelling"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "azure-storage-key": {
+      "status": "shipped-structured",
+      "inventory": "docs/secret-formats/cloud.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/structured/urls.rs::connections + context: AccountKey / SharedAccessSignature semicolon connection fields",
+      "implementation": "src/context/* and src/structured/*",
+      "span_boundary": "Whole raw credential field value up to its proven connection delimiter.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": false,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "azure-storage-key-positive",
+        "azure-storage-key-negative",
+        "azure-storage-key-malformed-context",
+        "azure-storage-key-encoding",
+        "azure-storage-key-delimiter",
+        "azure-storage-key-semicolon",
+        "azure-storage-key-provider-spelling"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "azure-sas": {
+      "status": "shipped-structured",
+      "inventory": "docs/secret-formats/cloud.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/structured/urls.rs::urls: sv plus authorization/expiry/resource fields and sig",
+      "implementation": "src/context/* and src/structured/*",
+      "span_boundary": "Entire raw sig query value; generic sig alone is not classified.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": false,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "azure-sas-positive",
+        "azure-sas-negative",
+        "azure-sas-malformed-context",
+        "azure-sas-encoding",
+        "azure-sas-delimiter",
+        "azure-sas-public-367",
+        "azure-sas-query",
+        "azure-sas-provider-spelling"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "cloudflare-current": {
+      "status": "shipped-lexical",
+      "inventory": "docs/secret-formats/cloud.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/providers.rs::detect: cfk_, cfut_, cfat_; no invented checksum validation",
+      "implementation": "src/providers.rs::detect",
+      "span_boundary": "Whole boundary-delimited raw candidate; lexical tails use [A-Za-z0-9_./+~=-]+ without fixed length. Sensitive fields protect unknown/malformed values.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": false,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "cloudflare-current-positive-0",
+        "cloudflare-current-positive-1",
+        "cloudflare-current-positive-2",
+        "cloudflare-current-delimiter",
+        "cloudflare-current-negative",
+        "cloudflare-current-malformed-context",
+        "cloudflare-current-encoding"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "cloudflare-legacy": {
+      "status": "context-only",
+      "inventory": "docs/secret-formats/cloud.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/context/names.rs + src/context.rs: CLOUDFLARE_API_KEY / token fields; no bare 40-hex rule",
+      "implementation": "src/context/* and src/structured/*",
+      "span_boundary": "Whole raw sensitive field contents, preserving proven quotes/structured framing; unknown formats stay hidden.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": false,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "cloudflare-legacy-positive",
+        "cloudflare-legacy-negative",
+        "cloudflare-legacy-malformed-context",
+        "cloudflare-legacy-encoding",
+        "cloudflare-legacy-delimiter",
+        "cloudflare-legacy-legacy-352"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "supabase-current": {
+      "status": "shipped-lexical",
+      "inventory": "docs/secret-formats/cloud.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/providers.rs::detect: sb_secret_; sb_publishable_ stays public",
+      "implementation": "src/providers.rs::detect",
+      "span_boundary": "Whole boundary-delimited raw candidate; lexical tails use [A-Za-z0-9_./+~=-]+ without fixed length. Sensitive fields protect unknown/malformed values.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": false,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "supabase-current-positive-0",
+        "supabase-current-delimiter",
+        "supabase-current-negative",
+        "supabase-current-malformed-context",
+        "supabase-current-encoding",
+        "supabase-current-public-358"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "supabase-legacy": {
+      "status": "shipped-structured",
+      "inventory": "docs/secret-formats/cloud.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "JWT container syntax is recognized without trusting roles; anon JWT may conservatively redact; opaque service-role context supported.",
+      "rule": "src/structured/jose.rs::detect + context: JOSE syntax and *_SERVICE_ROLE_KEY fields; never trust decoded role",
+      "implementation": "src/context/* and src/structured/*",
+      "span_boundary": "Whole raw JOSE candidate or sensitive field contents.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": false,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "supabase-legacy-positive",
+        "supabase-legacy-negative",
+        "supabase-legacy-malformed-context",
+        "supabase-legacy-encoding",
+        "supabase-legacy-delimiter"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "http-bearer": {
+      "status": "shipped-structured",
+      "inventory": "docs/secret-formats/structures.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/structured.rs::authentication: Case-insensitive Authorization/Proxy-Authorization Bearer",
+      "implementation": "src/context/* and src/structured/*",
+      "span_boundary": "Whole raw payload; retain header, scheme and proven enclosing quotes.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": true,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "http-bearer-positive",
+        "http-bearer-negative",
+        "http-bearer-malformed-context",
+        "http-bearer-encoding",
+        "http-bearer-delimiter",
+        "http-bearer-grammar-delimiter"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "http-basic": {
+      "status": "shipped-structured",
+      "inventory": "docs/secret-formats/structures.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/structured.rs::authentication: Case-insensitive Authorization/Proxy-Authorization Basic",
+      "implementation": "src/context/* and src/structured/*",
+      "span_boundary": "Whole encoded payload, without decoding user/password.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": true,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "http-basic-positive",
+        "http-basic-negative",
+        "http-basic-malformed-context",
+        "http-basic-encoding",
+        "http-basic-delimiter"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "jws-jwt": {
+      "status": "shipped-structured",
+      "inventory": "docs/secret-formats/structures.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/structured/jose.rs::detect: Compact JWS with Base64url JSON alg header; includes empty signature",
+      "implementation": "src/context/* and src/structured/*",
+      "span_boundary": "Whole raw recognized candidate, including nonempty unknown extension segments.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": true,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "jws-jwt-positive-0",
+        "jws-jwt-positive-1",
+        "jws-jwt-delimiter",
+        "jws-jwt-negative",
+        "jws-jwt-malformed-context",
+        "jws-jwt-encoding",
+        "jws-jwt-non-eyj-header"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "jwe": {
+      "status": "shipped-structured",
+      "inventory": "docs/secret-formats/structures.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/structured/jose.rs::detect: Compact JWE with alg/enc header and five segments; empty encrypted-key allowed",
+      "implementation": "src/context/* and src/structured/*",
+      "span_boundary": "Whole raw recognized candidate; no claims or key material decoded into output.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": false,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "jwe-positive-0",
+        "jwe-delimiter",
+        "jwe-negative",
+        "jwe-malformed-context",
+        "jwe-encoding"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "pem-private": {
+      "status": "shipped-structured",
+      "inventory": "docs/secret-formats/structures.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/structured.rs::private_blocks: BEGIN/END label ending PRIVATE KEY or PRIVATE KEY BLOCK",
+      "implementation": "src/context/* and src/structured/*",
+      "span_boundary": "Whole raw private block, including armor boundaries; missing END fails safely.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": true,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "pem-private-positive-0",
+        "pem-private-positive-1",
+        "pem-private-delimiter",
+        "pem-private-negative",
+        "pem-private-malformed-context",
+        "pem-private-encoding",
+        "pem-private-public-363",
+        "pem-private-public-364",
+        "pem-private-truncated-private"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "pem-traditional": {
+      "status": "shipped-structured",
+      "inventory": "docs/secret-formats/structures.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/structured.rs::private_blocks: BEGIN/END label ending PRIVATE KEY or PRIVATE KEY BLOCK",
+      "implementation": "src/context/* and src/structured/*",
+      "span_boundary": "Whole raw private block, including armor boundaries; missing END fails safely.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": true,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "pem-traditional-positive-0",
+        "pem-traditional-positive-1",
+        "pem-traditional-positive-2",
+        "pem-traditional-delimiter",
+        "pem-traditional-negative",
+        "pem-traditional-malformed-context",
+        "pem-traditional-encoding",
+        "pem-traditional-truncated-private"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "openssh-private": {
+      "status": "shipped-structured",
+      "inventory": "docs/secret-formats/structures.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/structured.rs::private_blocks: BEGIN/END label ending PRIVATE KEY or PRIVATE KEY BLOCK",
+      "implementation": "src/context/* and src/structured/*",
+      "span_boundary": "Whole raw private block, including armor boundaries; missing END fails safely.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": true,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "openssh-private-positive-0",
+        "openssh-private-delimiter",
+        "openssh-private-negative",
+        "openssh-private-malformed-context",
+        "openssh-private-encoding",
+        "openssh-private-public-365",
+        "openssh-private-truncated-private"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "openpgp-private": {
+      "status": "shipped-structured",
+      "inventory": "docs/secret-formats/structures.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/structured.rs::private_blocks: BEGIN/END label ending PRIVATE KEY or PRIVATE KEY BLOCK",
+      "implementation": "src/context/* and src/structured/*",
+      "span_boundary": "Whole raw private block, including armor boundaries; missing END fails safely.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": false,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "openpgp-private-positive-0",
+        "openpgp-private-delimiter",
+        "openpgp-private-negative",
+        "openpgp-private-malformed-context",
+        "openpgp-private-encoding",
+        "openpgp-private-public-366",
+        "openpgp-private-truncated-private"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "jwk-private": {
+      "status": "shipped-structured",
+      "inventory": "docs/secret-formats/structures.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Private JWK whole JSON object and service-account private fields supported; structural JSON scanning bounded to 1 MiB; no decoded material emitted.",
+      "rule": "src/structured/containers.rs::json_containers: kty with RSA/EC/OKP private members or oct k; malformed discriminator remains protected",
+      "implementation": "src/context/* and src/structured/*",
+      "span_boundary": "Whole private JSON object; public-only JWK stays unchanged.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": false,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "jwk-private-positive",
+        "jwk-private-negative",
+        "jwk-private-malformed-context",
+        "jwk-private-encoding",
+        "jwk-private-delimiter",
+        "jwk-private-public-362",
+        "jwk-private-malformed-object",
+        "jwk-private-duplicate-kind"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "postgres-connection": {
+      "status": "shipped-structured",
+      "inventory": "docs/secret-formats/structures.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/structured/urls.rs: postgres/postgresql URI authority, query, and libpq keyword dialect",
+      "implementation": "src/context/* and src/structured/*",
+      "span_boundary": "URI userinfo/query values or raw quoted/escaped libpq password span.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": true,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "postgres-connection-positive",
+        "postgres-connection-negative",
+        "postgres-connection-malformed-context",
+        "postgres-connection-encoding",
+        "postgres-connection-delimiter",
+        "postgres-connection-keyword-quoted"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "mongodb-connection": {
+      "status": "shipped-structured",
+      "inventory": "docs/secret-formats/structures.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/structured/urls.rs::urls: mongodb/mongodb+srv URI authority and sensitive query fields",
+      "implementation": "src/context/* and src/structured/*",
+      "span_boundary": "Whole URI userinfo and raw sensitive query values; preserve hosts/options.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": true,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "mongodb-connection-positive",
+        "mongodb-connection-negative",
+        "mongodb-connection-malformed-context",
+        "mongodb-connection-encoding",
+        "mongodb-connection-delimiter"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "redis-connection": {
+      "status": "shipped-structured",
+      "inventory": "docs/secret-formats/structures.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/structured/urls.rs::urls: redis/rediss URI authority and sensitive query fields",
+      "implementation": "src/context/* and src/structured/*",
+      "span_boundary": "Whole URI userinfo and raw sensitive query values; preserve host/database.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": true,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "redis-connection-positive",
+        "redis-connection-negative",
+        "redis-connection-malformed-context",
+        "redis-connection-encoding",
+        "redis-connection-delimiter"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "encoded-config": {
+      "status": "shipped-structured",
+      "inventory": "docs/secret-formats/structures.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Whole recognized Docker auths or Kubernetes Secret JSON object hidden, bounded to 1 MiB; Kubernetes YAML Secret document hidden; arbitrary recursive Base64/binary containers unsupported.",
+      "rule": "src/structured/containers.rs: Docker auths and Kubernetes Secret JSON/YAML containers",
+      "implementation": "src/context/* and src/structured/*",
+      "span_boundary": "Whole recognized JSON object or YAML document; no recursive Base64 decoding.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": false,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "encoded-config-positive",
+        "encoded-config-negative",
+        "encoded-config-malformed-context",
+        "encoded-config-encoding",
+        "encoded-config-delimiter",
+        "encoded-config-provider-spelling",
+        "encoded-config-kubernetes",
+        "encoded-config-docker-config",
+        "encoded-config-malformed-object"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "bcrypt-verifier": {
+      "status": "shipped-lexical",
+      "inventory": "docs/secret-formats/structures.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/providers.rs::detect + context: $2b$ verifier marker or password-hash field",
+      "implementation": "src/providers.rs::detect",
+      "span_boundary": "Whole modular verifier candidate; legacy markers require context.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": false,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "bcrypt-verifier-positive-0",
+        "bcrypt-verifier-delimiter",
+        "bcrypt-verifier-negative",
+        "bcrypt-verifier-malformed-context",
+        "bcrypt-verifier-encoding"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    },
+    "phc-verifier": {
+      "status": "shipped-lexical",
+      "inventory": "docs/secret-formats/structures.md",
+      "retrieved": "2026-10-04",
+      "evidence": "documented",
+      "versions": "Researched 2026-10-04; no inferred body lengths or validity",
+      "limitation": "Recognition is local evidence only; arbitrary standalone unknown passwords remain undetectable.",
+      "rule": "src/providers.rs::detect + context: $argon2id$ / $argon2i$ / $argon2d$ or password-hash field",
+      "implementation": "src/providers.rs::detect",
+      "span_boundary": "Whole Argon2 verifier candidate; other PHC algorithms require context.",
+      "classification": "Internal evidence only; v1 output exposes fingerprints, no validity or provider assertion.",
+      "default_v1": false,
+      "tests": [
+        "researched_formats_pass_real_rstr_subprocesses",
+        "format_mutations_stay_hidden_under_sensitive_context"
+      ],
+      "fixture_file": "tests/fixtures/secret-formats.json",
+      "fixture_ids": [
+        "phc-verifier-positive-0",
+        "phc-verifier-delimiter",
+        "phc-verifier-negative",
+        "phc-verifier-malformed-context",
+        "phc-verifier-encoding"
+      ],
+      "fuzz": [
+        "detectors",
+        "text_filter"
+      ]
+    }
+  }
+}

@@ -1,3 +1,8 @@
+#[allow(dead_code, reason = "shared synthetic assertions across test suites")]
+#[path = "support/synthetic.rs"]
+mod synthetic;
+use synthetic::*;
+
 use proptest::prelude::*;
 use redact::{filter, fingerprint};
 
@@ -79,11 +84,7 @@ fn all_prefix_variants_protect_complete_evolving_bodies() {
                 "status=401 [[REDACTED sha256={}]], host=example.test\r\n",
                 fingerprint(&token)
             );
-            assert_eq!(
-                filter(input.as_bytes()).unwrap(),
-                expected,
-                "prefix {prefix}"
-            );
+            assert_eq!(filter(input.as_bytes()).must(), expected, "prefix {prefix}");
         }
     }
 }
@@ -104,7 +105,7 @@ fn near_prefixes_and_public_material_pass_unchanged() {
         "signature=ordinary-public-metadata",
         "tokenizer=ordinary",
     ] {
-        assert_eq!(filter(input.as_bytes()).unwrap(), input);
+        assert_eq!(filter(input.as_bytes()).must(), input);
     }
 }
 
@@ -118,7 +119,7 @@ fn rejected_outer_hints_do_not_conceal_tokens_or_url_path_credentials() {
     ] {
         let input = format!("{before}{token}{after}");
         assert_eq!(
-            filter(input.as_bytes()).unwrap(),
+            filter(input.as_bytes()).must(),
             format!("{before}[REDACTED sha256={}]{after}", fingerprint(token))
         );
     }
@@ -130,14 +131,14 @@ proptest! {
     fn prefix_mutations_preserve_whole_spans(index in 0usize..PREFIXES.len(), suffix in "[A-Za-z0-9_./+~=-]{1,512}") {
         let value = format!("{}SYNTHETIC_{suffix}", PREFIXES[index]);
         let input = format!("before {value} after\n");
-        prop_assert_eq!(filter(input.as_bytes()).unwrap(), format!("before [REDACTED sha256={}] after\n", fingerprint(&value)));
+        prop_assert_eq!(filter(input.as_bytes()).must(), format!("before [REDACTED sha256={}] after\n", fingerprint(&value)));
     }
     #[test]
     fn unknown_and_malformed_provider_values_stay_hidden(value in "[^\"\\\\\n\r\x00]{1,256}") {
         let input = serde_json::json!({"GEMINI_API_KEY":value,"status":401}).to_string();
-        let expected_value = serde_json::to_string(&value).unwrap();
+        let expected_value = serde_json::to_string(&value).must();
         let raw_span = &expected_value[1..expected_value.len()-1];
         let expected = format!("{{\"GEMINI_API_KEY\":\"[REDACTED sha256={}]\",\"status\":401}}",fingerprint(raw_span));
-        prop_assert_eq!(filter(input.as_bytes()).unwrap(), expected);
+        prop_assert_eq!(filter(input.as_bytes()).must(), expected);
     }
 }

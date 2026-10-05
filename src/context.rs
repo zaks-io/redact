@@ -134,6 +134,26 @@ fn scan(input: &str, structured: &[Span], depth: usize) -> Result<Vec<Span>, Saf
             at = end + 2;
         } else if matches!(bytes[value], b'"' | b'\'') {
             let end = quoted_end(input, value, bytes[value], true)?;
+            if json && bytes[value] == b'"' {
+                serde_json::from_str::<String>(&input[value..=end]).map_err(|_| {
+                    SafeError::new(
+                        "invalid quoted JSON value. Correct its string escapes and retry.",
+                    )
+                })?;
+            } else if bytes[value] == b'"' {
+                let mut cursor = value + 1;
+                while cursor < end {
+                    if bytes[cursor] == b'\\' {
+                        cursor += 1;
+                        if !matches!(bytes[cursor], b'\\' | b'"' | b'n' | b'r' | b't') {
+                            return Err(SafeError::new(
+                                "unsupported quoted-value escape. Use documented escapes and retry.",
+                            ));
+                        }
+                    }
+                    cursor += 1;
+                }
+            }
             if end > value + 1 {
                 spans.push(Span {
                     start: value + 1,

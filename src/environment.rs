@@ -1,23 +1,37 @@
-use crate::{error::SafeError, fingerprint};
+use crate::{
+    error::SafeError,
+    rprintenv::{policy, render},
+    secret::SecretString,
+};
 use serde::Serialize;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 
-/// Raw values have deliberately opaque formatting, including when nested.
-pub struct RawVariables(BTreeMap<String, String>);
+pub use policy::Source;
+
+/// Compatibility inputs use the same opaque secret type as the command.
+pub struct RawVariables(BTreeMap<String, SecretString>);
 
 impl fmt::Debug for RawVariables {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str("RawVariables([opaque])")
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str("RawVariables([opaque])")
     }
 }
 
 impl RawVariables {
     pub fn from_pairs(pairs: impl IntoIterator<Item = (String, String)>) -> Self {
-        Self(pairs.into_iter().collect())
+        Self(
+            pairs
+                .into_iter()
+                .map(|(name, value)| (name, SecretString::new(value)))
+                .collect(),
+        )
+    }
+    pub(crate) fn from_secrets(values: BTreeMap<String, SecretString>) -> Self {
+        Self(values)
     }
     pub fn get(&self, name: &str) -> Option<&str> {
-        self.0.get(name).map(String::as_str)
+        self.0.get(name).map(SecretString::as_str)
     }
     pub fn contains_key(&self, name: &str) -> bool {
         self.0.contains_key(name)
@@ -26,22 +40,6 @@ impl RawVariables {
         self.0
             .iter()
             .map(|(name, value)| (name.as_str(), value.as_str()))
-    }
-}
-
-#[derive(Debug, Clone, Serialize)]
-#[serde(tag = "kind", rename_all = "snake_case")]
-pub enum Source {
-    Environment,
-    File { path: String },
-}
-
-impl Source {
-    fn label(&self) -> String {
-        match self {
-            Self::Environment => "env".to_owned(),
-            Self::File { path } => format!("file:{path}"),
-        }
     }
 }
 
@@ -71,7 +69,7 @@ pub enum State {
     Visible,
 }
 
-/// Only policy-approved values cross this serialization boundary.
+/// Compatibility records contain only values approved by the shared policy.
 #[derive(Serialize)]
 pub struct SafeRecord {
     pub source: Source,
@@ -82,8 +80,9 @@ pub struct SafeRecord {
 }
 
 impl fmt::Debug for SafeRecord {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("SafeRecord")
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("SafeRecord")
             .field("source", &self.source)
             .field("name", &self.name)
             .field("state", &self.state)
@@ -99,29 +98,33 @@ pub fn decision(
     allow: &BTreeSet<String>,
     redact: &BTreeSet<String>,
 ) -> State {
-    match value {
-        None => State::Missing,
-        Some("") => State::Empty,
-        Some(_) if redact.contains(name) => State::Redacted,
-        Some(_) if allow.contains(name) => State::Visible,
-        Some(value) if builtin_allowed(name, value) => State::Visible,
-        Some(_) => State::Redacted,
-    }
+    let secret = value.map(|value| SecretString::new(value.to_owned()));
+    let record = policy::disclose(
+        Source::Environment,
+        name.to_owned(),
+        secret.as_ref(),
+        &policy::Policy {
+            allow: allow.clone(),
+            redact: redact.clone(),
+        },
+    );
+    state(&record.state)
 }
 
-fn builtin_allowed(name: &str, value: &str) -> bool {
-    match name {
-        "NODE_ENV" => matches!(value, "development" | "test" | "production"),
-        "RUST_BACKTRACE" | "RUST_LIB_BACKTRACE" => matches!(value, "0" | "1" | "full"),
-        "CI" => matches!(value, "true" | "false" | "0" | "1"),
-        "NO_COLOR" => value == "1",
-        "FORCE_COLOR" => matches!(value, "0" | "1" | "2" | "3"),
-        "CLICOLOR" | "CLICOLOR_FORCE" => matches!(value, "0" | "1"),
-        _ => false,
+fn state(state: &policy::State) -> State {
+    match state {
+        policy::State::Missing => State::Missing,
+        policy::State::Empty => State::Empty,
+        policy::State::Redacted(_) => State::Redacted,
+        policy::State::Visible(_) => State::Visible,
     }
 }
 
 pub fn sanitize(snapshots: &[Snapshot], options: &Options) -> Vec<SafeRecord> {
+    let policy = policy::Policy {
+        allow: options.allow.clone(),
+        redact: options.redact.clone(),
+    };
     let mut records = Vec::new();
     for snapshot in snapshots {
         let names: Vec<&str> = if options.names.is_empty() {
@@ -130,22 +133,24 @@ pub fn sanitize(snapshots: &[Snapshot], options: &Options) -> Vec<SafeRecord> {
             options.names.iter().map(String::as_str).collect()
         };
         for name in names {
-            let raw = snapshot.values.get(name);
-            let state = decision(name, raw, &options.allow, &options.redact);
+            let approved = policy::disclose(
+                snapshot.source.clone(),
+                name.to_owned(),
+                snapshot.values.0.get(name),
+                &policy,
+            );
+            let (value, fingerprint) = match &approved.state {
+                policy::State::Visible(value) => (Some(value.as_str().to_owned()), None),
+                policy::State::Redacted(hash) => (None, Some(hash.clone())),
+                policy::State::Empty => (Some(String::new()), None),
+                policy::State::Missing => (None, None),
+            };
             records.push(SafeRecord {
-                source: snapshot.source.clone(),
-                name: name.to_owned(),
-                state,
-                value: if matches!(state, State::Visible | State::Empty) {
-                    raw.map(str::to_owned)
-                } else {
-                    None
-                },
-                fingerprint: if state == State::Redacted {
-                    raw.map(fingerprint)
-                } else {
-                    None
-                },
+                state: state(&approved.state),
+                source: approved.source,
+                name: approved.name,
+                value,
+                fingerprint,
             });
         }
     }
@@ -153,54 +158,51 @@ pub fn sanitize(snapshots: &[Snapshot], options: &Options) -> Vec<SafeRecord> {
 }
 
 pub fn render_text(records: &[SafeRecord]) -> Result<String, SafeError> {
-    let mut output = String::new();
-    for record in records {
-        let source = encode(&record.source.label())?;
-        let name = encode(&record.name)?;
-        let value = match record.state {
-            State::Missing => "[UNSET]".to_owned(),
-            State::Empty => "[EMPTY]".to_owned(),
-            State::Visible => encode(
-                record
-                    .value
-                    .as_deref()
-                    .ok_or_else(|| SafeError::new("invalid approved output record."))?,
-            )?,
-            State::Redacted => format!(
-                "[REDACTED sha256={}]",
-                record
-                    .fingerprint
-                    .as_deref()
-                    .ok_or_else(|| SafeError::new("invalid approved output record."))?
-            ),
-        };
-        output.push_str(&format!("{source}\t{name}\t{value}\n"));
-    }
-    Ok(output)
+    render_records(records, false)
 }
-
 pub fn render_json(records: &[SafeRecord]) -> Result<String, SafeError> {
-    #[derive(Serialize)]
-    struct Listing<'a> {
-        schema_version: u8,
-        records: &'a [SafeRecord],
-    }
-    let mut output = encode(&Listing {
-        schema_version: 1,
-        records,
-    })?;
-    output.push('\n');
-    Ok(output)
+    render_records(records, true)
 }
 
-fn encode(value: &(impl Serialize + ?Sized)) -> Result<String, SafeError> {
-    serde_json::to_string(value)
-        .map_err(|_| SafeError::new("output encoding failed. Retry with supported UTF-8 input."))
+fn render_records(records: &[SafeRecord], json: bool) -> Result<String, SafeError> {
+    let approved = records
+        .iter()
+        .map(|record| {
+            let state = match record.state {
+                State::Missing => policy::State::Missing,
+                State::Empty => policy::State::Empty,
+                State::Visible => policy::State::Visible(SecretString::new(
+                    record.value.as_ref().ok_or_else(invalid_record)?.clone(),
+                )),
+                State::Redacted => policy::State::Redacted(
+                    record
+                        .fingerprint
+                        .as_ref()
+                        .ok_or_else(invalid_record)?
+                        .clone(),
+                ),
+            };
+            Ok(policy::Record {
+                source: record.source.clone(),
+                name: record.name.clone(),
+                state,
+            })
+        })
+        .collect::<Result<Vec<_>, SafeError>>()?;
+    let mut bytes = Vec::new();
+    render::render(&approved, json, &mut bytes)?;
+    String::from_utf8(bytes).map_err(|_| invalid_record())
+}
+
+fn invalid_record() -> SafeError {
+    SafeError::new("invalid approved output record.")
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::fingerprint;
+    use crate::synthetic::*;
     use proptest::prelude::*;
 
     #[test]
@@ -273,14 +275,14 @@ mod tests {
         fn hidden_values_only_change_fingerprints(value in any::<String>()) {
             let snapshots = [Snapshot { source: Source::Environment, values: RawVariables::from_pairs([("TOKEN".to_owned(), value.clone())]) }];
             let records = sanitize(&snapshots, &Options::default());
-            let json: serde_json::Value = serde_json::from_str(&render_json(&records).unwrap()).unwrap();
+            let json: serde_json::Value = serde_json::from_str(&render_json(&records).must()).must();
             if value.is_empty() {
                 prop_assert_eq!(json["records"][0]["state"].as_str(), Some("empty"));
             } else {
                 prop_assert_eq!(json["records"][0]["value"].clone(), serde_json::Value::Null);
                 let expected_fingerprint = fingerprint(&value);
                 prop_assert_eq!(records[0].fingerprint.as_deref(), Some(expected_fingerprint.as_str()));
-                prop_assert_eq!(render_text(&records).unwrap(), format!("\"env\"\t\"TOKEN\"\t[REDACTED sha256={}]\n", fingerprint(&value)));
+                prop_assert_eq!(render_text(&records).must(), format!("\"env\"\t\"TOKEN\"\t[REDACTED sha256={}]\n", fingerprint(&value)));
             }
         }
     }

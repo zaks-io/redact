@@ -85,6 +85,7 @@ pub fn filter(bytes: &[u8]) -> Result<String, SafeError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::synthetic::*;
     use proptest::prelude::*;
     use std::error::Error;
 
@@ -100,7 +101,7 @@ mod tests {
                     Span { start: 5, end: 6 }
                 ]
             )
-            .unwrap(),
+            .must(),
             vec![Span { start: 0, end: 5 }, Span { start: 5, end: 6 }]
         );
         assert!(render_spans("é", &[Span { start: 1, end: 2 }]).is_err());
@@ -111,7 +112,7 @@ mod tests {
         fn sensitive_fields_never_leak(value in "[A-Za-z0-9_./+~=-]{1,256}") {
             let input = format!("status=401 password=\"{value}\" host=example.test\n");
             let expected = format!("status=401 password=\"[REDACTED sha256={}]\" host=example.test\n", fingerprint(&value));
-            prop_assert_eq!(filter(input.as_bytes()).unwrap(), expected);
+            prop_assert_eq!(filter(input.as_bytes()).must(), expected);
         }
         #[test]
         fn arbitrary_input_errors_are_safe(bytes in prop::collection::vec(any::<u8>(), 0..2048)) {
@@ -124,7 +125,7 @@ mod tests {
         fn union_matches_byte_oracle(pairs in prop::collection::vec((0usize..128,0usize..128),0..64)) {
             let input = "x".repeat(128);
             let spans:Vec<_> = pairs.iter().map(|&(a,b)| Span {start:a.min(b),end:a.max(b)}).collect();
-            let merged = merge_spans(&input, &spans).unwrap();
+            let merged = merge_spans(&input, &spans).must();
             for index in 0..128 {
                 prop_assert_eq!(spans.iter().any(|s| s.start<=index && index<s.end), merged.iter().any(|s| s.start<=index && index<s.end));
             }

@@ -1,8 +1,9 @@
 # Fuzzing specification
 
-Status: all six cargo-fuzz harnesses are implemented in `fuzz/`, with synthetic
-seed corpora and independent disclosure/span oracles. See
-[fuzz campaign results](fuzz-results.md) for bounded runs and their limits.
+Status: all six [harness targets](../fuzz/README.md) build and have completed
+short sanitizer-enabled smoke runs. [Earlier results](fuzzing-results.md) and [expanded-format results](fuzz-results.md) state
+the tested inputs, budgets, toolchain, and limitations. Longer campaigns remain
+separate from normal CLI and property-test validation.
 
 ## Objective
 
@@ -108,8 +109,7 @@ when a mutated value no longer matches its expected provider format.
 
 ## Running and triaging
 
-Install `cargo-fuzz` version `0.13.2` and the pinned `nightly-2026-10-04`
-toolchain. Run from the repository root:
+From the `fuzz` directory, the documented commands are:
 
 ```sh
 cargo fuzz run dotenv

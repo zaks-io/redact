@@ -1,12 +1,19 @@
 # Agent workflow test contracts
 
-Status: executable integration tests run all synthetic cases against the Cargo
-binaries. `scripts/acceptance.py` replays the same fixtures against release
-executables and records one-command correctness and reproducible timing.
+Status: synthetic inputs and independent expected results consumed by
+[real executable integration tests](workflows.rs). All named cases run with
+cleared child environments in normal validation and release workflow checks.
+No fixture is ignored or skipped when a binary is absent.
+
+```sh
+cargo test --locked --test workflows -- --test-threads=2 --nocapture
+cargo test --locked --release --test workflows -- --test-threads=2 --nocapture
+```
 
 - [rprintenv cases](fixtures/rprintenv-workflows.json)
 - [rstr cases](fixtures/rstr-workflows.json)
-- [Context and review regressions](fixtures/context-workflows.json)
+- [Context and review cases](fixtures/context-workflows.json)
+- [Complete secret inventory](fixtures/secret-formats.json)
 - [Behavior requirements](../docs/agent-usability.md)
 
 ## Fixture format

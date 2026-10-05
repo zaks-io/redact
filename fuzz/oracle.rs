@@ -4,7 +4,8 @@ pub fn leaks_canary(output: &str, value: &str) -> bool {
     if output.contains(value) {
         return true;
     }
-    let escaped = serde_json::to_string(value).unwrap();
+    let escaped =
+        serde_json::to_string(value).unwrap_or_else(|_| panic!("synthetic oracle setup failed"));
     if output.contains(&escaped[1..escaped.len() - 1]) {
         return true;
     }

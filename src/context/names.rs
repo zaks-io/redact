@@ -21,6 +21,9 @@ pub(crate) fn sensitive_name(name: &str) -> bool {
         }
         previous = Some(character);
     }
+    let plain = name
+        .to_ascii_lowercase()
+        .replace(['-', '.', ' ', '\t'], "_");
     let suffixes = [
         "password",
         "passwd",
@@ -41,38 +44,41 @@ pub(crate) fn sensitive_name(name: &str) -> bool {
         "service_role_key",
     ];
     suffixes.iter().any(|suffix| {
-        normalized
-            .strip_suffix(suffix)
-            .is_some_and(|prefix| prefix.is_empty() || prefix.ends_with('_'))
-    }) || matches!(
-        normalized.as_str(),
-        "accountkey"
-            | "account_key"
-            | "sharedaccesssignature"
-            | "shared_access_signature"
-            | "privatekeydata"
-            | "private_key_data"
-            | "_authtoken"
-            | "authtoken"
-            | "clientsecret"
-            | "accesstoken"
-            | "refreshtoken"
-            | "sessiontoken"
-            | "secretaccesskey"
-            | "awssecretaccesskey"
-            | "awssessiontoken"
-            | "privatekey"
-            | "passwordhash"
-            | "password_hash"
-            | "sslpassword"
-            | "dd_api_key"
-            | "dd_application_key"
-            | "x_shopify_access_token"
-            | "_gitlab_session"
-            | "cookie"
-            | "set_cookie"
-            | "tokenvalue"
-            | "token_value"
-            | "_auth"
-    )
+        [&normalized, &plain].iter().any(|name| {
+            name.strip_suffix(suffix)
+                .is_some_and(|prefix| prefix.is_empty() || prefix.ends_with('_'))
+        })
+    }) || [&normalized, &plain].iter().any(|name| {
+        matches!(
+            name.as_str(),
+            "accountkey"
+                | "account_key"
+                | "sharedaccesssignature"
+                | "shared_access_signature"
+                | "privatekeydata"
+                | "private_key_data"
+                | "_authtoken"
+                | "authtoken"
+                | "clientsecret"
+                | "accesstoken"
+                | "refreshtoken"
+                | "sessiontoken"
+                | "secretaccesskey"
+                | "awssecretaccesskey"
+                | "awssessiontoken"
+                | "privatekey"
+                | "passwordhash"
+                | "password_hash"
+                | "sslpassword"
+                | "dd_api_key"
+                | "dd_application_key"
+                | "x_shopify_access_token"
+                | "_gitlab_session"
+                | "cookie"
+                | "set_cookie"
+                | "tokenvalue"
+                | "token_value"
+                | "_auth"
+        )
+    })
 }

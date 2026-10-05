@@ -27,15 +27,19 @@ pub fn matches_record(
         return false;
     }
     let rendered_value = match state {
-        "redacted" => format!("[REDACTED sha256={}]", fingerprint.unwrap()),
+        "redacted" => format!(
+            "[REDACTED sha256={}]",
+            fingerprint.unwrap_or_else(|| panic!("synthetic oracle fingerprint missing"))
+        ),
         "empty" => "[EMPTY]".to_owned(),
         "missing" => "[UNSET]".to_owned(),
-        "visible" => serde_json::to_string(raw_value).unwrap(),
+        "visible" => serde_json::to_string(raw_value)
+            .unwrap_or_else(|_| panic!("synthetic oracle setup failed")),
         _ => return false,
     };
     let expected_text = format!(
         "\"env\"\t{}\t{rendered_value}\n",
-        serde_json::to_string(name).unwrap(),
+        serde_json::to_string(name).unwrap_or_else(|_| panic!("synthetic oracle setup failed")),
     );
     text == expected_text
 }

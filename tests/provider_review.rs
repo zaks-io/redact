@@ -1,3 +1,8 @@
+#[allow(dead_code, reason = "shared synthetic assertions across test suites")]
+#[path = "support/synthetic.rs"]
+mod synthetic;
+use synthetic::*;
+
 use redact::{Span, detect, filter};
 use sha2::{Digest, Sha256};
 use std::io::{Read, Write};
@@ -20,38 +25,38 @@ fn bounded_filter(input: Vec<u8>) -> (Output, Duration) {
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
-        .unwrap();
-    let mut stdin = child.stdin.take().unwrap();
+        .must();
+    let mut stdin = child.stdin.take().must();
     let writer = std::thread::spawn(move || stdin.write_all(&input));
-    let mut stdout = child.stdout.take().unwrap();
+    let mut stdout = child.stdout.take().must();
     let out = std::thread::spawn(move || {
         let mut bytes = Vec::new();
-        stdout.read_to_end(&mut bytes).unwrap();
+        stdout.read_to_end(&mut bytes).must();
         bytes
     });
-    let mut stderr = child.stderr.take().unwrap();
+    let mut stderr = child.stderr.take().must();
     let err = std::thread::spawn(move || {
         let mut bytes = Vec::new();
-        stderr.read_to_end(&mut bytes).unwrap();
+        stderr.read_to_end(&mut bytes).must();
         bytes
     });
     let status = loop {
-        if let Some(status) = child.try_wait().unwrap() {
+        if let Some(status) = child.try_wait().must() {
             break status;
         }
         if started.elapsed() > Duration::from_secs(5) {
-            child.kill().unwrap();
-            child.wait().unwrap();
+            child.kill().must();
+            child.wait().must();
             panic!("provider near-match regression exceeded five-second process budget");
         }
         std::thread::sleep(Duration::from_millis(2));
     };
-    writer.join().unwrap().unwrap();
+    writer.join().must().must();
     (
         Output {
             status,
-            stdout: out.join().unwrap(),
-            stderr: err.join().unwrap(),
+            stdout: out.join().must(),
+            stderr: err.join().must(),
         },
         started.elapsed(),
     )
@@ -91,17 +96,17 @@ fn rejected_outer_hints_keep_inner_credentials_and_delimiters() {
         let expected = input
             .replace(first, &marker(first))
             .replace(second, &marker(second));
-        assert_eq!(filter(input.as_bytes()).unwrap(), expected);
+        assert_eq!(filter(input.as_bytes()).must(), expected);
     }
     let compound = format!("{first}/{second}");
     assert_eq!(
-        detect(&compound).unwrap(),
+        detect(&compound).must(),
         [Span {
             start: 0,
             end: compound.len()
         }]
     );
-    assert_eq!(filter(compound.as_bytes()).unwrap(), marker(&compound));
+    assert_eq!(filter(compound.as_bytes()).must(), marker(&compound));
 }
 
 #[test]
@@ -113,8 +118,21 @@ fn distinct_verifier_markers_recover_after_adjacent_provider_tokens() {
     ] {
         let input = format!("{token}{verifier}");
         assert_eq!(
-            filter(input.as_bytes()).unwrap(),
+            filter(input.as_bytes()).must(),
             format!("{}{}", marker(token), marker(&verifier))
         );
+    }
+}
+
+#[test]
+fn bare_specific_markers_do_not_fall_back_to_generic_provider_matches() {
+    for prefix in ["sk-proj-", "sk-admin-", "sk-ant-admin", "sk-ant-api03-"] {
+        assert_eq!(filter(prefix.as_bytes()).must(), prefix);
+        let input = format!("{prefix} ghp_SYNTHETIC_REVIEW_CANARY_0123456789");
+        let expected = format!(
+            "{prefix} {}",
+            marker("ghp_SYNTHETIC_REVIEW_CANARY_0123456789")
+        );
+        assert_eq!(filter(input.as_bytes()).must(), expected);
     }
 }

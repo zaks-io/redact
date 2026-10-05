@@ -1,3 +1,8 @@
+#[allow(dead_code, reason = "shared synthetic assertions across test suites")]
+#[path = "support/synthetic.rs"]
+mod synthetic;
+use synthetic::*;
+
 use redact::fingerprint;
 use std::io::Write;
 use std::process::{Command, Stdio};
@@ -21,14 +26,9 @@ fn escaped_certificate_and_private_key_have_separate_boundaries() {
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()
-            .unwrap();
-        child
-            .stdin
-            .take()
-            .unwrap()
-            .write_all(input.as_bytes())
-            .unwrap();
-        let output = child.wait_with_output().unwrap();
+            .must();
+        child.stdin.take().must().write_all(input.as_bytes()).must();
+        let output = child.wait_with_output().must();
         assert_eq!(output.status.code(), Some(0));
         assert_eq!(output.stdout, expected.as_bytes());
         assert!(output.stderr.is_empty());

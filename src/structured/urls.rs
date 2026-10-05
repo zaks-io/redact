@@ -1,31 +1,61 @@
-use crate::{Span, context::sensitive_name, error::SafeError};
+use crate::{Span, error::SafeError};
+
+mod parameters;
+
+pub(super) struct Frame {
+    start: usize,
+    end: usize,
+    parameters_start: usize,
+}
 
 pub(super) fn urls(
     input: &str,
     spans: &mut Vec<Span>,
     contexts: &mut Vec<Span>,
 ) -> Result<(), SafeError> {
-    let matcher = pattern!(r#"[A-Za-z][A-Za-z0-9+.-]*:(?://|\\/\\/)[^\s\x00-\x1f<>"']+"#)?;
-    let field_pattern = pattern!(r"[?&#;,]([^?&#;,/=]+)=")?;
-    for matched in matcher.find_iter(input) {
-        let mut url = matched.as_str();
+    let matcher = pattern!(r"[A-Za-z][A-Za-z0-9+.-]*:(?://|\\/\\/)")?;
+    let schemes: Vec<_> = matcher.find_iter(input).collect();
+    let boundaries: Vec<_> = input
+        .char_indices()
+        .filter_map(|(index, ch)| {
+            (ch.is_whitespace()
+                || ch.is_control()
+                || matches!(ch, '<' | '>' | '"' | '\'' | '{' | '}'))
+            .then_some(index)
+        })
+        .collect();
+    let mut frames = Vec::with_capacity(schemes.len());
+    for (index, matched) in schemes.iter().enumerate() {
+        let full_end = boundaries
+            .get(boundaries.partition_point(|end| *end < matched.end()))
+            .copied()
+            .unwrap_or(input.len());
+        let local_end = schemes
+            .get(index + 1)
+            .map_or(full_end, |next| full_end.min(next.start()));
+        let mut raw_url = &input[matched.start()..local_end];
         let opener = input.as_bytes().get(matched.start().wrapping_sub(1));
         let closer = match opener {
             Some(b'[') => Some(']'),
             Some(b'(') => Some(')'),
-            Some(b'{') => Some('}'),
             _ => None,
         };
-        if let Some(closer) = closer {
-            let without_punctuation = url.trim_end_matches([',', '.', ';']);
-            if let Some(unwrapped) = without_punctuation.strip_suffix(closer) {
-                url = unwrapped;
+        if local_end == full_end
+            && let Some(closer) = closer
+        {
+            let unpunctuated = raw_url.trim_end_matches([',', '.', ';']);
+            if let Some(unwrapped) = unpunctuated.strip_suffix(closer) {
+                raw_url = unwrapped;
             }
         }
-        let raw_url = url;
+        let end = if local_end == full_end {
+            matched.start() + raw_url.len()
+        } else {
+            full_end
+        };
         contexts.push(Span {
             start: matched.start(),
-            end: matched.start() + raw_url.len(),
+            end,
         });
         let escaped = raw_url
             .contains("\\/")
@@ -34,27 +64,46 @@ pub(super) fn urls(
         let url = escaped
             .as_ref()
             .map_or(raw_url, |(decoded, _)| decoded.as_str());
-        let boundary = |index: usize| {
+        let boundary = |offset: usize| {
             matched.start()
                 + escaped
                     .as_ref()
-                    .map_or(index, |(_, offsets)| offsets[index])
+                    .map_or(offset, |(_, offsets)| offsets[offset])
         };
         let Some(scheme_end) = url.find("://") else {
             continue;
         };
         let authority_start = scheme_end + 3;
-        let authority_end = url[authority_start..]
+        let first_delimiter = url[authority_start..]
             .find(['/', '?', '#'])
-            .map_or(url.len(), |at| authority_start + at);
-        let authority = &url[authority_start..authority_end];
-        if let Some(at) = authority.rfind('@') {
+            .map_or(url.len(), |offset| authority_start + offset);
+        let authority = &url[authority_start..first_delimiter];
+        let userinfo_end = authority
+            .rfind('@')
+            .map(|offset| authority_start + offset)
+            .or_else(|| {
+                if authority.starts_with('[') {
+                    return None;
+                }
+                let (_, password) = authority.split_once(':')?;
+                if !password.is_empty() && password.bytes().all(|byte| byte.is_ascii_digit()) {
+                    return None;
+                }
+                url[first_delimiter..]
+                    .find('@')
+                    .map(|offset| first_delimiter + offset)
+            });
+        if let Some(at) = userinfo_end {
             spans.push(Span {
                 start: boundary(authority_start),
-                end: boundary(authority_start + at),
+                end: boundary(at),
             });
         }
-        let host_port = authority.rsplit('@').next().unwrap_or("");
+        let host_start = userinfo_end.map_or(authority_start, |at| at + 1);
+        let host_end = url[host_start..]
+            .find(['/', '?', '#'])
+            .map_or(url.len(), |offset| host_start + offset);
+        let host_port = &url[host_start..host_end];
         let host = if host_port.starts_with('[') {
             host_port
                 .split_once(']')
@@ -66,8 +115,15 @@ pub(super) fn urls(
         }
         .trim_end_matches('.')
         .to_ascii_lowercase();
-        let path_end = url.find(['?', '#']).unwrap_or(url.len());
-        let path = &url[authority_end..path_end.max(authority_end)];
+        frames.push(Frame {
+            start: matched.start(),
+            end,
+            parameters_start: boundary(host_end),
+        });
+        let path_end = url[host_end..]
+            .find(['?', '#'])
+            .map_or(url.len(), |offset| host_end + offset);
+        let path = &url[host_end..path_end];
         if matches!(host.as_str(), "hooks.slack.com" | "hooks.slack-gov.com")
             && path.starts_with("/services/")
             && path[10..]
@@ -78,9 +134,8 @@ pub(super) fn urls(
         {
             spans.push(Span {
                 start: matched.start(),
-                end: matched.start() + raw_url.len(),
+                end,
             });
-            continue;
         }
         let bot_start = if path.starts_with("/bot") {
             Some(4)
@@ -94,73 +149,20 @@ pub(super) fn urls(
         {
             let token_end = path[bot_start..]
                 .find('/')
-                .map_or(path.len(), |at| at + bot_start);
-            let token = &path[bot_start..token_end];
-            if let Some((id, body)) = token.split_once(':')
+                .map_or(path.len(), |offset| bot_start + offset);
+            if let Some((id, body)) = path[bot_start..token_end].split_once(':')
                 && !id.is_empty()
                 && id.bytes().all(|byte| byte.is_ascii_digit())
                 && !body.is_empty()
             {
                 spans.push(Span {
-                    start: boundary(authority_end + bot_start),
-                    end: boundary(authority_end + token_end),
-                });
-            }
-        }
-        let fields: Vec<_> = field_pattern
-            .captures_iter(&url[authority_end..])
-            .filter_map(|capture| {
-                let complete = capture.get(0)?;
-                let name = capture.get(1)?;
-                let decoded = percent_encoding::percent_decode_str(name.as_str())
-                    .decode_utf8()
-                    .ok()?;
-                Some((
-                    decoded.into_owned(),
-                    authority_end + complete.start(),
-                    authority_end + complete.end(),
-                ))
-            })
-            .collect();
-        let azure_sas = fields
-            .iter()
-            .any(|field| field.0.eq_ignore_ascii_case("sv"))
-            && fields.iter().any(|field| {
-                ["se", "sp", "sr", "ss", "srt"]
-                    .iter()
-                    .any(|name| field.0.eq_ignore_ascii_case(name))
-            });
-        let hard_delimiters: Vec<_> = url
-            .bytes()
-            .enumerate()
-            .filter_map(|(index, byte)| matches!(byte, b'&' | b'#').then_some(index))
-            .collect();
-        let mut hard_cursor = hard_delimiters.len();
-        let mut hard_end = url.len();
-        for index in (0..fields.len()).rev() {
-            let (name, _, start) = &fields[index];
-            while hard_cursor > 0 && hard_delimiters[hard_cursor - 1] >= *start {
-                hard_cursor -= 1;
-                hard_end = hard_delimiters[hard_cursor];
-            }
-            let next_field = fields.get(index + 1).map_or(url.len(), |field| field.1);
-            let end = hard_end.min(next_field);
-            let signed = [
-                "x-amz-credential",
-                "x-amz-signature",
-                "x-amz-security-token",
-            ]
-            .iter()
-            .any(|expected| name.eq_ignore_ascii_case(expected))
-                || azure_sas && name.eq_ignore_ascii_case("sig");
-            if end > *start && (signed || sensitive_name(name)) {
-                spans.push(Span {
-                    start: boundary(*start),
-                    end: boundary(end),
+                    start: boundary(host_end + bot_start),
+                    end: boundary(host_end + token_end),
                 });
             }
         }
     }
+    parameters::detect(input, &frames, spans)?;
     Ok(())
 }
 

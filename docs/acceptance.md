@@ -123,7 +123,7 @@ that unit tests or property tests have already fuzzed the executable.
 
 ## Verification commands
 
-Once implementation exists, run:
+Run:
 
 ```sh
 cargo fmt --check

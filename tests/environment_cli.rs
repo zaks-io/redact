@@ -1,3 +1,8 @@
+#[allow(dead_code, reason = "shared synthetic assertions across test suites")]
+#[path = "support/synthetic.rs"]
+mod synthetic;
+use synthetic::*;
+
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::collections::{BTreeMap, BTreeSet};
@@ -43,41 +48,41 @@ fn execute(command: &mut Command, input: &[u8]) -> Output {
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
-        .unwrap();
-    child.stdin.take().unwrap().write_all(input).unwrap();
-    let mut stdout = child.stdout.take().unwrap();
-    let mut stderr = child.stderr.take().unwrap();
+        .must();
+    child.stdin.take().must().write_all(input).must();
+    let mut stdout = child.stdout.take().must();
+    let mut stderr = child.stderr.take().must();
     let stdout_thread = std::thread::spawn(move || {
         let mut output = Vec::new();
-        stdout.read_to_end(&mut output).unwrap();
+        stdout.read_to_end(&mut output).must();
         output
     });
     let stderr_thread = std::thread::spawn(move || {
         let mut output = Vec::new();
-        stderr.read_to_end(&mut output).unwrap();
+        stderr.read_to_end(&mut output).must();
         output
     });
     let start = Instant::now();
     let status = loop {
-        if let Some(status) = child.try_wait().unwrap() {
+        if let Some(status) = child.try_wait().must() {
             break status;
         }
         if start.elapsed() > Duration::from_secs(5) {
-            child.kill().unwrap();
-            child.wait().unwrap();
+            child.kill().must();
+            child.wait().must();
             panic!("synthetic rprintenv child exceeded five seconds");
         }
         std::thread::sleep(Duration::from_millis(2));
     };
     Output {
         status,
-        stdout: stdout_thread.join().unwrap(),
-        stderr: stderr_thread.join().unwrap(),
+        stdout: stdout_thread.join().must(),
+        stderr: stderr_thread.join().must(),
     }
 }
 
 fn run(args: &[&str], environment: &[(&str, &str)]) -> Output {
-    let directory = tempfile::tempdir().unwrap();
+    let directory = tempfile::tempdir().must();
     execute(
         Command::new(env!("CARGO_BIN_EXE_rprintenv"))
             .env_clear()
@@ -97,7 +102,7 @@ fn assert_safe(output: &Output) {
 #[test]
 fn named_workflows_and_cross_process_stability() {
     let fixtures: Fixtures =
-        serde_json::from_str(include_str!("fixtures/rprintenv-workflows.json")).unwrap();
+        serde_json::from_str(include_str!("fixtures/rprintenv-workflows.json")).must();
     assert_eq!(fixtures.fixture_version, 1);
     assert!(fixtures.synthetic_only);
     let mut ids = BTreeSet::new();
@@ -114,7 +119,7 @@ fn named_workflows_and_cross_process_stability() {
             case.expect.stderr_utf8.is_some(),
             case.expect.stderr_contains.is_some()
         );
-        let directory = tempfile::tempdir().unwrap();
+        let directory = tempfile::tempdir().must();
         for (path, contents) in &case.files {
             assert!(!Path::new(path).is_absolute());
             assert!(
@@ -123,8 +128,8 @@ fn named_workflows_and_cross_process_stability() {
                     .all(|part| matches!(part, Component::Normal(_)))
             );
             let destination = directory.path().join(path);
-            std::fs::create_dir_all(destination.parent().unwrap()).unwrap();
-            std::fs::write(destination, contents).unwrap();
+            std::fs::create_dir_all(destination.parent().must()).must();
+            std::fs::write(destination, contents).must();
         }
         let started = Instant::now();
         let mut command = Command::new(env!("CARGO_BIN_EXE_rprintenv"));
@@ -135,8 +140,8 @@ fn named_workflows_and_cross_process_stability() {
             .current_dir(directory.path());
         let output = execute(&mut command, case.stdin_utf8.as_bytes());
         count += 1;
-        let stdout = String::from_utf8(output.stdout).unwrap();
-        let stderr = String::from_utf8(output.stderr).unwrap();
+        let stdout = String::from_utf8(output.stdout).must();
+        let stderr = String::from_utf8(output.stderr).must();
         assert_eq!(
             output.status.code(),
             Some(case.expect.exit_code),
@@ -148,7 +153,7 @@ fn named_workflows_and_cross_process_stability() {
         }
         if let Some(expected) = case.expect.stdout_json {
             assert_eq!(
-                serde_json::from_str::<Value>(&stdout).unwrap(),
+                serde_json::from_str::<Value>(&stdout).must(),
                 expected,
                 "{}",
                 case.id
@@ -201,7 +206,7 @@ fn ordinary_listing_and_disclosure_overrides() {
     let output = run(&[], &environment);
     assert_eq!(output.status.code(), Some(0));
     assert_safe(&output);
-    let text = String::from_utf8(output.stdout).unwrap();
+    let text = String::from_utf8(output.stdout).must();
     assert!(text.starts_with("\"env\"\t\"A_TOKEN\"\t[REDACTED sha256=ba7816bf8f01cfea]\n"));
     assert!(text.contains("\"EMPTY\"\t[EMPTY]\n"));
     assert!(text.contains("\"NODE_ENV\"\t\"production\"\n"));
@@ -214,7 +219,7 @@ fn ordinary_listing_and_disclosure_overrides() {
         assert_eq!(output.status.code(), Some(0));
         assert!(
             String::from_utf8(output.stdout)
-                .unwrap()
+                .must()
                 .contains("[REDACTED sha256=")
         );
     }
@@ -222,8 +227,8 @@ fn ordinary_listing_and_disclosure_overrides() {
         &["--allow", "A_TOKEN", "--json", "A_TOKEN", "A_TOKEN"],
         &environment,
     );
-    let value: Value = serde_json::from_slice(&output.stdout).unwrap();
-    assert_eq!(value["records"].as_array().unwrap().len(), 1);
+    let value: Value = serde_json::from_slice(&output.stdout).must();
+    assert_eq!(value["records"].as_array().must().len(), 1);
     assert_eq!(value["records"][0]["value"], "abc");
     let unexpected = run(&["NODE_ENV"], &[("NODE_ENV", CANARY)]);
     assert_safe(&unexpected);
@@ -231,8 +236,8 @@ fn ordinary_listing_and_disclosure_overrides() {
 
 #[test]
 fn sources_are_explicit_separate_and_fully_validated() {
-    let directory = tempfile::tempdir().unwrap();
-    std::fs::write(directory.path().join(".env"), "FILE_ONLY=abc\nEMPTY=\n").unwrap();
+    let directory = tempfile::tempdir().must();
+    std::fs::write(directory.path().join(".env"), "FILE_ONLY=abc\nEMPTY=\n").must();
     let mut command = Command::new(env!("CARGO_BIN_EXE_rprintenv"));
     command
         .env_clear()
@@ -242,20 +247,20 @@ fn sources_are_explicit_separate_and_fully_validated() {
     assert_safe(&output);
     assert!(
         !String::from_utf8(output.stdout)
-            .unwrap()
+            .must()
             .contains("FILE_ONLY")
     );
     command.args(["--file", ".env", "--json", "ENV_ONLY", "FILE_ONLY"]);
     let output = execute(&mut command, b"");
     assert_eq!(output.status.code(), Some(1));
-    let value: Value = serde_json::from_slice(&output.stdout).unwrap();
+    let value: Value = serde_json::from_slice(&output.stdout).must();
     assert_eq!(value["records"][0]["state"], "missing");
     assert_eq!(value["records"][1]["fingerprint"], "ba7816bf8f01cfea");
     std::fs::write(
         directory.path().join("bad.env"),
         format!("UNSELECTED=\"{CANARY}"),
     )
-    .unwrap();
+    .must();
     let output = execute(
         Command::new(env!("CARGO_BIN_EXE_rprintenv"))
             .env_clear()
@@ -305,12 +310,12 @@ fn usage_and_encoding_failures_never_echo_arguments_or_values() {
     assert_eq!(output.status.code(), Some(2));
     assert!(
         String::from_utf8(output.stderr)
-            .unwrap()
+            .must()
             .contains("read failed")
     );
-    let directory = tempfile::tempdir().unwrap();
+    let directory = tempfile::tempdir().must();
     for contents in [b"TOKEN=\xff".as_slice(), b"TOKEN=secret\0".as_slice()] {
-        std::fs::write(directory.path().join("invalid.env"), contents).unwrap();
+        std::fs::write(directory.path().join("invalid.env"), contents).must();
         let output = execute(
             Command::new(env!("CARGO_BIN_EXE_rprintenv"))
                 .env_clear()
@@ -325,11 +330,11 @@ fn usage_and_encoding_failures_never_echo_arguments_or_values() {
 
 #[test]
 fn dotenv_decoding_preserves_values_and_never_executes_shell_syntax() {
-    let directory = tempfile::tempdir().unwrap();
+    let directory = tempfile::tempdir().must();
     let literal = "$(touch sentinel) $NAME ${NAME} `touch sentinel`";
     let contents =
         format!("A='{literal}'\nB=\"{literal}\"\nC={literal}\nD='  abc  '\nE=\"line1\\nline2\"\n");
-    std::fs::write(directory.path().join("synthetic.env"), contents).unwrap();
+    std::fs::write(directory.path().join("synthetic.env"), contents).must();
     let output = execute(
         Command::new(env!("CARGO_BIN_EXE_rprintenv"))
             .env_clear()
@@ -341,8 +346,8 @@ fn dotenv_decoding_preserves_values_and_never_executes_shell_syntax() {
         b"",
     );
     assert_eq!(output.status.code(), Some(0));
-    let value: Value = serde_json::from_slice(&output.stdout).unwrap();
-    let records = value["records"].as_array().unwrap();
+    let value: Value = serde_json::from_slice(&output.stdout).must();
+    let records = value["records"].as_array().must();
     for index in 0..3 {
         assert_eq!(
             records[index]["fingerprint"],
@@ -359,7 +364,7 @@ fn dotenv_decoding_preserves_values_and_never_executes_shell_syntax() {
             b"",
         );
         assert_eq!(output.status.code(), Some(0));
-        assert!(String::from_utf8(output.stdout).unwrap().contains(literal));
+        assert!(String::from_utf8(output.stdout).must().contains(literal));
     }
     assert!(!directory.path().join("sentinel").exists());
 }
@@ -371,16 +376,16 @@ fn physical_line_escaping_and_help_without_source_reads() {
         &[("ODD\t\n\u{1b}", "ordinary\t\n\u{1b}")],
     );
     assert_eq!(output.status.code(), Some(0));
-    let text = String::from_utf8(output.stdout).unwrap();
+    let text = String::from_utf8(output.stdout).must();
     assert_eq!(text.lines().count(), 1);
     assert!(!text.contains('\u{1b}'));
     let fields: Vec<_> = text.trim_end().split('\t').collect();
     assert_eq!(
-        serde_json::from_str::<String>(fields[1]).unwrap(),
+        serde_json::from_str::<String>(fields[1]).must(),
         "ODD\t\n\u{1b}"
     );
     assert_eq!(
-        serde_json::from_str::<String>(fields[2]).unwrap(),
+        serde_json::from_str::<String>(fields[2]).must(),
         "ordinary\t\n\u{1b}"
     );
     for option in ["--help", "--version"] {
@@ -392,7 +397,7 @@ fn physical_line_escaping_and_help_without_source_reads() {
         assert!(output.stderr.is_empty());
         assert_safe(&output);
         if option == "--help" {
-            let help = String::from_utf8(output.stdout).unwrap();
+            let help = String::from_utf8(output.stdout).must();
             for fragment in [
                 "stable",
                 "--exists includes empty",
@@ -426,7 +431,7 @@ fn invalid_environment_and_closed_output_pipe_fail_safely() {
         assert!(output.stdout.is_empty());
         assert_safe(&output);
     }
-    let (reader, writer) = std::os::unix::net::UnixStream::pair().unwrap();
+    let (reader, writer) = std::os::unix::net::UnixStream::pair().must();
     drop(reader);
     let descriptor: std::os::fd::OwnedFd = writer.into();
     let child = Command::new(env!("CARGO_BIN_EXE_rprintenv"))
@@ -435,13 +440,13 @@ fn invalid_environment_and_closed_output_pipe_fail_safely() {
         .stdout(Stdio::from(descriptor))
         .stderr(Stdio::piped())
         .spawn()
-        .unwrap();
-    let output = child.wait_with_output().unwrap();
+        .must();
+    let output = child.wait_with_output().must();
     assert_eq!(output.status.code(), Some(2));
     assert_safe(&output);
     assert!(
         String::from_utf8(output.stderr)
-            .unwrap()
+            .must()
             .contains("output write failed")
     );
 }
@@ -451,7 +456,7 @@ fn missing_and_empty_states_have_exact_json_fields() {
     let output = run(&["--env", "--json", "EMPTY", "MISSING"], &[("EMPTY", "")]);
     assert_eq!(output.status.code(), Some(1));
     assert_eq!(
-        serde_json::from_slice::<Value>(&output.stdout).unwrap(),
+        serde_json::from_slice::<Value>(&output.stdout).must(),
         json!({"schema_version":1,"records":[{"source":{"kind":"environment"},"name":"EMPTY","state":"empty","value":"","fingerprint":null},{"source":{"kind":"environment"},"name":"MISSING","state":"missing","value":null,"fingerprint":null}]})
     );
     let output = run(&["--exists", "EMPTY", "MISSING"], &[("EMPTY", "")]);

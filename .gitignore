@@ -2,3 +2,7 @@
 /fuzz/target/
 /fuzz/artifacts/
 /fuzz/coverage/
+*.proptest-regressions
+.env
+.env.*
+!/tests/fixtures/**
