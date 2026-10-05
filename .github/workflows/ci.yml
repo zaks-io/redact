@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  CARGO_BUILD_JOBS: 2
+
+jobs:
+  quality:
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Install pinned Rust toolchain
+        run: rustup show active-toolchain
+      - uses: Swatinem/rust-cache@401aff9a7a08acb9d27b64936a90db81024cff97 # v2.8.2
+        with:
+          prefix-key: quality
+          cache-on-failure: false
+      - run: cargo fmt --check
+      - run: cargo clippy --locked --all-targets --all-features -- -D warnings
+      - name: Install dependency checker
+        run: cargo install cargo-deny --version 0.18.9 --locked
+      - run: cargo deny --locked check
+      - name: Check fuzz dependency policy
+        run: cargo deny --manifest-path fuzz/Cargo.toml --locked check --config ../deny.toml
+
+  acceptance:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [blacksmith-2vcpu-ubuntu-2404, blacksmith-6vcpu-macos-26]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Install pinned Rust toolchain
+        run: rustup show active-toolchain
+      - uses: Swatinem/rust-cache@401aff9a7a08acb9d27b64936a90db81024cff97 # v2.8.2
+        with:
+          prefix-key: acceptance
+          cache-on-failure: false
+      - run: cargo test --locked -- --test-threads=2
+      - run: cargo build --locked --release
+      - name: Release workflow acceptance and timing
+        run: cargo test --locked --release --test workflows --test rstr -- --test-threads=2 --nocapture
+
+  fuzz-harness:
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: fuzz
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Install pinned nightly toolchain
+        run: rustup show active-toolchain
+      - uses: Swatinem/rust-cache@401aff9a7a08acb9d27b64936a90db81024cff97 # v2.8.2
+        with:
+          prefix-key: fuzz
+          workspaces: fuzz
+          cache-on-failure: false
+      - name: Install pinned fuzz tooling
+        run: cargo install cargo-fuzz --version 0.13.2 --locked
+      - name: Validate independent fuzz oracles
+        run: cargo test --locked --lib
+      - name: Build all sanitizer-enabled targets
+        run: |
+          cargo metadata --locked --format-version 1 > /dev/null
+          cargo fuzz build
+          git diff --exit-code -- Cargo.lock

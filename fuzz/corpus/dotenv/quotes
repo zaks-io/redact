@@ -1,0 +1,2 @@
+A='literal $NAME'
+B="escape\n\r\t\\\""

@@ -1,7 +1,8 @@
 # Agent usability acceptance
 
 Status: required behavior, with [synthetic executable test fixtures](../tests/README.md)
-prepared before implementation. No CLI acceptance tests have run yet.
+executed by the Rust workflow suite. Local results cover Linux; the checked-in
+Blacksmith matrix supplies macOS coverage when hosted CI runs.
 
 The goal is to answer routine configuration questions and filter recognizable
 secrets without custom redaction regexes, raw-input debugging, or unnecessary
