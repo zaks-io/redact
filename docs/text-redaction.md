@@ -120,6 +120,8 @@ not neutralize terminal escape sequences or embedded instructions.
 - Test both detected and undetected transformed copies against documented rules.
 - Fuzz detectors and complete text processing as defined in [fuzzing.md](fuzzing.md).
 - Check failures for leaks using synthetic canaries and exact output assertions.
+- Run the [usability fixtures](agent-usability.md) for detection context,
+  preservation of surrounding diagnostics, and safe failure recovery.
 
 ## Done
 

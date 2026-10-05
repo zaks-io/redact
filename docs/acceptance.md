@@ -5,6 +5,10 @@ This document covers `rprintenv`. The companion `rstr` has its own
 and [detector tests](detection.md#acceptance-and-fuzzing). Both commands share
 the [fuzzing plan](fuzzing.md) and must pass their own real-binary checks.
 
+The named scenarios and fixture inputs in [agent usability acceptance](agent-usability.md)
+are required executable tests, including presence versus configuration state,
+focused output, cross-run fingerprints, and safe recovery.
+
 ## Disclosure invariant
 
 A populated value may enter stdout in full only if an explicit `--allow` or

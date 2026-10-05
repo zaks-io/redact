@@ -46,6 +46,9 @@ cryptographic proof that two values are equal.
 - [rstr CLI contract](text-redaction.md): stdin filtering, replacements, and limits.
 - [rstr detection](detection.md): detector categories and rule gates.
 - [CI](ci.md): Blacksmith on macOS and Linux, plus agent workflow checks.
+- [Agent usage](agent-usage.md): preferred commands and safe recovery.
+- [Agent usability acceptance](agent-usability.md): required workflows and
+  [synthetic test fixtures](../tests/README.md).
 
 Defaults and edge cases below are proposed v1 decisions that make the agreed
 behavior implementable. Changes to these contracts should update the specs and

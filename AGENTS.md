@@ -78,3 +78,10 @@ Use synthetic end-to-end scenarios to verify those tasks. Measure command count,
 correctness, and reproducible latency before adding convenience abstractions.
 Do not add scheduled model-driven evaluations without an agreed budget and stop
 threshold. Deterministic CLI scenarios are the initial acceptance harness.
+
+The [agent usage guide](docs/agent-usage.md) and
+[usability acceptance cases](docs/agent-usability.md) are required product
+contracts. Wire the checked-in synthetic fixtures into executable tests during
+implementation. Assert preserved diagnostic context as well as removed secrets.
+Never conflate presence with a nonempty or valid credential, or a zero-match
+filter result with proof that text is safe. Keep original context when piping.

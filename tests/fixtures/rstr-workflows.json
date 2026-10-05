@@ -1,0 +1,153 @@
+{
+  "fixture_version": 1,
+  "synthetic_only": true,
+  "cases": [
+    {
+      "id": "bare_value_has_no_context",
+      "binary": "rstr",
+      "args": [],
+      "environment": {},
+      "files": {},
+      "stdin_utf8": "synthetic-secret-lilac-48\n",
+      "expect": {
+        "exit_code": 0,
+        "stdout_utf8": "synthetic-secret-lilac-48\n",
+        "stderr_utf8": ""
+      },
+      "hidden_canaries": []
+    },
+    {
+      "id": "json_preserves_diagnostic_context",
+      "binary": "rstr",
+      "args": [],
+      "environment": {},
+      "files": {},
+      "stdin_utf8": "{\"password\":\"synthetic-secret-lilac-48\",\"status\":401,\"host\":\"api.example.test\",\"message\":\"authentication failed\"}\n",
+      "expect": {
+        "exit_code": 0,
+        "stdout_utf8": "{\"password\":\"[REDACTED sha256=1d5a8919184510ff]\",\"status\":401,\"host\":\"api.example.test\",\"message\":\"authentication failed\"}\n",
+        "stderr_utf8": ""
+      },
+      "hidden_canaries": [
+        "synthetic-secret-lilac-48"
+      ]
+    },
+    {
+      "id": "quoted_log_preserves_following_fields",
+      "binary": "rstr",
+      "args": [],
+      "environment": {},
+      "files": {},
+      "stdin_utf8": "status=401 password=\"synthetic-secret-lilac-48\" host=api.example.test message=\"authentication failed\"\n",
+      "expect": {
+        "exit_code": 0,
+        "stdout_utf8": "status=401 password=\"[REDACTED sha256=1d5a8919184510ff]\" host=api.example.test message=\"authentication failed\"\n",
+        "stderr_utf8": ""
+      },
+      "hidden_canaries": [
+        "synthetic-secret-lilac-48"
+      ]
+    },
+    {
+      "id": "header_preserves_scheme_and_other_lines",
+      "binary": "rstr",
+      "args": [],
+      "environment": {},
+      "files": {},
+      "stdin_utf8": "HTTP/1.1 401 Unauthorized\nAuthorization: Bearer synthetic-secret-lilac-48\nX-Request-ID: example-request\n",
+      "expect": {
+        "exit_code": 0,
+        "stdout_utf8": "HTTP/1.1 401 Unauthorized\nAuthorization: Bearer [REDACTED sha256=1d5a8919184510ff]\nX-Request-ID: example-request\n",
+        "stderr_utf8": ""
+      },
+      "hidden_canaries": [
+        "synthetic-secret-lilac-48"
+      ]
+    },
+    {
+      "id": "ambiguous_unquoted_value_is_conservative",
+      "binary": "rstr",
+      "args": [],
+      "environment": {},
+      "files": {},
+      "stdin_utf8": "status=401 password=synthetic-secret-lilac-48 host=api.example.test\n",
+      "expect": {
+        "exit_code": 0,
+        "stdout_utf8": "status=401 password=[REDACTED sha256=5ea52f3878f087a3]\n",
+        "stderr_utf8": ""
+      },
+      "hidden_canaries": [
+        "synthetic-secret-lilac-48"
+      ]
+    },
+    {
+      "id": "environment_and_files_do_not_affect_filter",
+      "binary": "rstr",
+      "args": [],
+      "environment": {
+        "API_KEY": "synthetic-secret-lilac-48"
+      },
+      "files": {
+        ".env": "API_KEY=\"malformed"
+      },
+      "stdin_utf8": "synthetic-secret-lilac-48\n",
+      "expect": {
+        "exit_code": 0,
+        "stdout_utf8": "synthetic-secret-lilac-48\n",
+        "stderr_utf8": ""
+      },
+      "hidden_canaries": []
+    },
+    {
+      "id": "malformed_stdin_recovery",
+      "binary": "rstr",
+      "args": [],
+      "environment": {},
+      "files": {},
+      "stdin_utf8": "status=401\npassword=\"synthetic-secret-lilac-48",
+      "expect": {
+        "exit_code": 2,
+        "stdout_utf8": "",
+        "stderr_contains": [
+          "rstr:",
+          "line 2",
+          "unterminated quoted value",
+          "Close the quoted value and retry."
+        ]
+      },
+      "hidden_canaries": [
+        "synthetic-secret-lilac-48"
+      ]
+    },
+    {
+      "id": "malformed_stdin_corrected",
+      "binary": "rstr",
+      "args": [],
+      "environment": {},
+      "files": {},
+      "stdin_utf8": "status=401\npassword=\"synthetic-secret-lilac-48\"\n",
+      "expect": {
+        "exit_code": 0,
+        "stdout_utf8": "status=401\npassword=\"[REDACTED sha256=1d5a8919184510ff]\"\n",
+        "stderr_utf8": ""
+      },
+      "hidden_canaries": [
+        "synthetic-secret-lilac-48"
+      ]
+    },
+    {
+      "id": "ordinary_output_has_no_banner",
+      "binary": "rstr",
+      "args": [],
+      "environment": {},
+      "files": {},
+      "stdin_utf8": "status=200 host=api.example.test\n",
+      "expect": {
+        "exit_code": 0,
+        "stdout_utf8": "status=200 host=api.example.test\n",
+        "stderr_utf8": ""
+      },
+      "hidden_canaries": []
+    }
+  ]
+}

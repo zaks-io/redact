@@ -52,7 +52,10 @@ They must not make the stable application build depend on nightly.
 
 ## Agent workflow smoke checks
 
-Exercise the following using synthetic data and the real release executables:
+Run every named case and additional integration scenario in
+[agent usability acceptance](agent-usability.md), consuming the
+[checked-in fixtures](../tests/README.md). Fixture validation alone does not
+satisfy this gate. Exercise the following with real release executables:
 
 | Task | Expected agent workflow |
 | --- | --- |

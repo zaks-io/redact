@@ -140,6 +140,11 @@ Help and documentation must say:
 - Fingerprints are stable across runs, files, names, and machines.
 - Compare fingerprints to identify likely equal values. They are truncated.
 - Missing and empty are different; either can explain configuration failures.
+- `--exists` includes empty values. Use `--json NAME` to inspect configuration
+  state; populated does not establish provider authentication success.
 - Use explicit sources to inspect the actual configuration being compared.
 - `--allow` prints full values that may then enter logs and chat history.
 - Fingerprints permit guessing weak values; they are not encryption.
+
+Preferred agent commands and recovery are specified in [agent usage](agent-usage.md),
+with required [usability tests](agent-usability.md).

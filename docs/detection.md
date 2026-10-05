@@ -47,6 +47,13 @@ For an unquoted dotenv assignment, redact its full value span. For generic log
 fields, conservatively include ambiguous trailing text through the physical
 line ending rather than guess a narrow boundary and expose a secret suffix.
 
+Specific structured contexts define their own credential boundaries. Generic
+sensitive-assignment fallbacks apply only when no supported structured context
+establishes the boundary. In particular, they must not swallow neighboring JSON
+fields, fields after a closed quoted log value, or an authentication scheme that
+the header detector preserves. Apply overlap merging to the valid resulting
+spans; do not manufacture a wider fallback match for an already parsed context.
+
 For URI query parameters, use the same sensitive-name rules. Redact the complete
 raw parameter value, including percent-encoded text, up to the query delimiter.
 Encoded names must be recognized by one percent-decoding pass before comparison.
@@ -118,6 +125,8 @@ rules and claim successful filtering.
   text. Detection and span-merging assertions matter as much as crash detection.
 - Require every span to be in bounds and on UTF-8 boundaries before rendering.
 - Replay every confirmed detector finding as a deterministic regression test.
+- Enforce the exact context-preservation fixtures in
+  [agent usability acceptance](agent-usability.md#preserve-useful-surrounding-text).
 
 ## Done
 

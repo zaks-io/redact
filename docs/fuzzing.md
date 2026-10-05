@@ -94,6 +94,10 @@ snapshots or real `.env` files. Include synthetic headers, token formats, URLs,
 private keys, JWTs, quoted fields, malformed boundaries, and overlapping matches
 for `rstr`.
 
+Seed suitable targets from the [agent workflow fixtures](../tests/README.md).
+Preserve deterministic tests for context retention and recovery; successful
+fuzzing does not replace those assertions.
+
 ## Running and triaging
 
 When the harness exists, its documented commands will be:

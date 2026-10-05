@@ -1,0 +1,267 @@
+{
+  "fixture_version": 1,
+  "synthetic_only": true,
+  "cases": [
+    {
+      "id": "presence_empty_is_present",
+      "binary": "rprintenv",
+      "args": [
+        "--exists",
+        "API_KEY"
+      ],
+      "environment": {
+        "API_KEY": ""
+      },
+      "files": {},
+      "stdin_utf8": "",
+      "expect": {
+        "exit_code": 0,
+        "stdout_utf8": "",
+        "stderr_utf8": ""
+      },
+      "hidden_canaries": []
+    },
+    {
+      "id": "presence_missing",
+      "binary": "rprintenv",
+      "args": [
+        "--exists",
+        "API_KEY"
+      ],
+      "environment": {},
+      "files": {},
+      "stdin_utf8": "",
+      "expect": {
+        "exit_code": 1,
+        "stdout_utf8": "",
+        "stderr_utf8": ""
+      },
+      "hidden_canaries": []
+    },
+    {
+      "id": "configuration_states",
+      "binary": "rprintenv",
+      "args": [
+        "--json",
+        "MISSING_KEY",
+        "POPULATED_KEY",
+        "EMPTY_KEY"
+      ],
+      "environment": {
+        "EMPTY_KEY": "",
+        "POPULATED_KEY": "synthetic-secret-lilac-48"
+      },
+      "files": {},
+      "stdin_utf8": "",
+      "expect": {
+        "exit_code": 1,
+        "stdout_json": {
+          "schema_version": 1,
+          "records": [
+            {
+              "source": {
+                "kind": "environment"
+              },
+              "name": "EMPTY_KEY",
+              "state": "empty",
+              "value": "",
+              "fingerprint": null
+            },
+            {
+              "source": {
+                "kind": "environment"
+              },
+              "name": "MISSING_KEY",
+              "state": "missing",
+              "value": null,
+              "fingerprint": null
+            },
+            {
+              "source": {
+                "kind": "environment"
+              },
+              "name": "POPULATED_KEY",
+              "state": "redacted",
+              "value": null,
+              "fingerprint": "1d5a8919184510ff"
+            }
+          ]
+        },
+        "stderr_utf8": ""
+      },
+      "hidden_canaries": [
+        "synthetic-secret-lilac-48"
+      ]
+    },
+    {
+      "id": "targeted_inspection",
+      "binary": "rprintenv",
+      "args": [
+        "--json",
+        "API_KEY"
+      ],
+      "environment": {
+        "API_KEY": "synthetic-secret-lilac-48",
+        "UNRELATED_KEY": "synthetic-secret-cobalt-73",
+        "NODE_ENV": "production"
+      },
+      "files": {},
+      "stdin_utf8": "",
+      "expect": {
+        "exit_code": 0,
+        "stdout_json": {
+          "schema_version": 1,
+          "records": [
+            {
+              "source": {
+                "kind": "environment"
+              },
+              "name": "API_KEY",
+              "state": "redacted",
+              "value": null,
+              "fingerprint": "1d5a8919184510ff"
+            }
+          ]
+        },
+        "stderr_utf8": ""
+      },
+      "hidden_canaries": [
+        "synthetic-secret-lilac-48",
+        "synthetic-secret-cobalt-73"
+      ]
+    },
+    {
+      "id": "compare_explicit_sources",
+      "binary": "rprintenv",
+      "args": [
+        "--env",
+        "--file",
+        ".env",
+        "--file",
+        ".env.local",
+        "--json",
+        "API_KEY"
+      ],
+      "environment": {
+        "API_KEY": "synthetic-secret-lilac-48"
+      },
+      "files": {
+        ".env": "API_KEY=synthetic-secret-lilac-48\n",
+        ".env.local": "API_KEY=synthetic-secret-cobalt-73\n"
+      },
+      "stdin_utf8": "",
+      "expect": {
+        "exit_code": 0,
+        "stdout_json": {
+          "schema_version": 1,
+          "records": [
+            {
+              "source": {
+                "kind": "environment"
+              },
+              "name": "API_KEY",
+              "state": "redacted",
+              "value": null,
+              "fingerprint": "1d5a8919184510ff"
+            },
+            {
+              "source": {
+                "kind": "file",
+                "path": ".env"
+              },
+              "name": "API_KEY",
+              "state": "redacted",
+              "value": null,
+              "fingerprint": "1d5a8919184510ff"
+            },
+            {
+              "source": {
+                "kind": "file",
+                "path": ".env.local"
+              },
+              "name": "API_KEY",
+              "state": "redacted",
+              "value": null,
+              "fingerprint": "2ebfd630ac26e5f8"
+            }
+          ]
+        },
+        "stderr_utf8": ""
+      },
+      "hidden_canaries": [
+        "synthetic-secret-lilac-48",
+        "synthetic-secret-cobalt-73"
+      ]
+    },
+    {
+      "id": "stable_text_fingerprint",
+      "binary": "rprintenv",
+      "args": [
+        "API_KEY"
+      ],
+      "environment": {
+        "API_KEY": "synthetic-secret-lilac-48"
+      },
+      "files": {},
+      "stdin_utf8": "",
+      "expect": {
+        "exit_code": 0,
+        "stdout_utf8": "\"env\"\t\"API_KEY\"\t[REDACTED sha256=1d5a8919184510ff]\n",
+        "stderr_utf8": ""
+      },
+      "hidden_canaries": [
+        "synthetic-secret-lilac-48"
+      ]
+    },
+    {
+      "id": "malformed_file_recovery",
+      "binary": "rprintenv",
+      "args": [
+        "--file",
+        ".env",
+        "API_KEY"
+      ],
+      "environment": {},
+      "files": {
+        ".env": "NODE_ENV=production\nAPI_KEY=\"synthetic-secret-lilac-48"
+      },
+      "stdin_utf8": "",
+      "expect": {
+        "exit_code": 2,
+        "stdout_utf8": "",
+        "stderr_contains": [
+          "rprintenv:",
+          ".env",
+          "line 2",
+          "unterminated quoted value",
+          "Close the quoted value and retry."
+        ]
+      },
+      "hidden_canaries": [
+        "synthetic-secret-lilac-48"
+      ]
+    },
+    {
+      "id": "malformed_file_corrected",
+      "binary": "rprintenv",
+      "args": [
+        "--file",
+        ".env",
+        "API_KEY"
+      ],
+      "environment": {},
+      "files": {
+        ".env": "NODE_ENV=production\nAPI_KEY=\"synthetic-secret-lilac-48\"\n"
+      },
+      "stdin_utf8": "",
+      "expect": {
+        "exit_code": 0,
+        "stdout_utf8": "\"file:.env\"\t\"API_KEY\"\t[REDACTED sha256=1d5a8919184510ff]\n",
+        "stderr_utf8": ""
+      },
+      "hidden_canaries": [
+        "synthetic-secret-lilac-48"
+      ]
+    }
+  ]
+}
