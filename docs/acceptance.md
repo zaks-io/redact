@@ -84,6 +84,14 @@ to catch default argument-parser error echoing.
 Verify that an invalid input produces no stdout even when an earlier source was
 valid. Ensure diagnostic snapshots contain no source lines or decoded values.
 
+Exercise `Debug`/`Display` and serialization boundaries for secret-bearing types
+and nested errors using synthetic canaries. Fault tests must cover third-party
+parser errors, argument rejection, and I/O failures.
+Run representative subprocess failures with backtraces enabled to check that
+error handling does not panic and echo values. Verify diagnostics explain the
+problem and safe recovery without quoting input. Do not rely on terminal output
+masking or CI secret masking to make these tests pass.
+
 ## Property testing and robustness
 
 Use bounded property tests for Unicode values, escaping, policy precedence, and
@@ -111,15 +119,18 @@ Once implementation exists, run:
 
 ```sh
 cargo fmt --check
-cargo clippy --all-targets --all-features -- -D warnings
-cargo test --all-targets
-cargo build --release
+cargo clippy --locked --all-targets --all-features -- -D warnings
+cargo test --locked
+cargo build --locked --release
 ```
 
 Also run the release executable against temporary files and a controlled
 subprocess environment, covering listing, JSON, stable cross-run fingerprints,
 mixed-source comparison, empty/missing presence checks, and malformed input.
 Capture only synthetic output. Unit tests alone do not satisfy CLI acceptance.
+
+Run the platform and agent workflow checks from [CI](ci.md) on Blacksmith
+Linux and macOS runners. Windows is outside current acceptance.
 
 ## Done
 

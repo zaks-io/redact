@@ -120,6 +120,30 @@ Do not forward third-party parser or I/O diagnostics wholesale. Map failures to
 safe messages. Only deliberately visible metadata may appear, and it must be
 escaped. No network or telemetry path may receive input or output.
 
+## Formatting and recovery contract
+
+Secret-bearing types must not expose raw contents through derived `Debug`,
+`Display`, or `Serialize`, including when nested in another value or error.
+Use opaque debug output or omit formatting implementations. Safe output records
+are the serialization boundary, and intentional allowed-value output stays in
+the renderer. Errors must not retain raw input for later formatting.
+
+Map third-party failures into fixed categories and approved metadata. Avoid
+`unwrap`/`expect` on input-derived errors. A caught panic can still leak through
+the panic hook, so catching a panic is not a replacement for safe error paths.
+No verbose setting, environment flag, or debug build enables raw input logging.
+
+A useful diagnostic identifies the problem and safe next step, for example:
+
+```text
+rprintenv: ".env", line 12: unterminated quoted value. Close the quoted value and retry.
+```
+
+Do not append the source line, a matching substring, or a raw nested error.
+Agents must reproduce with synthetic input when more diagnosis is needed, never
+retry by bypassing redaction. Successful commands should have no diagnostic
+banner or repetitive warning that adds noise to agent context.
+
 ## Library guidance
 
 Prefer maintained libraries for established primitives:

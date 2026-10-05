@@ -10,6 +10,14 @@ replaces other values with stable fingerprints.
 `rstr` is a separate Rust command line tool that detects and redacts secrets in
 piped text. It reads stdin only and preserves ordinary unmatched text.
 
+## Product success
+
+The tools succeed when an agent can finish ordinary secret-handling tasks with
+fewer commands and without hand-written redaction regexes or raw-data debugging.
+Concise output, stable fingerprints, presence checks, and safe actionable errors
+are product requirements. Both normal and failure workflows must be tested.
+See [project instructions](../AGENTS.md) for the development rules.
+
 ## Agreed rprintenv decisions
 
 - Read the current process environment and explicitly selected `.env` files.
@@ -37,6 +45,7 @@ cryptographic proof that two values are equal.
 - [Fuzzing](fuzzing.md): future harnesses, leak oracles, and corpus handling.
 - [rstr CLI contract](text-redaction.md): stdin filtering, replacements, and limits.
 - [rstr detection](detection.md): detector categories and rule gates.
+- [CI](ci.md): Blacksmith on macOS and Linux, plus agent workflow checks.
 
 Defaults and edge cases below are proposed v1 decisions that make the agreed
 behavior implementable. Changes to these contracts should update the specs and
@@ -52,6 +61,9 @@ acceptance coverage together.
 The tools share the fingerprint format. Their input sources and disclosure rules
 remain separate. `rstr` has no environment/file-source flags or allowlist.
 
+Support macOS and Linux. Use Blacksmith runners for both; Windows is outside
+the current scope.
+
 Both tools are local. No network requests, telemetry, background processes,
 configuration file, secret storage, environment mutation, or shell execution.
 No recursive file discovery, automatic `.env` loading, file editing, or
@@ -65,7 +77,8 @@ detector. `rstr` has no environment or `.env` lookup.
 - `rstr` filters stdin independently of environment values and nearby files.
 - Stable fingerprints match the documented SHA-256 representation.
 - Missing, empty, malformed, and duplicate input cases have verified behavior.
-- Tests verify disclosure rules across success and failure paths.
+- Tests verify disclosure rules across success and failure paths, including
+  debug formatting, nested errors, and synthetic recovery scenarios.
 - Parsing and disclosure logic can be exercised directly by future fuzz targets
   without reading the host environment or accessing real files.
 - Formatting, linting, unit tests, and CLI integration tests pass.

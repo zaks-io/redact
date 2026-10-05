@@ -42,7 +42,9 @@ printf '%s\n' 'password=example-password' | rstr
 
 No positional text argument, `--file`, `--env`, `--allow`, `--redact`, JSON mode,
 or configuration file in v1. Never require a literal secret in a CLI argument.
-Help and version return `0` without reading stdin. Invalid arguments return `2`
+Help and version return `0` without reading stdin. If stdin is an interactive
+terminal, return `2` with a hint to pipe text or redirect a file rather than
+waiting indefinitely for interactive input. Invalid arguments return `2`
 with a sanitized error that does not echo the arguments.
 
 Agents should pipe producer output directly without first reading it into their
@@ -95,6 +97,10 @@ not neutralize terminal escape sequences or embedded instructions.
 - No stdout on failures discovered before writing. An output I/O failure may
   leave a partial redacted result; never retry with raw input.
 - Use sanitized stderr with no input snippets, raw values, or parser dumps.
+  Report a fixed problem category and a safe recovery step. Never suggest
+  rerunning the producer without the filter or printing the input for diagnosis.
+- Secret-bearing types, nested errors, and panic paths follow the shared
+  [formatting contract](disclosure.md#formatting-and-recovery-contract).
 - A run with zero matches outputs the original text unchanged.
 
 ## Required tests and future fuzzing
@@ -107,6 +113,7 @@ not neutralize terminal escape sequences or embedded instructions.
 - Test embedded, adjacent, repeated, nested, and partially overlapping matches.
 - Split input at every byte offset for representative Unicode and multiline
   secrets to catch accidental dependence on I/O boundaries.
+- Verify interactive stdin fails promptly with a safe usage hint on both platforms.
 - Cover invalid UTF-8, NUL bytes, empty input, input-size limits, failed reads,
   detector failures, and failed output writes.
 - Verify unmatched bytes are preserved and replacements are never reprocessed.
