@@ -221,6 +221,8 @@ workflows!(
     malformed_stdin_recovery,
     malformed_stdin_corrected,
     ordinary_output_has_no_banner,
+    unicode_provider_boundaries,
+    unicode_header_case_folding,
 );
 
 #[test]

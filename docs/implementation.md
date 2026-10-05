@@ -79,6 +79,10 @@ to 2.15 MiB. With those builds, `rstr` filtered a 12 MiB synthetic mixed log in
 about 0.5 s; the slowest adversarial 16 MiB shapes took about 2.3 s. Peak
 resident memory stayed below 100 MiB at the input limit. macOS is unmeasured.
 
+The [binary optimization specification](binary-optimization.md) defines release
+settings, required dependency features, behavior compatibility, measurement
+procedures, and acceptance criteria for binary size and performance work.
+
 ## Remaining platform evidence
 
 The [workflow](../.github/workflows/ci.yml) defines Blacksmith Linux and Apple

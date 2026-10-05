@@ -74,6 +74,10 @@ fixed synthetic fixture set on a named runner before setting a performance
 threshold; do not invent a speed claim or a flaky timing gate. No model calls or
 scheduled token spending are required for these deterministic checks.
 
+Binary size and performance work must also satisfy the
+[binary optimization specification](binary-optimization.md), including
+standalone release feature validation and reproducible comparisons.
+
 ## Done
 
 Both Blacksmith platform jobs pass against the current commit; both release

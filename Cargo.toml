@@ -14,9 +14,12 @@ test = true
 
 [dependencies]
 base64 = "0.22.1"
-clap = { version = "4.6.1", features = ["derive"] }
+# CLI errors use fixed diagnostics, and help is rendered as plain text.
+clap = { version = "4.6.1", default-features = false, features = ["derive", "std", "help", "usage"] }
 percent-encoding = "2.3"
-regex = "1.12.2"
+# Retain Unicode boundaries, categories and case folding used by bundled detectors.
+# Standalone release acceptance checks this set; test dependencies enable extra tables.
+regex = { version = "1.12.2", default-features = false, features = ["std", "perf", "unicode-bool", "unicode-case", "unicode-gencat", "unicode-perl"] }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = { version = "1.0.145", features = ["arbitrary_precision"] }
 sha2 = "0.10.9"
@@ -32,7 +35,7 @@ unwrap_used = "deny"
 expect_used = "deny"
 
 
-# Smaller shipped binaries without changing behaviour; measured in docs/implementation.md.
+# Release settings follow docs/binary-optimization.md.
 [profile.release]
 strip = true
 lto = "fat"

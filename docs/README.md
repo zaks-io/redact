@@ -44,6 +44,8 @@ cryptographic proof that two values are equal.
 - [Disclosure and input rules](disclosure.md): allowlist, fingerprints, parsing,
   and safe errors.
 - [Acceptance and validation](acceptance.md): tests and release criteria.
+- [Binary optimization](binary-optimization.md): release builds, dependency
+  features, performance measurements, and compatibility requirements.
 - [Fuzzing](fuzzing.md): future harnesses, leak oracles, and corpus handling.
 - [rstr CLI contract](text-redaction.md): stdin filtering, replacements, and limits.
 - [rstr detection](detection.md): detector categories and rule gates.
