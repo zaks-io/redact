@@ -85,3 +85,8 @@ contracts. Wire the checked-in synthetic fixtures into executable tests during
 implementation. Assert preserved diagnostic context as well as removed secrets.
 Never conflate presence with a nonempty or valid credential, or a zero-match
 filter result with proof that text is safe. Keep original context when piping.
+
+Use the [secret-format inventory](docs/secret-formats/README.md) for detection
+rules. Distinguish documented grammar, official examples, and contextual clues.
+Never infer fixed lengths from examples or treat a format mismatch as permission
+to reveal a value. Format labels describe evidence, not credential validity.

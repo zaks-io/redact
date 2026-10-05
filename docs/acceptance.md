@@ -27,6 +27,10 @@ Never use real credentials or the developer's inherited environment in fixtures.
 - Every allowlisted name and each accepted value is visible by default.
 - Unexpected values under every allowlisted name remain hidden.
 - Unknown names default to redacted, even when their values look ordinary.
+- Unknown, malformed, custom-prefix, and obsolete credential formats never
+  weaken hiding. Future format classification follows the
+  [classification contract](secret-formats/classification.md), independently of
+  disclosure policy.
 - Exact `--allow` reveals the value; `--redact` wins in every argument order.
 - Case variations and partial name matches do not grant disclosure.
 - Missing and empty values follow their own states and have no fingerprint.

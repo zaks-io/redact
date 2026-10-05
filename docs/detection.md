@@ -12,6 +12,18 @@ password. Detection therefore requires recognizable structure or context.
 Do not promise perfect coverage, and do not treat absence of matches as evidence
 that a value is harmless.
 
+## Format evidence
+
+Use the [researched format inventory](secret-formats/README.md) when selecting
+rules and assigning future credential-family labels. It records official
+prefixes, legacy variants, contextual secrets, public identifiers, source URLs,
+and research gaps. Recognition is local format evidence, never validity proof.
+
+The [format regression requirements](secret-formats/acceptance.md) apply to every
+shipped family. Existing v1 categories below retain their scope; additional
+catalogue entries are researched coverage candidates until explicitly implemented
+and tested. Unknown formats in recognized sensitive fields remain redacted.
+
 ## Required v1 categories
 
 | Category | Required behavior |
@@ -79,6 +91,9 @@ Each shipped rule requires:
 - A stable internal identifier and a human-readable coverage description.
 - Its precise pattern or structured parser and captured redaction span.
 - Upstream revision/provenance, where applicable.
+- Inventory evidence class, supported versions, and any unresolved grammar.
+- Exact purpose of a future label: credential family, container, or public ID;
+  never issuance, activity, account ownership, or authorization.
 - Positive, negative, boundary, malformed, and near-match fixtures.
 - A documented false-positive or false-negative limitation when known.
 
@@ -125,6 +140,8 @@ rules and claim successful filtering.
   text. Detection and span-merging assertions matter as much as crash detection.
 - Require every span to be in bounds and on UTF-8 boundaries before rendering.
 - Replay every confirmed detector finding as a deterministic regression test.
+- Include researched legacy/current variants and format-mismatch regressions
+  from the [inventory acceptance contract](secret-formats/acceptance.md).
 - Enforce the exact context-preservation fixtures in
   [agent usability acceptance](agent-usability.md#preserve-useful-surrounding-text).
 

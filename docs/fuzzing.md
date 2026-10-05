@@ -98,6 +98,13 @@ Seed suitable targets from the [agent workflow fixtures](../tests/README.md).
 Preserve deterministic tests for context retention and recovery; successful
 fuzzing does not replace those assertions.
 
+Add versioned provider shapes and malformed variants from the
+[format inventory](secret-formats/README.md) and its
+[acceptance requirements](secret-formats/acceptance.md) to detector seeds. Never
+contact a provider to verify a generated credential. Distinguish classification
+failures from disclosure failures; a supported sensitive context must stay hidden
+when a mutated value no longer matches its expected provider format.
+
 ## Running and triaging
 
 When the harness exists, its documented commands will be:

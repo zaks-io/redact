@@ -42,7 +42,11 @@ encode the first 8 digest bytes as 16 lowercase hexadecimal characters.
 
 Do not include the name, source, salt, newline, or any other data. Do not trim,
 case-fold, normalize Unicode, or remove prefixes. Do not report secret length,
-character classes, guessed provider, prefixes, or suffixes.
+character classes, guessed provider, prefixes, or suffixes. A future explicit
+format annotation may report an approved evidence-backed family label under the
+[classification contract](secret-formats/classification.md); it must not change
+fingerprints, the disclosure allowlist, or current output without a versioned
+interface change.
 
 Known vector: the synthetic value `abc` produces `ba7816bf8f01cfea`.
 

@@ -45,6 +45,8 @@ cryptographic proof that two values are equal.
 - [Fuzzing](fuzzing.md): future harnesses, leak oracles, and corpus handling.
 - [rstr CLI contract](text-redaction.md): stdin filtering, replacements, and limits.
 - [rstr detection](detection.md): detector categories and rule gates.
+- [Secret formats](secret-formats/README.md): sourced provider/structure inventory,
+  classification limits, and format-evolution tests.
 - [CI](ci.md): Blacksmith on macOS and Linux, plus agent workflow checks.
 - [Agent usage](agent-usage.md): preferred commands and safe recovery.
 - [Agent usability acceptance](agent-usability.md): required workflows and

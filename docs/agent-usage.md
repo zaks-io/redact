@@ -67,3 +67,11 @@ secrets to get the command through.
 
 `--allow NAME` on `rprintenv` deliberately prints the complete value. It is not
 an error-recovery technique and should not be used just to inspect a credential.
+
+## Future format hints
+
+The [format inventory](secret-formats/README.md) records recognizable types for
+future detection and classification. A hint such as "Stripe publishable-key
+format" can help identify the wrong kind of credential, but is not a validity or
+account check. An unknown format may be a new or custom version. Keep it hidden
+and avoid raw inspection or rotation solely on the basis of a pattern mismatch.
