@@ -226,14 +226,15 @@ fn jwt_requires_json_objects_and_alg_without_eyj_or_signature_assumptions() {
     );
     let token = format!("{header}.{payload}.c3ludGhldGlj");
     assert_eq!(filter(token.as_bytes()).must(), marker(token.as_bytes()));
-    for token in [
-        "abc.def.ghi",
-        "e30.e30.",
-        "e30.W10.",
-        &format!("{header}.{payload}.c3ludGhldGlj.extra"),
-    ] {
+    for token in ["abc.def.ghi", "e30.e30.", "e30.W10."] {
         assert_eq!(filter(token.as_bytes()).must(), token);
     }
+    // A trailing segment does not turn a valid JWS into a different JOSE structure.
+    let jws = format!("{header}.{payload}.c3ludGhldGlj");
+    assert_eq!(
+        filter(format!("{jws}.extra").as_bytes()).must(),
+        format!("{}.extra", marker(jws.as_bytes()))
+    );
 }
 
 #[test]
@@ -451,7 +452,11 @@ fn coverage_ledger_maps_every_researched_family_and_shipped_evidence() {
         if entry["status"].as_str().must().starts_with("shipped") {
             assert!(!entry["rule"].as_str().must().is_empty());
             for test in entry["tests"].as_array().must() {
-                assert!(include_str!("rstr.rs").contains(&format!("fn {}(", test.as_str().must())));
+                let name = format!("fn {}(", test.as_str().must());
+                assert!(
+                    include_str!("rstr.rs").contains(&name)
+                        || include_str!("rstr_regressions.rs").contains(&name)
+                );
             }
         }
     }

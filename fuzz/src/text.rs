@@ -71,7 +71,7 @@ pub fn generated_credentials(data: &[u8]) {
         .map(|byte| char::from(b'A' + byte % 26))
         .collect();
     let value = format!("syntheticFuzz{body}0123456789");
-    let mode = data.first().copied().unwrap_or_default() % 9;
+    let mode = data.first().copied().unwrap_or_default() % 13;
     let (before, secret, after) = match mode {
         0 => (
             "status=401 λ ghp_".to_owned(),
@@ -113,10 +113,30 @@ pub fn generated_credentials(data: &[u8]) {
             format!("https://syntheticUser:{value}@inner.test/path"),
             "&status=401\n".to_owned(),
         ),
-        _ => (
+        8 => (
             "status=401 λ ".to_owned(),
             format!("eyJhbGciOiJub25lIn0.eyJzdWIiOiJzeW50aGV0aWMifQ.{body}A"),
             " context preserved\n".to_owned(),
+        ),
+        9 => (
+            "status=401 λ DEBUG: token=".to_owned(),
+            value,
+            "\ncontext preserved\n".to_owned(),
+        ),
+        10 => (
+            "status=401 λ cookie.".to_owned(),
+            format!("eyJhbGciOiJub25lIn0.eyJzdWIiOiJzeW50aGV0aWMifQ.{body}A"),
+            ". context preserved\n".to_owned(),
+        ),
+        11 => (
+            "status=401 λ {\"accessToken\":\"".to_owned(),
+            value,
+            "\",\"status\":401}\n".to_owned(),
+        ),
+        _ => (
+            "status=401 λ postgres://".to_owned(),
+            format!("syntheticUser:pa#{value}"),
+            "@db.test/app\n".to_owned(),
         ),
     };
     let (before, secret) = if mode == 0 {
@@ -279,7 +299,7 @@ mod tests {
     #[test]
     fn generated_structure_oracles_cover_each_context() {
         crate::jwt::validate_oracle_seeds();
-        for mode in 0..9 {
+        for mode in 0..13 {
             generated_credentials(&[mode]);
         }
     }

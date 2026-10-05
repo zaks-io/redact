@@ -4,6 +4,7 @@ mod providers;
 
 use std::io::{Read, Write};
 use std::ops::Range;
+use std::sync::LazyLock;
 
 use crate::error::{ErrorKind, SafeError};
 use crate::fingerprint::marker;
@@ -95,6 +96,14 @@ pub(crate) fn pattern(pattern: &str) -> Result<regex::Regex, SafeError> {
         .size_limit(2 * 1024 * 1024)
         .dfa_size_limit(2 * 1024 * 1024)
         .build()
+        .map_err(|_| SafeError::new(ErrorKind::Detector))
+}
+
+/// Patterns compile once per process; per-call compilation dominated detector fuzzing.
+pub(crate) type Compiled<T> = LazyLock<Result<T, SafeError>>;
+
+pub(crate) fn compiled<T>(cell: &'static Compiled<T>) -> Result<&'static T, SafeError> {
+    cell.as_ref()
         .map_err(|_| SafeError::new(ErrorKind::Detector))
 }
 

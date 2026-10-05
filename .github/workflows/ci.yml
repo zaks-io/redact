@@ -57,7 +57,7 @@ jobs:
       - run: cargo test --locked -- --test-threads=2
       - run: cargo build --locked --release
       - name: Release workflow acceptance and timing
-        run: cargo test --locked --release --test workflows --test rstr -- --test-threads=2 --nocapture
+        run: cargo test --locked --release --test workflows --test rstr --test rstr_regressions -- --test-threads=2 --nocapture
 
   fuzz-harness:
     runs-on: blacksmith-2vcpu-ubuntu-2404

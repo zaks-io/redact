@@ -51,7 +51,7 @@ cargo fmt --check
 cargo clippy --locked --all-targets --all-features -- -D warnings
 cargo test --locked -- --test-threads=2
 cargo build --locked --release
-cargo test --locked --release --test workflows --test rstr -- --test-threads=2 --nocapture
+cargo test --locked --release --test workflows --test rstr --test rstr_regressions -- --test-threads=2 --nocapture
 cargo install cargo-deny --version 0.18.9 --locked --jobs 2
 cargo deny --locked check
 cargo deny --manifest-path fuzz/Cargo.toml --locked check --config ../deny.toml
