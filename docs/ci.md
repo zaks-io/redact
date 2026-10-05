@@ -1,7 +1,7 @@
 # CI specification
 
-Status: required setup for the Rust scaffold. No workflow or Rust implementation
-exists yet; these requirements do not claim a passing hosted run.
+Status: implemented in [the workflow](../.github/workflows/ci.yml). These
+requirements do not claim a passing hosted run or verified Blacksmith App access.
 
 ## Platforms and runners
 
@@ -49,6 +49,10 @@ this initial matrix does not certify them.
 Fuzz regression tests are normal CI tests. Coverage-guided campaigns use the
 separate nightly harness and explicit time/resource budgets from [fuzzing.md](fuzzing.md).
 They must not make the stable application build depend on nightly.
+The Linux fuzz-harness job independently validates its oracles and builds all six
+sanitizer-enabled targets with the pinned nightly toolchain. Campaigns remain
+explicit local runs. cargo-fuzz lacks a locked build flag, so CI validates the
+lockfile before the build and rejects any resulting lockfile change.
 
 ## Agent workflow smoke checks
 

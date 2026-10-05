@@ -1,9 +1,14 @@
 # Agent workflow test contracts
 
-Status: synthetic test inputs and expected results, written before the Rust
-scaffold. There is no binary test runner yet. These fixtures have not established
-that either CLI works. They must become real executable integration tests during
-scaffolding/implementation, not ignored or automatically skipped placeholders.
+Status: synthetic inputs and independent expected results consumed by
+[real executable integration tests](workflows.rs). All named cases run with
+cleared child environments in normal validation and release workflow checks.
+No fixture is ignored or skipped when a binary is absent.
+
+```sh
+cargo test --locked --test workflows -- --test-threads=2 --nocapture
+cargo test --locked --release --test workflows -- --test-threads=2 --nocapture
+```
 
 - [rprintenv cases](fixtures/rprintenv-workflows.json)
 - [rstr cases](fixtures/rstr-workflows.json)

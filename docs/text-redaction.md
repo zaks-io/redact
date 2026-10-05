@@ -1,7 +1,8 @@
 # rstr: stdin text redaction
 
-Status: proposed implementation contract. The executable is named `rstr`;
-package registry availability has not been checked. No implementation exists.
+Status: implemented as the `rstr` binary in the local `redact` package. Registry
+publication is disabled; package-name availability has not been checked. The
+[rule ledger](rules.md) distinguishes shipped coverage from deferred research.
 
 ## Purpose
 

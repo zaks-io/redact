@@ -1,7 +1,9 @@
 # Fuzzing specification
 
-Status: planned follow-up to v1 tests. This document defines the harnesses;
-no fuzzing has been run and no harness exists yet.
+Status: all six [harness targets](../fuzz/README.md) build and have completed
+short sanitizer-enabled smoke runs. [Recorded results](fuzzing-results.md) state
+the tested inputs, budgets, toolchain, and limitations. Longer campaigns remain
+separate from normal CLI and property-test validation.
 
 ## Objective
 
@@ -107,7 +109,7 @@ when a mutated value no longer matches its expected provider format.
 
 ## Running and triaging
 
-When the harness exists, its documented commands will be:
+From the `fuzz` directory, the documented commands are:
 
 ```sh
 cargo fuzz run dotenv

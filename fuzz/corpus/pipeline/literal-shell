@@ -1,0 +1,2 @@
+A=$(synthetic-command)
+B=`synthetic-command`

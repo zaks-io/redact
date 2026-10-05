@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "synthetic_only_tests": true,
+  "provenance": "Original conservative lexical rules derived from the primary-source inventory researched 2026-10-04. No scanner patterns or code copied.",
+  "body_pattern": "[A-Za-z0-9_./+~=-]+",
+  "boundary": "Start of input or preceding character outside ASCII alphanumeric, underscore, hyphen, and dot; consume the full candidate body without fixed historical lengths.",
+  "rules": [
+    {"id":"openai-key", "prefixes":["sk-proj-","sk-admin-","sk-"], "evidence":"example-backed", "scope":"Current project/admin and ambiguous legacy secret-key candidates; generic sk- does not attribute an issuer", "source":"https://developers.openai.com/api/reference/resources/organization/subresources/projects/subresources/service_accounts/methods/create"},
+    {"id":"anthropic-key", "prefixes":["sk-ant-api03-","sk-ant-admin"], "evidence":"documented admin; example-backed API03", "scope":"Admin/API03 lexical candidates", "source":"https://docs.anthropic.com/en/api/administration-api"},
+    {"id":"github-access", "prefixes":["github_pat_","ghp_","gho_","ghu_","ghs_","ghr_"], "evidence":"documented", "scope":"Legacy/current tokens including variable-length outer installation tokens; checksums are not validated", "source":"https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/about-authentication-to-github#githubs-token-formats"},
+    {"id":"gitlab-access", "prefixes":["glpat-","gloas-","gldt-","glrt-","glrtr-","glcbt-","glptt-","glft-","glimt-","glagent-","glwt-","glsoat-","glffct-"], "evidence":"documented", "scope":"Default prefixes only; administrator-customized prefixes need context", "source":"https://docs.gitlab.com/security/tokens/#token-prefixes"},
+    {"id":"slack-token", "prefixes":["xoxe.xapp-","xoxe.xoxb-","xoxe.xoxp-","xoxe-","xoxb-","xoxp-","xwfp-","xapp-"], "evidence":"documented and example-backed rotation", "scope":"Full outer current/rotation token candidate", "source":"https://docs.slack.dev/authentication/tokens/"},
+    {"id":"stripe-key", "prefixes":["sk_test_","sk_live_","rk_test_","rk_live_","sk_org_","whsec_"], "evidence":"documented", "scope":"Secret/restricted/organization keys and webhook signing secrets; publishable prefixes excluded", "source":"https://docs.stripe.com/keys"}
+  ],
+  "aws": {"id":"aws-access-id", "pattern":"(?:AKIA|ASIA)[A-Za-z0-9]{12,}", "evidence":"documented", "scope":"Conservative complete alphanumeric candidates, including common 20-character IDs; no secret-access-key coverage", "source":"https://docs.aws.amazon.com/STS/latest/APIReference/API_GetAccessKeyInfo.html"}
+}
