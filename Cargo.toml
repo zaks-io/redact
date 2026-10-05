@@ -25,3 +25,9 @@ wait-timeout = "0.2.1"
 unwrap_used = "deny"
 expect_used = "deny"
 
+
+# Smaller shipped binaries without changing behaviour; measured in docs/implementation.md.
+[profile.release]
+strip = true
+lto = "fat"
+codegen-units = 1
