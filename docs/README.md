@@ -47,6 +47,10 @@ cryptographic proof that two values are equal.
 - [Fuzzing](fuzzing.md): future harnesses, leak oracles, and corpus handling.
 - [rstr CLI contract](text-redaction.md): stdin filtering, replacements, and limits.
 - [rstr detection](detection.md): detector categories and rule gates.
+- [Entropy experiment](entropy-evaluation.md): synthetic evaluation of additive
+  length-bounded entropy detection, separate from shipped behavior.
+- [Future entropy options](entropy-options.md): strategies, evidence limits,
+  open decisions, and deferred chat-history evaluation.
 - [Secret formats](secret-formats/README.md): sourced provider/structure inventory,
   classification limits, and format-evolution tests.
 - [CI](ci.md): Blacksmith on macOS and Linux, plus agent workflow checks.

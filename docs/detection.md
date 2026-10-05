@@ -120,6 +120,11 @@ Exact provider patterns and the complete machine-readable inventory are an
 implementation deliverable. Categories alone do not constitute tested coverage.
 Broad entropy-only detection is out of scope for v1: random-looking identifiers
 are not sufficient evidence and ordinary passwords can have low entropy.
+The [synthetic entropy experiment](entropy-evaluation.md) measures additive
+coverage and false positives without enabling entropy detection in either CLI.
+The [future options record](entropy-options.md) captures broad versus contextual
+matching, public-structure handling, decision criteria, and possible chat-log
+evaluation. These remain research options, not production requirements.
 
 ## Matching and fingerprint behavior
 

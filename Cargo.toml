@@ -7,6 +7,11 @@ description = "Secret-safe environment inspection and stdin redaction"
 license = "MIT"
 publish = false
 
+[[example]]
+name = "entropy_eval"
+path = "examples/entropy_eval/main.rs"
+test = true
+
 [dependencies]
 base64 = "0.22.1"
 clap = { version = "4.6.1", features = ["derive"] }
