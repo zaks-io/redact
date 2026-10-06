@@ -1,14 +1,17 @@
-use crate::error::{ErrorKind, SafeError};
+use crate::error::{ErrorKind, SafeError, line_number};
 use crate::secret::SecretString;
 use std::collections::BTreeMap;
 
 /// Parse only the documented literal dotenv dialect, without interpolation.
 pub fn parse_dotenv(bytes: &[u8]) -> Result<BTreeMap<String, SecretString>, SafeError> {
     let text = std::str::from_utf8(bytes).map_err(|failure| {
-        SafeError::at(ErrorKind::Encoding, line_at(bytes, failure.valid_up_to()))
+        SafeError::at(
+            ErrorKind::Encoding,
+            line_number(bytes, failure.valid_up_to()),
+        )
     })?;
     if let Some(offset) = text.find('\0') {
-        return Err(SafeError::at(ErrorKind::Nul, line_at(bytes, offset)));
+        return Err(SafeError::at(ErrorKind::Nul, line_number(bytes, offset)));
     }
     let text = text
         .strip_prefix('\u{feff}')
@@ -108,14 +111,6 @@ pub fn parse_dotenv(bytes: &[u8]) -> Result<BTreeMap<String, SecretString>, Safe
     Ok(values)
 }
 
-fn line_at(bytes: &[u8], offset: usize) -> usize {
-    bytes[..offset]
-        .iter()
-        .filter(|byte| **byte == b'\n')
-        .count()
-        + 1
-}
-
 fn valid_name(name: &str) -> bool {
     let mut bytes = name.bytes();
     matches!(bytes.next(), Some(b'A'..=b'Z' | b'a'..=b'z' | b'_'))
@@ -125,6 +120,7 @@ fn valid_name(name: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::synthetic::*;
     use proptest::prelude::*;
 
     #[test]
@@ -153,11 +149,15 @@ mod tests {
             assert!(result.is_err());
             assert!(!format!("{result:?}").contains("synthetic-canary"));
         }
-        let Err(error) = parse_dotenv(b"A=x\nA=x\n") else {
-            panic!("duplicate accepted")
-        };
+        let error = parse_dotenv(b"A=x\nA=x\n").must_err();
         assert_eq!(error.line, Some(2));
         assert_eq!(error.previous_line, Some(1));
+        for bytes in [b"A=one\nB=bad\0".as_slice(), b"A=one\nB=\xff".as_slice()] {
+            assert!(matches!(
+                parse_dotenv(bytes),
+                Err(SafeError { line: Some(2), .. })
+            ));
+        }
     }
 
     #[test]
@@ -200,8 +200,19 @@ mod tests {
             ..ProptestConfig::default()
         })]
         #[test]
-        fn arbitrary_bytes_never_panic(bytes in prop::collection::vec(any::<u8>(), 0..2048)) {
-            let _ = parse_dotenv(&bytes);
+        fn arbitrary_bytes_yield_valid_names_or_errors(bytes in prop::collection::vec(any::<u8>(), 0..4096)) {
+            if let Ok(values) = parse_dotenv(&bytes) {
+                prop_assert!(values.keys().all(|name| valid_name(name)));
+            }
+        }
+        #[test]
+        fn double_quoted_values_decode_without_normalizing(value in "[^\\x00]*") {
+            let encoded = value.replace('\\', "\\\\").replace('"', "\\\"").replace('\n', "\\n").replace('\r', "\\r").replace('\t', "\\t");
+            let result = parse_dotenv(format!("VALUE=\"{encoded}\"\n").as_bytes());
+            prop_assert!(result.is_ok());
+            if let Ok(values) = result {
+                prop_assert_eq!(values["VALUE"].as_str(), value.as_str());
+            }
         }
         #[test]
         fn single_quotes_preserve_unicode(value in "[^'\\x00\\r]{0,128}") {

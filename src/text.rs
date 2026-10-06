@@ -1,14 +1,23 @@
-use crate::{context, error::SafeError, fingerprint, providers, structured};
+use crate::error::{ErrorKind, SafeError};
+use crate::{context, fingerprint, providers, structured};
 
-pub const MAX_INPUT_BYTES: usize = 16_777_216;
+pub const MAX_INPUT_BYTES: usize = 16 * 1024 * 1024;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Span {
-    pub start: usize,
-    pub end: usize,
+/// Byte range of removed input; always on UTF-8 boundaries once validated.
+pub type Span = std::ops::Range<usize>;
+
+pub fn validate_input(bytes: &[u8]) -> Result<&str, SafeError> {
+    if bytes.len() > MAX_INPUT_BYTES {
+        return Err(SafeError::new(ErrorKind::TooLarge));
+    }
+    let text = std::str::from_utf8(bytes).map_err(|_| SafeError::new(ErrorKind::Encoding))?;
+    if text.contains('\0') {
+        return Err(SafeError::new(ErrorKind::Nul));
+    }
+    Ok(text)
 }
 
-fn validate(input: &str, span: Span) -> Result<(), SafeError> {
+fn validate(input: &str, span: &Span) -> Result<(), SafeError> {
     if span.start > span.end
         || span.end > input.len()
         || !input.is_char_boundary(span.start)
@@ -23,13 +32,13 @@ fn validate(input: &str, span: Span) -> Result<(), SafeError> {
 
 pub fn merge_spans(input: &str, spans: &[Span]) -> Result<Vec<Span>, SafeError> {
     let mut sorted = Vec::with_capacity(spans.len());
-    for &span in spans {
+    for span in spans {
         validate(input, span)?;
-        if span.start != span.end {
-            sorted.push(span);
+        if !span.is_empty() {
+            sorted.push(span.clone());
         }
     }
-    sorted.sort_unstable_by_key(|s| (s.start, s.end));
+    sorted.sort_unstable_by_key(|span| (span.start, span.end));
     let mut merged: Vec<Span> = Vec::with_capacity(sorted.len());
     for span in sorted {
         if let Some(last) = merged.last_mut()
@@ -44,9 +53,14 @@ pub fn merge_spans(input: &str, spans: &[Span]) -> Result<Vec<Span>, SafeError> 
 }
 
 pub fn detect(input: &str) -> Result<Vec<Span>, SafeError> {
+    detect_at_depth(input, 0)
+}
+
+/// Every detector family over one input; quoted text re-enters at a greater depth.
+pub(crate) fn detect_at_depth(input: &str, depth: usize) -> Result<Vec<Span>, SafeError> {
     let detection = structured::detect_with_contexts(input)?;
     let mut spans = detection.spans;
-    spans.extend(context::detect_with_structured(input, &detection.contexts)?);
+    spans.extend(context::detect(input, &detection.contexts, depth)?);
     spans.extend(providers::detect(input)?);
     merge_spans(input, &spans)
 }
@@ -58,7 +72,7 @@ pub fn render_spans(input: &str, spans: &[Span]) -> Result<String, SafeError> {
     for span in spans {
         output.push_str(&input[cursor..span.start]);
         output.push_str("[REDACTED sha256=");
-        output.push_str(&fingerprint(&input[span.start..span.end]));
+        output.push_str(&fingerprint(&input[span.clone()]));
         output.push(']');
         cursor = span.end;
     }
@@ -67,18 +81,7 @@ pub fn render_spans(input: &str, spans: &[Span]) -> Result<String, SafeError> {
 }
 
 pub fn filter(bytes: &[u8]) -> Result<String, SafeError> {
-    if bytes.len() > MAX_INPUT_BYTES {
-        return Err(SafeError::new(
-            "input exceeds 16 MiB. Supply a smaller bounded input and retry.",
-        ));
-    }
-    let input = std::str::from_utf8(bytes)
-        .map_err(|_| SafeError::new("input is not UTF-8. Supply UTF-8 text and retry."))?;
-    if input.contains('\0') {
-        return Err(SafeError::new(
-            "input contains NUL bytes. Supply UTF-8 text without NUL bytes and retry.",
-        ));
-    }
+    let input = validate_input(bytes)?;
     render_spans(input, &detect(input)?)
 }
 
@@ -93,18 +96,11 @@ mod tests {
     fn fingerprint_and_union() {
         assert_eq!(fingerprint("abc"), "ba7816bf8f01cfea");
         assert_eq!(
-            merge_spans(
-                "abcdef",
-                &[
-                    Span { start: 0, end: 3 },
-                    Span { start: 2, end: 5 },
-                    Span { start: 5, end: 6 }
-                ]
-            )
-            .must(),
-            vec![Span { start: 0, end: 5 }, Span { start: 5, end: 6 }]
+            merge_spans("abcdef", &[0..3, 2..5, 5..6]).must(),
+            vec![0..5, 5..6]
         );
-        assert!(render_spans("é", &[Span { start: 1, end: 2 }]).is_err());
+        let inside_character: Span = 1..2;
+        assert!(render_spans("é", &[inside_character]).is_err());
     }
 
     proptest! {
@@ -124,10 +120,10 @@ mod tests {
         #[test]
         fn union_matches_byte_oracle(pairs in prop::collection::vec((0usize..128,0usize..128),0..64)) {
             let input = "x".repeat(128);
-            let spans:Vec<_> = pairs.iter().map(|&(a,b)| Span {start:a.min(b),end:a.max(b)}).collect();
+            let spans:Vec<_> = pairs.iter().map(|&(a,b)| a.min(b)..a.max(b)).collect();
             let merged = merge_spans(&input, &spans).must();
             for index in 0..128 {
-                prop_assert_eq!(spans.iter().any(|s| s.start<=index && index<s.end), merged.iter().any(|s| s.start<=index && index<s.end));
+                prop_assert_eq!(spans.iter().any(|s| s.contains(&index)), merged.iter().any(|s| s.contains(&index)));
             }
             prop_assert!(merged.windows(2).all(|s| s[0].end<=s[1].start));
         }

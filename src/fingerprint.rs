@@ -1,6 +1,6 @@
 use sha2::{Digest, Sha256};
 
-pub fn fingerprint(bytes: &[u8]) -> String {
+pub fn fingerprint(bytes: impl AsRef<[u8]>) -> String {
     let digest = Sha256::digest(bytes);
     let hex = b"0123456789abcdef";
     let mut fingerprint = String::with_capacity(16);
@@ -11,6 +11,6 @@ pub fn fingerprint(bytes: &[u8]) -> String {
     fingerprint
 }
 
-pub fn marker(bytes: &[u8]) -> String {
+pub fn marker(bytes: impl AsRef<[u8]>) -> String {
     format!("[REDACTED sha256={}]", fingerprint(bytes))
 }

@@ -49,7 +49,7 @@ pub(super) fn json_containers(input: &str, spans: &mut Vec<Span>) -> Result<(), 
                         match parse_object(object) {
                             Ok(value) => {
                                 if private_object(&value) {
-                                    spans.push(Span { start, end: at + 1 });
+                                    spans.push(start..at + 1);
                                 }
                             }
                             Err(_) if credential_object_hint(object) => {
@@ -182,7 +182,7 @@ pub(super) fn kubernetes_yaml(input: &str, spans: &mut Vec<Span>) -> Result<(), 
                     "credential container exceeds parsing limit. Split input and retry.",
                 ));
             }
-            spans.push(Span { start, end });
+            spans.push(start..end);
         }
         start = end;
     }

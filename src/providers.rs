@@ -90,10 +90,7 @@ pub fn detect(input: &str) -> Result<Vec<Span>, SafeError> {
                 if detectors.prefixes.contains(found.as_str()) {
                     continue;
                 }
-                spans.push(Span {
-                    start: found.start(),
-                    end: found.end(),
-                });
+                spans.push(found.start()..found.end());
             }
         }
     }

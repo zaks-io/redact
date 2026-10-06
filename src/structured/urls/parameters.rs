@@ -71,7 +71,7 @@ pub(super) fn detect(
         .any(|expected| name.eq_ignore_ascii_case(expected))
             || signed_frames[*frame] == 3 && name.eq_ignore_ascii_case("sig");
         if end > *start && (signed || sensitive_name(name)) {
-            spans.push(Span { start: *start, end });
+            spans.push(*start..end);
         }
     }
     Ok(())

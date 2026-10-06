@@ -1,10 +1,10 @@
-# Binary optimization specification
+# Performance specification
 
 This contract defines release-build, resource-use, and validation requirements
-for `rprintenv` and `rstr`. Optimize download and installation size, command
-startup, and filtering throughput while preserving the CLI and disclosure
-contracts. Correctness and secret-safe failure handling take precedence over
-size or speed.
+for `rprintenv` and `rstr`. Optimize command startup and filtering throughput
+while preserving the CLI and disclosure contracts. Executable size is secondary:
+a larger binary is acceptable when it buys measurable speed or simpler code.
+Correctness and secret-safe failure handling take precedence over speed.
 
 ## Release builds and portability
 
@@ -125,8 +125,9 @@ python3 scripts/benchmark.py target/optimization/baseline target/optimization/ca
 
 ## Acceptance criteria
 
-An optimization must improve at least one measured objective: executable size,
-startup latency, bulk filtering time, or allocation overhead. Assess both
+An optimization must improve at least one measured objective: startup latency,
+bulk filtering time, or allocation overhead. A size reduction alone does not
+justify slower runs. Assess both
 binaries and every fixed scenario. Investigate regressions beyond ordinary
 run-to-run variation with repeated comparisons on the same runner. Any retained
 regression must have an explicit product tradeoff and supporting measurements.
@@ -156,7 +157,8 @@ must cover safe read/write failures and producer pipeline exit statuses.
 
 Validate supported platforms independently. A Linux result cannot establish
 macOS size, timing, or CLI acceptance. Record measured outcomes and validation
-limitations in implementation evidence; this specification defines requirements.
+limitations in the pull request or handoff; do not check results into the
+repository. This specification defines requirements.
 
 ## Done
 

@@ -1,6 +1,6 @@
 #![no_main]
 use libfuzzer_sys::fuzz_target;
-use redact::rstr::detect;
+use redact::detect;
 use redact_fuzz::{
     check_error,
     text::{check_spans, generated_credentials},

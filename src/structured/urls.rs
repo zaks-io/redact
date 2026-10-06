@@ -53,10 +53,7 @@ pub(super) fn urls(
         } else {
             full_end
         };
-        contexts.push(Span {
-            start: matched.start(),
-            end,
-        });
+        contexts.push(matched.start()..end);
         let escaped = raw_url
             .contains("\\/")
             .then(|| slash_unescape(raw_url))
@@ -94,10 +91,7 @@ pub(super) fn urls(
                     .map(|offset| first_delimiter + offset)
             });
         if let Some(at) = userinfo_end {
-            spans.push(Span {
-                start: boundary(authority_start),
-                end: boundary(at),
-            });
+            spans.push(boundary(authority_start)..boundary(at));
         }
         let host_start = userinfo_end.map_or(authority_start, |at| at + 1);
         let host_end = url[host_start..]
@@ -132,10 +126,7 @@ pub(super) fn urls(
                 .count()
                 >= 3
         {
-            spans.push(Span {
-                start: matched.start(),
-                end,
-            });
+            spans.push(matched.start()..end);
         }
         let bot_start = if path.starts_with("/bot") {
             Some(4)
@@ -155,10 +146,7 @@ pub(super) fn urls(
                 && id.bytes().all(|byte| byte.is_ascii_digit())
                 && !body.is_empty()
             {
-                spans.push(Span {
-                    start: boundary(host_end + bot_start),
-                    end: boundary(host_end + token_end),
-                });
+                spans.push(boundary(host_end + bot_start)..boundary(host_end + token_end));
             }
         }
     }
@@ -206,14 +194,8 @@ pub(super) fn connections(
             if matches!(bytes[value], b'\'' | b'"') {
                 let end = crate::context::quoted_end(input, value, bytes[value], true)?;
                 if end > value + 1 {
-                    spans.push(Span {
-                        start: value + 1,
-                        end,
-                    });
-                    contexts.push(Span {
-                        start: offset + field.start(),
-                        end: end + 1,
-                    });
+                    spans.push(value + 1..end);
+                    contexts.push(offset + field.start()..end + 1);
                 }
             } else {
                 let mut end = value;
@@ -228,11 +210,8 @@ pub(super) fn connections(
                     end += 1;
                 }
                 if end > value {
-                    spans.push(Span { start: value, end });
-                    contexts.push(Span {
-                        start: offset + field.start(),
-                        end,
-                    });
+                    spans.push(value..end);
+                    contexts.push(offset + field.start()..end);
                 }
             }
         }

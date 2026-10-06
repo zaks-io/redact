@@ -4,7 +4,7 @@ use std::process::{Command, Stdio};
 use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
 use proptest::prelude::*;
 use redact::fingerprint::marker;
-use redact::rstr::{MAX_INPUT_BYTES, detect, filter, filter_to_writer, merge_spans, render_spans};
+use redact::{MAX_INPUT_BYTES, detect, filter, merge_spans, render_spans, rstr::filter_to_writer};
 
 const CANARY: &str = "synthetic-canary-orchid-72";
 
@@ -288,7 +288,8 @@ fn read_write_detector_faults_and_limit_have_safe_errors() {
     assert!(!format!("{error:?} {error}").contains(CANARY));
     let error = filter_to_writer(format!("password={CANARY}").as_bytes(), FailedWrite).must_err();
     assert!(!format!("{error:?} {error}").contains(CANARY));
-    let error = render_spans("秘密", std::iter::once(1..2).collect()).must_err();
+    let inside_character: redact::Span = 1..2;
+    let error = render_spans("秘密", &[inside_character]).must_err();
     assert!(!format!("{error:?} {error}").contains("秘密"));
     assert!(filter(&vec![b'x'; MAX_INPUT_BYTES + 1]).is_err());
     assert_eq!(filter(b"").must(), "");
@@ -301,11 +302,11 @@ fn read_write_detector_faults_and_limit_have_safe_errors() {
 #[test]
 fn overlapping_and_adjacent_spans_hash_original_union_once() {
     assert_eq!(
-        merge_spans("abcdef", vec![0..3, 2..5, 5..6]).must(),
+        merge_spans("abcdef", &[0..3, 2..5, 5..6]).must(),
         vec![0..5, 5..6]
     );
     assert_eq!(
-        render_spans("abcdef", vec![0..3, 2..5, 5..6]).must(),
+        render_spans("abcdef", &[0..3, 2..5, 5..6]).must(),
         format!("{}{}", marker(b"abcde"), marker(b"f"))
     );
     let input = "password=ghp_synthetic-token\n";
@@ -381,7 +382,7 @@ proptest! {
     fn overlap_union_matches_graph_components(pairs in prop::collection::vec((0usize..32, 0usize..32), 0..16)) {
         let input = "abcdefghijklmnopqrstuvwxyzABCDEF";
         let spans: Vec<_> = pairs.into_iter().map(|(a,b)| a.min(b)..a.max(b)).filter(|span| !span.is_empty()).collect();
-        let actual = merge_spans(input, spans.clone()).must();
+        let actual = merge_spans(input, &spans).must();
         let mut seen = vec![false; spans.len()];
         let mut expected = Vec::new();
         for root in 0..spans.len() {

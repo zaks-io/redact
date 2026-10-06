@@ -73,8 +73,8 @@ tests run in normal validation; six coverage-guided fuzz targets have a separate
 pinned nightly toolchain and explicit campaign budgets.
 Hosted CI and macOS results require an
 actual GitHub Actions run.
-The [implementation report](docs/implementation.md) records local validation and
-remaining platform evidence.
+The [implementation summary](docs/implementation.md) describes what is built and
+which platform checks remain.
 
 The `.env` parser implements the [documented literal dialect](docs/disclosure.md).
 It never expands variables or executes shell syntax. Core functions take explicit

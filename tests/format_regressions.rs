@@ -328,16 +328,20 @@ mod render_oracle;
 fn fuzz_render_oracle_accepts_canary_metadata_and_rejects_extra_hidden_data() {
     let name = "SYNTHETIC_FUZZ_CANARY_METADATA";
     let secret = "SYNTHETIC_FUZZ_CANARY_secret_0123456789";
-    let snapshots = [redact::environment::Snapshot {
-        source: redact::environment::Source::Environment,
-        values: redact::environment::RawVariables::from_pairs([(
-            name.to_owned(),
-            secret.to_owned(),
-        )]),
-    }];
-    let records = redact::environment::sanitize(&snapshots, &Default::default());
-    let text = redact::environment::render_text(&records).must();
-    let json = redact::environment::render_json(&records).must();
+    use redact::rprintenv::{policy, render::render};
+    let value = redact::secret::SecretString::new(secret.to_owned());
+    let records = [policy::disclose(
+        policy::Source::Environment,
+        name.to_owned(),
+        Some(&value),
+        &policy::Policy::default(),
+    )];
+    let rendered = |json| {
+        let mut bytes = Vec::new();
+        render(&records, json, &mut bytes).must();
+        String::from_utf8(bytes).must()
+    };
+    let (text, json) = (rendered(false), rendered(true));
     use sha2::{Digest, Sha256};
     let hash: String = Sha256::digest(secret.as_bytes())[..8]
         .iter()

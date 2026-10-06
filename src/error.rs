@@ -16,12 +16,10 @@ pub enum ErrorKind {
     TooLarge,
     Interactive,
     Detector,
-    UnterminatedKey,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SafeError {
-    source: Option<String>,
     pub kind: ErrorKind,
     pub line: Option<usize>,
     pub previous_line: Option<usize>,
@@ -30,40 +28,27 @@ pub struct SafeError {
 impl SafeError {
     pub fn new(kind: impl Into<ErrorKind>) -> Self {
         Self {
-            source: None,
             kind: kind.into(),
             line: None,
             previous_line: None,
         }
     }
 
-    pub fn at(kind: ErrorKind, line: usize) -> Self {
+    pub fn at(kind: impl Into<ErrorKind>, line: usize) -> Self {
         Self {
-            source: None,
-            kind,
             line: Some(line),
-            previous_line: None,
+            ..Self::new(kind)
         }
     }
-    pub fn at_line(category: &'static str, line: usize) -> Self {
-        Self::at(ErrorKind::Category(category), line)
-    }
-    pub fn with_source(mut self, source: &str) -> Self {
-        self.source = Some(source.to_owned());
-        self
-    }
-    pub fn with_related_line(mut self, line: usize) -> Self {
-        self.previous_line = Some(line);
-        self
-    }
+}
+
+/// One-based line containing `offset`; approved metadata for diagnostics.
+pub(crate) fn line_number(text: &[u8], offset: usize) -> usize {
+    text[..offset].iter().filter(|byte| **byte == b'\n').count() + 1
 }
 
 impl fmt::Display for SafeError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if let Some(source) = &self.source {
-            let escaped = serde_json::to_string(source).map_err(|_| fmt::Error)?;
-            write!(f, "{escaped}, ")?;
-        }
         if let Some(line) = self.line {
             write!(f, "line {line}: ")?;
         }
@@ -100,9 +85,6 @@ impl fmt::Display for SafeError {
             }
             ErrorKind::Detector => {
                 "detector failed. Report the version and a synthetic reproduction."
-            }
-            ErrorKind::UnterminatedKey => {
-                "unterminated private-key block. Close the private-key block and retry."
             }
         })
     }

@@ -1,4 +1,4 @@
-use redact::rstr::Span;
+use redact::Span;
 
 #[derive(Clone, Copy)]
 pub enum Threshold {
