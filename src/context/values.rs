@@ -136,7 +136,7 @@ pub(super) fn yaml_indented_value(
     if end > header_end && bytes[end - 1] == b'\r' {
         end -= 1;
     }
-    Ok(start.map(|start| crate::Span { start, end }))
+    Ok(start.map(|start| start..end))
 }
 
 fn yaml_indentation(bytes: &[u8], name: usize) -> Option<usize> {

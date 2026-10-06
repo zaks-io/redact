@@ -122,9 +122,7 @@ Broad entropy-only detection is out of scope for v1: random-looking identifiers
 are not sufficient evidence and ordinary passwords can have low entropy.
 The [synthetic entropy experiment](entropy-evaluation.md) measures additive
 coverage and false positives without enabling entropy detection in either CLI.
-The [future options record](entropy-options.md) captures broad versus contextual
-matching, public-structure handling, decision criteria, and possible chat-log
-evaluation. These remain research options, not production requirements.
+It is research, not a production requirement.
 
 ## Matching and fingerprint behavior
 

@@ -35,7 +35,7 @@ unwrap_used = "deny"
 expect_used = "deny"
 
 
-# Release settings follow docs/binary-optimization.md.
+# Release settings follow docs/performance.md.
 [profile.release]
 strip = true
 lto = "fat"

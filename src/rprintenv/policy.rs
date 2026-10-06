@@ -55,7 +55,7 @@ pub fn disclose(
             {
                 State::Visible(SecretString::new(value.as_str().to_owned()))
             } else {
-                State::Redacted(fingerprint(value.as_str().as_bytes()))
+                State::Redacted(fingerprint(value.as_str()))
             }
         }
     };
@@ -135,7 +135,7 @@ mod tests {
             let secret = SecretString::new(value.clone());
             let record = disclose(Source::Environment, "KEY".to_owned(), Some(&secret), &policy);
             match record.state {
-                State::Redacted(hash) => prop_assert_eq!(hash, fingerprint(value.as_bytes())),
+                State::Redacted(hash) => prop_assert_eq!(hash, fingerprint(&value)),
                 _ => prop_assert!(false, "redaction precedence failed"),
             }
         }
@@ -183,7 +183,7 @@ mod tests {
                 }
                 _ => {
                     prop_assert!(record["value"].is_null());
-                    let hash = fingerprint(value.as_bytes());
+                    let hash = fingerprint(&value);
                     prop_assert_eq!(record["fingerprint"].as_str(), Some(hash.as_str()));
                     format!("[REDACTED sha256={hash}]")
                 }
@@ -202,7 +202,7 @@ mod tests {
                 let mut bytes = Vec::new();
                 prop_assert!(crate::rprintenv::render::render(&records, true, &mut bytes).is_ok());
                 let mut parsed: serde_json::Value = serde_json::from_slice(&bytes).map_err(|_| TestCaseError::fail("JSON parse failed"))?;
-                let hash = fingerprint(raw.as_bytes());
+                let hash = fingerprint(raw);
                 prop_assert_eq!(parsed["records"][0]["fingerprint"].as_str(), Some(hash.as_str()));
                 parsed["records"][0]["fingerprint"] = serde_json::Value::Null;
                 if let Some(previous) = previous {

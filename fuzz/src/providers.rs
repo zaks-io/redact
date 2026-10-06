@@ -1,5 +1,5 @@
 use crate::hash;
-use redact::rstr::{detect, filter};
+use redact::{detect, filter};
 
 const PREFIXES: &[&str] = &[
     "ghp_",

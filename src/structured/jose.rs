@@ -55,10 +55,7 @@ pub(super) fn detect(input: &str, spans: &mut Vec<Span>) -> Result<(), SafeError
                     {
                         check_json_depth(&payload)?;
                     }
-                    spans.push(Span {
-                        start: matched.start() + start,
-                        end: matched.start() + start + length,
-                    });
+                    spans.push(matched.start() + start..matched.start() + start + length);
                     break;
                 }
             }

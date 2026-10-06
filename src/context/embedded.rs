@@ -44,10 +44,8 @@ pub(super) fn detect(
     spans
         .into_iter()
         .map(|span| {
-            Ok(Span {
-                start: *offsets.get(span.start).ok_or_else(mapping_error)?,
-                end: *offsets.get(span.end).ok_or_else(mapping_error)?,
-            })
+            Ok(*offsets.get(span.start).ok_or_else(mapping_error)?
+                ..*offsets.get(span.end).ok_or_else(mapping_error)?)
         })
         .collect()
 }
@@ -60,10 +58,7 @@ fn raw_contents(
 ) -> Result<Vec<Span>, SafeError> {
     Ok(nested(&input[start + 1..end], depth)?
         .into_iter()
-        .map(|span| Span {
-            start: start + 1 + span.start,
-            end: start + 1 + span.end,
-        })
+        .map(|span| start + 1 + span.start..start + 1 + span.end)
         .collect())
 }
 
@@ -73,11 +68,7 @@ fn nested(input: &str, depth: usize) -> Result<Vec<Span>, SafeError> {
             "quoted input exceeds nesting limit. Reduce nested quoting and retry.",
         ));
     }
-    let detection = crate::structured::detect_with_contexts(input)?;
-    let mut spans = detection.spans;
-    spans.extend(super::scan(input, &detection.contexts, depth + 1)?);
-    spans.extend(crate::providers::detect(input)?);
-    crate::merge_spans(input, &spans)
+    crate::text::detect_at_depth(input, depth + 1)
 }
 
 fn mapping_error() -> SafeError {

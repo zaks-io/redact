@@ -1,6 +1,6 @@
 use crate::{check_error, hash};
 use redact::error::ErrorKind;
-use redact::rstr::{detect, filter, filter_to_writer};
+use redact::{detect, filter, rstr::filter_to_writer};
 
 const NUMERIC_PAYLOAD: &[u8] = include_bytes!("../corpus/detectors/jwt-large-number");
 const NUMERIC_HEADER: &[u8] = include_bytes!("../corpus/detectors/jwt-large-header-number");

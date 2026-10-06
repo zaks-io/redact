@@ -1,6 +1,6 @@
 use crate::{CANARY, check_error, hash};
 use arbitrary::{Arbitrary, Unstructured};
-use redact::rstr::{Span, detect, filter, merge_spans, render_spans, validate_input};
+use redact::{Span, detect, filter, merge_spans, render_spans, validate_input};
 
 pub fn check_spans(text: &str, spans: &[Span]) {
     let mut end = 0;
@@ -272,10 +272,10 @@ pub fn exercise_filter(data: &[u8]) {
         spans.push(usize::from(start) % (text.len() + 3)..usize::from(end) % (text.len() + 3));
     }
     let expected = union_oracle(text, &spans);
-    let actual = merge_spans(text, spans.clone());
+    let actual = merge_spans(text, &spans);
     match expected {
         None => assert!(
-            actual.is_err() && render_spans(text, spans).is_err(),
+            actual.is_err() && render_spans(text, &spans).is_err(),
             "invalid span accepted"
         ),
         Some(expected) => {
@@ -283,7 +283,7 @@ pub fn exercise_filter(data: &[u8]) {
             if let Ok(actual) = actual {
                 assert!(actual == expected, "span union oracle failed");
             }
-            let output = render_spans(text, spans);
+            let output = render_spans(text, &spans);
             assert!(output.is_ok(), "valid span rendering failed");
             if let Ok(output) = output {
                 assert!(

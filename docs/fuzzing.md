@@ -1,9 +1,9 @@
 # Fuzzing specification
 
 Status: all six [harness targets](../fuzz/README.md) build and have completed
-short sanitizer-enabled smoke runs. [Earlier results](fuzzing-results.md) and [expanded-format results](fuzz-results.md) state
-the tested inputs, budgets, toolchain, and limitations. Longer campaigns remain
-separate from normal CLI and property-test validation.
+short sanitizer-enabled smoke runs. Campaign results belong in the pull request
+or handoff, not the repository. Longer campaigns remain separate from normal CLI
+and property-test validation.
 
 ## Objective
 

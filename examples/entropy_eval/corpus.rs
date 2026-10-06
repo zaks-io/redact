@@ -1,5 +1,5 @@
 use base64::{Engine, engine::general_purpose::STANDARD};
-use redact::{rstr::Span, secret::SecretString};
+use redact::{Span, secret::SecretString};
 use sha2::{Digest, Sha256};
 
 pub const LENGTHS: [usize; 12] = [8, 15, 16, 24, 31, 32, 40, 64, 128, 129, 256, 512];

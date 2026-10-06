@@ -8,8 +8,8 @@ mod tests;
 use corpus::{Case, Kind, corpus};
 use metrics::{Metrics, measure};
 use redact::{
+    Span, detect,
     error::{ErrorKind, SafeError},
-    rstr::{Span, detect},
 };
 use scoring::{Policy, Threshold, policies};
 use std::{

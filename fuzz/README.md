@@ -60,6 +60,6 @@ Keep artifacts local. Minimize a confirmed finding, add a normal regression,
 fix production, replay seeds, and rerun the affected target. Do not weaken an
 oracle or bypass the redactor. Report the toolchain, tested revision or tree
 digest, seed set, budgets, executions, coverage counters where available, and
-findings. [Previous campaign results](../docs/fuzz-results.md) apply only to
-the recorded pre-integration sources; rerun after meaningful changes. A finite
-clean campaign is limited evidence, not exhaustive secret detection.
+findings in the pull request or handoff; do not check results in. Rerun after
+meaningful changes. A finite clean campaign is limited evidence, not exhaustive
+secret detection.

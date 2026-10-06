@@ -76,7 +76,7 @@ impl fmt::Display for Failure {
 
 impl std::error::Error for Failure {}
 
-pub fn environment_snapshot(
+fn environment_snapshot(
     entries: impl IntoIterator<Item = (OsString, OsString)>,
 ) -> Result<BTreeMap<String, SecretString>, SafeError> {
     entries
@@ -97,18 +97,8 @@ pub fn run(
     args: impl IntoIterator<Item = OsString>,
     output: &mut impl Write,
 ) -> Result<u8, Failure> {
-    let args = match Arguments::try_parse_from(args) {
-        Ok(args) => args,
-        Err(error) => match error.kind() {
-            clap::error::ErrorKind::DisplayHelp | clap::error::ErrorKind::DisplayVersion => {
-                output
-                    .write_all(error.to_string().as_bytes())
-                    .and_then(|()| output.flush())
-                    .map_err(|_| SafeError::new(ErrorKind::Output))?;
-                return Ok(0);
-            }
-            _ => return Err(SafeError::new(ErrorKind::Usage).into()),
-        },
+    let Some(args) = crate::parse_arguments::<Arguments>(args, output)? else {
+        return Ok(0);
     };
     if (args.exists
         && (args.names.is_empty()
@@ -197,4 +187,27 @@ fn read_file(path: &str) -> Result<Vec<u8>, SafeError> {
         ));
     }
     Ok(bytes)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn failures_escape_source_paths_to_one_line() {
+        let Err(error) = parser::parse_dotenv(b"A=one\n#comment\nA=two\n") else {
+            panic!("duplicate accepted")
+        };
+        let failure = Failure {
+            source: Some(Source::File {
+                path: "synthetic\n.env".to_owned(),
+            }),
+            error,
+        };
+        assert_eq!(
+            failure.to_string(),
+            "\"synthetic\\n.env\": line 3: previous definition on line 1: \
+             duplicate variable name. Keep one definition per source and retry."
+        );
+    }
 }

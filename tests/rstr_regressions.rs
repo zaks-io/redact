@@ -3,8 +3,8 @@
 mod support;
 
 use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
+use redact::filter;
 use redact::fingerprint::marker;
-use redact::rstr::filter;
 
 const CANARY: &str = "synthetic-canary-heron-41";
 

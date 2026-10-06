@@ -24,16 +24,12 @@ mod containers;
 mod jose;
 mod urls;
 
-pub struct Detection {
+pub(crate) struct Detection {
     pub spans: Vec<Span>,
     pub contexts: Vec<Span>,
 }
 
-pub fn detect(input: &str) -> Result<Vec<Span>, SafeError> {
-    Ok(detect_with_contexts(input)?.spans)
-}
-
-pub fn detect_with_contexts(input: &str) -> Result<Detection, SafeError> {
+pub(crate) fn detect_with_contexts(input: &str) -> Result<Detection, SafeError> {
     let mut spans = Vec::new();
     let mut contexts = Vec::new();
     authentication(input, &mut spans, &mut contexts)?;
@@ -67,7 +63,7 @@ fn authentication(
         if matches!(quote, b'"' | b'\'') && available[kind] {
             match crate::context::quoted_end(input, at, quote, false) {
                 Ok(end) => {
-                    quoted.push(Span { start: at, end });
+                    quoted.push(at..end);
                     at = end;
                 }
                 Err(_) => available[kind] = false,
@@ -89,15 +85,9 @@ fn authentication(
                 end = end.min(region.end);
             }
             if end > value.start() {
-                spans.push(Span {
-                    start: value.start(),
-                    end,
-                });
+                spans.push(value.start()..end);
             }
-            contexts.push(Span {
-                start: header.start(),
-                end: end.max(value.start()),
-            });
+            contexts.push(header.start()..end.max(value.start()));
         }
     }
     Ok(())
@@ -123,20 +113,12 @@ fn private_blocks(input: &str, spans: &mut Vec<Span>) -> Result<(), SafeError> {
             markers.get(markers.partition_point(|marker| marker.0 < begin.end()))
         });
         let Some((_, end)) = end else {
-            let line = input[..begin.start()]
-                .bytes()
-                .filter(|byte| *byte == b'\n')
-                .count()
-                + 1;
-            return Err(SafeError::at_line(
+            return Err(SafeError::at(
                 "unterminated private-key block. Add its matching END marker and retry.",
-                line,
+                crate::error::line_number(input.as_bytes(), begin.start()),
             ));
         };
-        spans.push(Span {
-            start: begin.start(),
-            end: *end,
-        });
+        spans.push(begin.start()..*end);
     }
 
     Ok(())

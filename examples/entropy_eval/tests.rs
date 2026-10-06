@@ -7,10 +7,7 @@ use super::{
     scoring::{Policy, Threshold, candidates, entropy, policies},
 };
 use proptest::prelude::*;
-use redact::{
-    rstr::{detect, merge_spans},
-    secret::SecretString,
-};
+use redact::{detect, merge_spans, secret::SecretString};
 use std::io::{self, Write};
 
 fn case(text: &str, secrets: Vec<std::ops::Range<usize>>) -> Case {
@@ -252,7 +249,7 @@ proptest! {
             prop_assert!(candidates(&text).contains(&span));
         }
         let combined = combined(&case, &baseline, Some(policy));
-        let merged = merge_spans(&text, combined);
+        let merged = merge_spans(&text, &combined);
         prop_assert!(merged.is_ok());
         if let Ok(spans) = merged {
             for baseline in baseline {

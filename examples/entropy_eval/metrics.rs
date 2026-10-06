@@ -1,8 +1,5 @@
 use super::corpus::{Case, Kind};
-use redact::{
-    error::SafeError,
-    rstr::{Span, merge_spans},
-};
+use redact::{Span, error::SafeError, merge_spans};
 
 #[derive(Clone, Copy, Default)]
 pub struct Metrics {
@@ -59,8 +56,8 @@ impl Metrics {
 
 pub fn measure(case: &Case, detections: Vec<Span>) -> Result<Metrics, SafeError> {
     let text = case.text.as_str();
-    let detected = merge_spans(text, detections)?;
-    let secrets = merge_spans(text, case.secrets.clone())?;
+    let detected = merge_spans(text, &detections)?;
+    let secrets = merge_spans(text, &case.secrets)?;
     let mut metrics = Metrics {
         secrets: secrets.len(),
         benign_cases: usize::from(secrets.is_empty()),

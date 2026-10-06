@@ -6,19 +6,12 @@ mod values;
 
 pub(crate) use names::sensitive_name;
 
-pub fn detect(input: &str) -> Result<Vec<Span>, SafeError> {
-    let structured = crate::structured::detect_with_contexts(input)?;
-    detect_with_structured(input, &structured.contexts)
-}
-
-pub(crate) fn detect_with_structured(
+/// Sensitive-name assignments outside `structured` framing; quoted text recurses via `embedded`.
+pub(crate) fn detect(
     input: &str,
     structured: &[Span],
+    depth: usize,
 ) -> Result<Vec<Span>, SafeError> {
-    scan(input, structured, 0)
-}
-
-fn scan(input: &str, structured: &[Span], depth: usize) -> Result<Vec<Span>, SafeError> {
     let structured = crate::merge_spans(input, structured)?;
     let bytes = input.as_bytes();
     let mut spans = Vec::new();
@@ -126,10 +119,7 @@ fn scan(input: &str, structured: &[Span], depth: usize) -> Result<Vec<Span>, Saf
         if bytes[value] == b'\\' && matches!(bytes.get(value + 1), Some(b'"' | b'\'')) {
             let end = values::escaped_quoted_end(input, value)?;
             if end > value + 2 {
-                spans.push(Span {
-                    start: value + 2,
-                    end,
-                });
+                spans.push(value + 2..end);
             }
             at = end + 2;
         } else if matches!(bytes[value], b'"' | b'\'') {
@@ -155,20 +145,17 @@ fn scan(input: &str, structured: &[Span], depth: usize) -> Result<Vec<Span>, Saf
                 }
             }
             if end > value + 1 {
-                spans.push(Span {
-                    start: value + 1,
-                    end,
-                });
+                spans.push(value + 1..end);
             }
             at = end + 1;
         } else if json && matches!(bytes[value], b'{' | b'[') {
             let end = values::balanced_end(input, value)?;
-            spans.push(Span { start: value, end });
+            spans.push(value..end);
             at = end;
         } else if bytes[delimiter] == b':'
             && let Some(end) = values::yaml_block_end(input, name_start, value)?
         {
-            spans.push(Span { start: value, end });
+            spans.push(value..end);
             at = end;
         } else {
             let mut end = value;
@@ -185,7 +172,7 @@ fn scan(input: &str, structured: &[Span], depth: usize) -> Result<Vec<Span>, Saf
                 end = continuation.end;
             }
             if end > value {
-                spans.push(Span { start: value, end });
+                spans.push(value..end);
             }
             at = end;
         }
@@ -210,11 +197,13 @@ pub(crate) fn quoted_end(
         }
         at += 1;
     }
-    let line = input[..start].bytes().filter(|byte| *byte == b'\n').count() + 1;
     let category = if fail {
         "unterminated quoted value. Close the quoted value and retry."
     } else {
         "invalid quoted field"
     };
-    Err(SafeError::at_line(category, line))
+    Err(SafeError::at(
+        category,
+        crate::error::line_number(input.as_bytes(), start),
+    ))
 }
