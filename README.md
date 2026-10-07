@@ -12,7 +12,7 @@ Two local Rust CLIs for inspecting configuration and filtering command output.
 
 Download prebuilt Linux x86-64 and Apple Silicon macOS binaries from a published
 GitHub Release. Each package includes both commands. See the
-[download and installation guide](docs/releases.md) for authenticated downloads,
+[download and installation guide](docs/releases.md) for public downloads,
 checksum verification, compatibility, and manual release preparation.
 
 The pinned Rust toolchain installs through rustup. macOS and Linux are supported.
