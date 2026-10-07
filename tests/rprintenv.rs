@@ -213,7 +213,7 @@ fn input_errors_and_invalid_encoding_are_safe() {
         .args(["--file", "nonexistent"]);
     let output = support::capture(&mut command, b"");
     status(&output, 2);
-    assert!(String::from_utf8_lossy(&output.stderr).contains("permissions"));
+    assert!(String::from_utf8_lossy(&output.stderr).contains("file not found"));
 }
 
 #[cfg(unix)]
@@ -323,7 +323,7 @@ fn selection_deduplicates_sorts_and_keeps_distinct_path_arguments() {
         assert_eq!(pair[0]["name"], "A");
         assert_eq!(pair[1]["name"], "Z");
         assert_eq!(pair[0]["fingerprint"], "ba7816bf8f01cfea");
-        assert_eq!(pair[0].as_object().map(|record| record.len()), Some(5));
+        assert_eq!(pair[0].as_object().map(|record| record.len()), Some(6));
     }
     assert_eq!(records[0]["source"]["kind"], "environment");
     assert_eq!(records[2]["source"]["path"], "values");

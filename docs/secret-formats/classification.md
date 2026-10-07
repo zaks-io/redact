@@ -1,8 +1,11 @@
 # Safe credential classification
 
-Status: design requirements for future format-aware annotations or checks.
-No new CLI flag or output field is introduced by this document. Before shipping
-such an interface, update the versioned output contract and executable fixtures.
+Status: fixed evidence labels are implemented for `rstr` redaction reports.
+They are derived from the detector matches, without changing removed spans or
+fingerprints. `rprintenv` JSON schema version 2 reports a disclosure-policy reason;
+it does not infer a credential format from an environment variable's name.
+The [stdin contract](../text-redaction.md) and [environment contract](../cli.md)
+define the shipped output. Expected-type comparisons below remain future work.
 
 ## What the agent should learn
 

@@ -1,3 +1,6 @@
+#[path = "support/redaction_report.rs"]
+mod report;
+
 #[allow(dead_code, reason = "shared synthetic assertions across test suites")]
 #[path = "support/synthetic.rs"]
 mod synthetic;
@@ -71,7 +74,7 @@ fn large_boundary_invalid_hints_finish_and_recover_later_credentials() {
         let expected = format!("{near_match}\nGET /v1/hooks/{} HTTP/1.1\n", marker(token));
         let (output, elapsed) = bounded_filter(input.into_bytes());
         assert_eq!(output.status.code(), Some(0), "hint {hint}");
-        assert!(output.stderr.is_empty(), "hint {hint} diagnostics");
+        report::assert_report(&output.stdout, &output.stderr);
         assert!(
             output.stdout == expected.as_bytes(),
             "hint {hint} exact output"

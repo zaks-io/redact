@@ -13,13 +13,14 @@ pub fn matches_record(
         _ => None,
     };
     let expected_json = serde_json::json!({
-        "schema_version": 1,
+        "schema_version": 2,
         "records": [{
             "source": {"kind": "environment"},
             "name": name,
             "state": state,
             "value": disclosed,
             "fingerprint": fingerprint,
+            "redaction_reason": (state == "redacted").then_some("default-policy"),
         }],
     });
     let actual: Result<serde_json::Value, _> = serde_json::from_str(json);

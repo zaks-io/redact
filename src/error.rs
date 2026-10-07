@@ -8,6 +8,9 @@ pub enum ErrorKind {
     Nul,
     Input,
     Output,
+    SourceNotFound,
+    SourcePermissionDenied,
+    SourceNotRegular,
     InvalidAssignment,
     DuplicateName,
     UnterminatedQuote,
@@ -23,6 +26,7 @@ pub struct SafeError {
     pub kind: ErrorKind,
     pub line: Option<usize>,
     pub previous_line: Option<usize>,
+    pub earlier_output_emitted: bool,
 }
 
 impl SafeError {
@@ -31,6 +35,7 @@ impl SafeError {
             kind: kind.into(),
             line: None,
             previous_line: None,
+            earlier_output_emitted: false,
         }
     }
 
@@ -39,6 +44,24 @@ impl SafeError {
             line: Some(line),
             ..Self::new(kind)
         }
+    }
+
+    /// Locate a record-local failure in the stream using a one-based first line.
+    pub fn in_stream(mut self, first_line: usize, earlier_output_emitted: bool) -> Self {
+        let offset = first_line.checked_sub(1);
+        let line = offset.and_then(|offset| self.line.unwrap_or(1).checked_add(offset));
+        let previous_line = match (self.previous_line, offset) {
+            (Some(line), Some(offset)) => line.checked_add(offset),
+            _ => None,
+        };
+        if line.is_none() || (self.previous_line.is_some() && previous_line.is_none()) {
+            self = Self::new("stream line count overflow. Split the input and retry safely.");
+        } else {
+            self.line = line;
+            self.previous_line = previous_line;
+        }
+        self.earlier_output_emitted |= earlier_output_emitted;
+        self
     }
 }
 
@@ -66,6 +89,15 @@ impl fmt::Display for SafeError {
             ErrorKind::Output => {
                 "could not write output: output write failed. Check the destination; do not retry with raw input."
             }
+            ErrorKind::SourceNotFound => {
+                "file not found. Check that the explicit path exists and retry with --file PATH."
+            }
+            ErrorKind::SourcePermissionDenied => {
+                "permission denied while reading file. Check read permissions on the file and its parent directories, then retry."
+            }
+            ErrorKind::SourceNotRegular => {
+                "source is not a regular file. Supply an explicit UTF-8 .env file and retry."
+            }
             ErrorKind::InvalidAssignment => "invalid assignment. Use NAME=VALUE syntax and retry.",
             ErrorKind::DuplicateName => {
                 "duplicate variable name. Keep one definition per source and retry."
@@ -86,7 +118,17 @@ impl fmt::Display for SafeError {
             ErrorKind::Detector => {
                 "detector failed. Report the version and a synthetic reproduction."
             }
-        })
+        })?;
+        if self.kind == ErrorKind::Output && self.earlier_output_emitted {
+            f.write_str(
+                " Some filtered output may already have been written. Treat stdout as incomplete.",
+            )?;
+        } else if self.earlier_output_emitted {
+            f.write_str(
+                " Earlier filtered output was emitted; the unfinished record was withheld.",
+            )?;
+        }
+        Ok(())
     }
 }
 

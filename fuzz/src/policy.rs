@@ -89,9 +89,19 @@ pub fn outputs_match(record: &Record, value: Option<&str>, policy: &Policy) -> b
         Source::Environment => json!({"kind": "environment"}),
         Source::File { path } => json!({"kind": "file", "path": path}),
     };
-    let expected_json = json!({"schema_version": 1, "records": [{
+    let redaction_reason = if state == "redacted" {
+        Some(if policy.redact.contains(&record.name) {
+            "explicit-redact"
+        } else {
+            "default-policy"
+        })
+    } else {
+        None
+    };
+    let expected_json = json!({"schema_version": 2, "records": [{
         "source": source, "name": record.name, "state": state,
         "value": value, "fingerprint": fingerprint,
+        "redaction_reason": redaction_reason,
     }]});
     let mut actual_json = Vec::new();
     if render(std::slice::from_ref(record), true, &mut actual_json).is_err() {

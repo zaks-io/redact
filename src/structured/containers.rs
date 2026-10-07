@@ -2,14 +2,38 @@ use super::STRUCTURE_LIMIT;
 use crate::{Span, error::SafeError};
 use serde_json::Value;
 
-pub(super) fn json_containers(input: &str, spans: &mut Vec<Span>) -> Result<(), SafeError> {
+pub(super) fn json_containers(
+    input: &str,
+    private_spans: &[Span],
+    spans: &mut Vec<Span>,
+) -> Result<(), SafeError> {
     let bytes = input.as_bytes();
+    let private_spans = crate::merge_spans(input, private_spans)?;
+    let mut private_at = 0;
     let mut stack = Vec::new();
     let mut at = 0;
     let mut quoted_regions_available = true;
+    let mut escaped_outside = false;
     while at < bytes.len() {
+        while private_spans
+            .get(private_at)
+            .is_some_and(|span| span.end <= at)
+        {
+            private_at += 1;
+        }
+        if let Some(span) = private_spans.get(private_at)
+            && span.start <= at
+        {
+            // Private block contents are already hidden, not JSON quotation context.
+            at = span.end;
+            escaped_outside = false;
+            continue;
+        }
+        let quote_starts = super::json_quote_starts_string(bytes[at], escaped_outside);
+        // A wire-escaped quote outside JSON cannot hide a later credential object.
+        escaped_outside = bytes[at] == b'\\' && !escaped_outside;
         match bytes[at] {
-            b'"' if quoted_regions_available => {
+            b'"' if quoted_regions_available && quote_starts => {
                 match crate::context::quoted_end(input, at, b'"', false) {
                     Ok(end) => at = end,
                     Err(_) => quoted_regions_available = false,
@@ -165,10 +189,9 @@ fn private_object(value: &Value) -> bool {
 }
 
 pub(super) fn kubernetes_yaml(input: &str, spans: &mut Vec<Span>) -> Result<(), SafeError> {
-    let kind =
-        pattern!(r#"(?m)^[ \t]*["']?kind["']?[ \t]*:[ \t]*["']?Secret["']?[ \t]*(?:#.*)?\r?$"#)?;
+    let kind = super::yaml_secret_kind()?;
     let data = pattern!(r#"(?m)^[ \t]*["']?(?:data|stringData)["']?[ \t]*:[ \t]*"#)?;
-    let separators = pattern!(r"(?m)^---[ \t]*(?:#.*)?\r?$")?;
+    let separators = super::yaml_document_separators()?;
     let mut start = 0;
     for end in separators
         .find_iter(input)

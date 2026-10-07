@@ -78,7 +78,7 @@ class PackageTests(unittest.TestCase):
         commands = self.root / "commands"
         commands.mkdir()
         archive = f"redact-v{VERSION}-{TARGETS[0]}.tar.gz"
-        gh = commands / "gh"
+        curl = commands / "curl"
         tar = commands / "tar"
         tar.write_text("#!/bin/sh\ntouch extraction-was-run\nexit 73\n")
         tar.chmod(0o755)
@@ -87,10 +87,15 @@ class PackageTests(unittest.TestCase):
         for valid in (False, True):
             with self.subTest(valid=valid):
                 checksum = digest(b"synthetic archive") if valid else "0" * 64
-                gh.write_text("#!/bin/sh\n"
-                              f"printf 'synthetic archive' > '{archive}'\n"
-                              f"printf '%s  %s\\n' '{checksum}' '{archive}' > SHA256SUMS\n")
-                gh.chmod(0o755)
+                curl.write_text("#!/bin/sh\n"
+                                "while [ \"$1\" != --output ]; do shift; done\n"
+                                "case \"$2\" in\n"
+                                f"  '{archive}') printf 'synthetic archive' > \"$2\" ;;\n"
+                                f"  SHA256SUMS) printf '%s  %s\\n' '{checksum}' '{archive}' > \"$2\" ;;\n"
+                                "  release-manifest.json) printf '{}' > \"$2\" ;;\n"
+                                "  *) exit 1 ;;\n"
+                                "esac\n")
+                curl.chmod(0o755)
                 result = subprocess.run(["/bin/bash", "--noprofile", "--norc", "-c", block],
                                         cwd=self.root, env={"PATH": f"{commands}:/usr/bin:/bin"},
                                         capture_output=True, timeout=10)

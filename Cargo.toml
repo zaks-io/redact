@@ -15,7 +15,7 @@ test = true
 [dependencies]
 base64 = "0.22.1"
 # CLI errors use fixed diagnostics, and help is rendered as plain text.
-clap = { version = "4.6.1", default-features = false, features = ["derive", "std", "help", "usage"] }
+clap = { version = "4.6.1", default-features = false, features = ["derive", "std", "help", "usage", "error-context"] }
 percent-encoding = "2.3"
 # Retain Unicode boundaries, categories and case folding used by bundled detectors.
 # Standalone release acceptance checks this set; test dependencies enable extra tables.

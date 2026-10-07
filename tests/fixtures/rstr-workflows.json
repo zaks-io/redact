@@ -26,7 +26,7 @@
       "expect": {
         "exit_code": 0,
         "stdout_utf8": "{\"password\":\"[REDACTED sha256=1d5a8919184510ff]\",\"status\":401,\"host\":\"api.example.test\",\"message\":\"authentication failed\"}\n",
-        "stderr_utf8": ""
+        "stderr_utf8": "rstr: 1 redaction; labels describe local syntax evidence, not credential validity.\nrstr: line 1: sha256=1d5a8919184510ff; sensitive field or quoted credential\n"
       },
       "hidden_canaries": [
         "synthetic-secret-lilac-48"
@@ -42,7 +42,7 @@
       "expect": {
         "exit_code": 0,
         "stdout_utf8": "status=401 password=\"[REDACTED sha256=1d5a8919184510ff]\" host=api.example.test message=\"authentication failed\"\n",
-        "stderr_utf8": ""
+        "stderr_utf8": "rstr: 1 redaction; labels describe local syntax evidence, not credential validity.\nrstr: line 1: sha256=1d5a8919184510ff; sensitive field or quoted credential\n"
       },
       "hidden_canaries": [
         "synthetic-secret-lilac-48"
@@ -58,7 +58,7 @@
       "expect": {
         "exit_code": 0,
         "stdout_utf8": "HTTP/1.1 401 Unauthorized\nAuthorization: Bearer [REDACTED sha256=1d5a8919184510ff]\nX-Request-ID: example-request\n",
-        "stderr_utf8": ""
+        "stderr_utf8": "rstr: 1 redaction; labels describe local syntax evidence, not credential validity.\nrstr: line 2: sha256=1d5a8919184510ff; authorization header\n"
       },
       "hidden_canaries": [
         "synthetic-secret-lilac-48"
@@ -74,7 +74,7 @@
       "expect": {
         "exit_code": 0,
         "stdout_utf8": "status=401 password=[REDACTED sha256=5ea52f3878f087a3]\n",
-        "stderr_utf8": ""
+        "stderr_utf8": "rstr: 1 redaction; labels describe local syntax evidence, not credential validity.\nrstr: line 1: sha256=5ea52f3878f087a3; sensitive field or quoted credential\n"
       },
       "hidden_canaries": [
         "synthetic-secret-lilac-48"
@@ -107,12 +107,13 @@
       "stdin_utf8": "status=401\npassword=\"synthetic-secret-lilac-48",
       "expect": {
         "exit_code": 2,
-        "stdout_utf8": "",
+        "stdout_utf8": "status=401\n",
         "stderr_contains": [
           "rstr:",
           "line 2",
           "unterminated quoted value",
-          "Close the quoted value and retry."
+          "Close the quoted value and retry.",
+          "Earlier filtered output was emitted; the unfinished record was withheld."
         ]
       },
       "hidden_canaries": [
@@ -129,7 +130,7 @@
       "expect": {
         "exit_code": 0,
         "stdout_utf8": "status=401\npassword=\"[REDACTED sha256=1d5a8919184510ff]\"\n",
-        "stderr_utf8": ""
+        "stderr_utf8": "rstr: 1 redaction; labels describe local syntax evidence, not credential validity.\nrstr: line 2: sha256=1d5a8919184510ff; sensitive field or quoted credential\n"
       },
       "hidden_canaries": [
         "synthetic-secret-lilac-48"
@@ -159,7 +160,7 @@
       "expect": {
         "exit_code": 0,
         "stdout_utf8": "\u00e9ghp_SYNTHETIC_UNICODE_BENCHMARK_CANARY\n\u0345ghp_SYNTHETIC_UNICODE_BENCHMARK_CANARY\n\u00b2ghp_SYNTHETIC_UNICODE_BENCHMARK_CANARY\n[REDACTED sha256=e4377ccdbb958d0c]\n",
-        "stderr_utf8": ""
+        "stderr_utf8": "rstr: 1 redaction; labels describe local syntax evidence, not credential validity.\nrstr: line 4: sha256=e4377ccdbb958d0c; GitHub token format\n"
       },
       "hidden_canaries": []
     },
@@ -173,7 +174,7 @@
       "expect": {
         "exit_code": 0,
         "stdout_utf8": "Authorization: Ba\u017fic [REDACTED sha256=eadf3b2322b04964]\n",
-        "stderr_utf8": ""
+        "stderr_utf8": "rstr: 1 redaction; labels describe local syntax evidence, not credential validity.\nrstr: line 1: sha256=eadf3b2322b04964; authorization header\n"
       },
       "hidden_canaries": [
         "SYNTHETIC_UNICODE_HEADER_CANARY"

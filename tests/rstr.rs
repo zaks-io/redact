@@ -1,3 +1,6 @@
+#[path = "support/redaction_report.rs"]
+mod report;
+
 use std::io::{self, Read, Write};
 use std::process::{Command, Stdio};
 
@@ -102,7 +105,7 @@ fn context_boundaries_and_exact_hashing() {
         let output = run(input.as_bytes(), &[]);
         assert_eq!(output.status.code(), Some(0));
         assert_eq!(output.stdout, expected.as_bytes());
-        assert!(output.stderr.is_empty());
+        report::assert_report(&output.stdout, &output.stderr);
     }
 }
 
@@ -491,7 +494,7 @@ fn nested_original_uri_candidates_and_json_diagnostics_preserve_context() {
         let output = run(input.as_bytes(), &[]);
         assert_eq!(output.status.code(), Some(0));
         assert_eq!(output.stdout, expected.as_bytes());
-        assert!(output.stderr.is_empty());
+        report::assert_report(&output.stdout, &output.stderr);
     }
     let nested = format!("https://outer.test/?password=https://user:{CANARY}@inner.test");
     assert_eq!(
@@ -512,7 +515,7 @@ fn nested_original_uri_candidates_and_json_diagnostics_preserve_context() {
         .as_bytes()
     );
     assert_eq!(output.status.code(), Some(0));
-    assert!(output.stderr.is_empty());
+    report::assert_report(&output.stdout, &output.stderr);
     let repeated = format!("{}\n", " password=synthetic".repeat(8_000));
     assert_eq!(
         filter(repeated.as_bytes()).must(),
@@ -560,7 +563,7 @@ fn separate_json_headers_each_preserve_their_scheme() {
     let output = run(input.as_bytes(), &[]);
     assert_eq!(output.status.code(), Some(0));
     assert_eq!(output.stdout, expected.as_bytes());
-    assert!(output.stderr.is_empty());
+    report::assert_report(&output.stdout, &output.stderr);
 }
 
 #[test]
@@ -577,7 +580,7 @@ fn jwt_json_representation_limits_never_allow_unchecked_passthrough() {
         let output = run(token.as_bytes(), &[]);
         assert_eq!(output.status.code(), Some(0));
         assert_eq!(output.stdout, marker(token.as_bytes()).as_bytes());
-        assert!(output.stderr.is_empty());
+        report::assert_report(&output.stdout, &output.stderr);
     }
     let nested = format!("{}\"{CANARY}\"{}", "{\"a\":".repeat(150), "}".repeat(150));
     let nested_header = format!(r#"{{"alg":"none","meta":{nested}}}"#);
@@ -595,7 +598,7 @@ fn jwt_json_representation_limits_never_allow_unchecked_passthrough() {
         assert!(output.stdout.is_empty());
         assert_eq!(
             String::from_utf8_lossy(&output.stderr),
-            "rstr: detector failed. Report the version and a synthetic reproduction.\n"
+            "rstr: line 1: detector failed. Report the version and a synthetic reproduction.\n"
         );
     }
     let braces = serde_json::to_vec(&serde_json::json!({"synthetic": "{[\\\"".repeat(150)})).must();

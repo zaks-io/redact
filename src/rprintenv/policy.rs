@@ -33,11 +33,19 @@ pub enum State {
     Missing,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum RedactionReason {
+    DefaultPolicy,
+    ExplicitRedact,
+}
+
 #[derive(Debug)]
 pub struct Record {
     pub source: Source,
     pub name: String,
     pub state: State,
+    pub redaction_reason: Option<RedactionReason>,
 }
 
 pub fn disclose(
@@ -59,10 +67,18 @@ pub fn disclose(
             }
         }
     };
+    let redaction_reason = match &state {
+        State::Redacted(_) if policy.redact.contains(&name) => {
+            Some(RedactionReason::ExplicitRedact)
+        }
+        State::Redacted(_) => Some(RedactionReason::DefaultPolicy),
+        _ => None,
+    };
     Record {
         source,
         name,
         state,
+        redaction_reason,
     }
 }
 

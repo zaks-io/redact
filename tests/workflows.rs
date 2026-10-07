@@ -1,3 +1,6 @@
+#[path = "support/redaction_report.rs"]
+mod report;
+
 #[path = "workflows/failures.rs"]
 mod failures;
 mod support;
@@ -246,6 +249,6 @@ fn producer_streams_flow_directly_to_filter_and_pipefail_preserves_failure() {
         let output = support::capture(&mut command, b"");
         assert_eq!(output.status.code(), Some(status));
         assert!(output.stdout == b"password=[REDACTED sha256=1d5a8919184510ff]\nstatus=401\n");
-        assert!(output.stderr.is_empty());
+        report::assert_report(&output.stdout, &output.stderr);
     }
 }

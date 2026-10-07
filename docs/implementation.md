@@ -7,12 +7,16 @@ launches a scanner, downloads rules, or records telemetry.
 
 `rprintenv` implements explicit source selection, full-source validation, the
 literal dotenv dialect, exact-name disclosure overrides, the narrow built-in
-allowlist, presence checks, sorted text records, and schema-version-1 JSON.
+allowlist, presence checks, sorted text records, and schema-version-2 JSON with
+policy reasons for hidden values.
 Renderers receive policy-approved records. Raw values have opaque Debug output.
 Errors retain fixed categories and approved source/line metadata.
 
-`rstr` implements all v1 detector categories, validates bounded UTF-8 stdin, and
-renders the union of original secret spans. See the [rule ledger](rules.md) and
+`rstr` implements all v1 detector categories, validates bounded pending UTF-8
+stdin records, and renders the union of original secret spans. Completed records
+are filtered independently before EOF; only filtered output is batched for I/O.
+A bounded stderr report preserves safe detector evidence and fingerprints.
+See the [rule ledger](rules.md) and
 [machine-readable coverage](../rules/coverage.json) for exact provider and
 container coverage. Researched formats beyond those rules remain explicitly
 deferred or context-only. Standalone arbitrary passwords and recursive encoded
@@ -22,12 +26,13 @@ Release builds strip symbols and use fat LTO with one codegen unit. The
 [performance specification](performance.md) defines release settings, required
 dependency features, behavior compatibility, and measurement procedures.
 
-## Remaining platform evidence
+## Platform evidence
 
-The [workflow](../.github/workflows/ci.yml) defines Blacksmith Linux and Apple
-Silicon macOS test/release jobs and a separate Linux nightly fuzz-harness job.
-No hosted run, GitHub App access check, or macOS execution has been performed
-locally. A hosted run is required before claiming that platform acceptance.
+The [workflow](../.github/workflows/ci.yml) runs tests, acceptance, and native
+packaging on Blacksmith Ubuntu 24.04 x86-64 and macOS 26 Apple Silicon, plus a
+separate Linux nightly fuzz-harness job. Hosted runs pass on both platforms, and
+v0.1.0 was published from a successful Release workflow run. Older operating
+system versions remain unverified.
 
 ## Done
 

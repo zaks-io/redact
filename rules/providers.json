@@ -22,7 +22,8 @@
       "sources": [
         "https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/about-authentication-to-github#githubs-token-formats"
       ],
-      "source": "https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/about-authentication-to-github#githubs-token-formats"
+      "source": "https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/about-authentication-to-github#githubs-token-formats",
+      "label": "github-token-format"
     },
     {
       "id": "gitlab-access",
@@ -36,7 +37,8 @@
         "https://docs.gitlab.com/security/tokens/#token-prefixes",
         "https://docs.gitlab.com/administration/settings/account_and_limit_settings/#personal-access-token-prefix"
       ],
-      "source": "https://docs.gitlab.com/security/tokens/#token-prefixes"
+      "source": "https://docs.gitlab.com/security/tokens/#token-prefixes",
+      "label": "gitlab-access-token-format"
     },
     {
       "id": "gitlab-other",
@@ -61,7 +63,8 @@
         "https://docs.gitlab.com/security/tokens/#token-prefixes",
         "https://docs.gitlab.com/administration/settings/account_and_limit_settings/#instance-token-prefix"
       ],
-      "source": "https://docs.gitlab.com/security/tokens/#token-prefixes"
+      "source": "https://docs.gitlab.com/security/tokens/#token-prefixes",
+      "label": "gitlab-token-format"
     },
     {
       "id": "npm-token",
@@ -74,7 +77,8 @@
       "sources": [
         "https://github.blog/security/announcing-npms-new-access-token-format/"
       ],
-      "source": "https://github.blog/security/announcing-npms-new-access-token-format/"
+      "source": "https://github.blog/security/announcing-npms-new-access-token-format/",
+      "label": "npm-token-format"
     },
     {
       "id": "pypi-token",
@@ -87,7 +91,8 @@
       "sources": [
         "https://pypi.org/help/#apitoken"
       ],
-      "source": "https://pypi.org/help/#apitoken"
+      "source": "https://pypi.org/help/#apitoken",
+      "label": "pypi-token-format"
     },
     {
       "id": "huggingface-token",
@@ -100,14 +105,14 @@
       "sources": [
         "https://huggingface.co/docs/hub/en/security-tokens"
       ],
-      "source": "https://huggingface.co/docs/hub/en/security-tokens"
+      "source": "https://huggingface.co/docs/hub/en/security-tokens",
+      "label": "huggingface-token-format"
     },
     {
       "id": "openai-key",
       "prefixes": [
         "sk-proj-",
-        "sk-admin-",
-        "sk-"
+        "sk-admin-"
       ],
       "evidence": "example-backed",
       "scope": "Researched 2026-10-04; no inferred body lengths or validity",
@@ -117,7 +122,22 @@
         "https://developers.openai.com/api/reference/resources/organization/subresources/projects/subresources/service_accounts/methods/create",
         "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/admin_api_keys/methods/create"
       ],
-      "source": "https://developers.openai.com/cookbook/examples/agents_sdk/evaluate_agents"
+      "source": "https://developers.openai.com/cookbook/examples/agents_sdk/evaluate_agents",
+      "label": "openai-key-format"
+    },
+    {
+      "id": "generic-secret-key",
+      "label": "generic-secret-key-format",
+      "prefixes": [
+        "sk-"
+      ],
+      "evidence": "shared prefix; provider unknown",
+      "scope": "Conservative secret-key syntax, without provider attribution or validity claims.",
+      "sources": [
+        "https://developers.openai.com/cookbook/examples/agents_sdk/evaluate_agents",
+        "https://developers.openai.com/api/reference/resources/organization/subresources/projects/subresources/service_accounts/methods/create",
+        "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/admin_api_keys/methods/create"
+      ]
     },
     {
       "id": "anthropic-key",
@@ -132,7 +152,8 @@
         "https://docs.anthropic.com/en/api/administration-api",
         "https://docs.anthropic.com/en/api/admin-api/apikeys/get-api-key"
       ],
-      "source": "https://docs.anthropic.com/en/api/administration-api"
+      "source": "https://docs.anthropic.com/en/api/administration-api",
+      "label": "anthropic-key-format"
     },
     {
       "id": "stripe-key",
@@ -149,7 +170,8 @@
       "sources": [
         "https://docs.stripe.com/keys"
       ],
-      "source": "https://docs.stripe.com/keys"
+      "source": "https://docs.stripe.com/keys",
+      "label": "stripe-key-format"
     },
     {
       "id": "stripe-webhook",
@@ -162,7 +184,8 @@
       "sources": [
         "https://docs.stripe.com/webhooks/signature"
       ],
-      "source": "https://docs.stripe.com/webhooks/signature"
+      "source": "https://docs.stripe.com/webhooks/signature",
+      "label": "stripe-webhook-format"
     },
     {
       "id": "slack-token",
@@ -179,7 +202,8 @@
       "sources": [
         "https://docs.slack.dev/authentication/tokens/"
       ],
-      "source": "https://docs.slack.dev/authentication/tokens/"
+      "source": "https://docs.slack.dev/authentication/tokens/",
+      "label": "slack-token-format"
     },
     {
       "id": "slack-rotation",
@@ -194,7 +218,8 @@
       "sources": [
         "https://docs.slack.dev/authentication/using-token-rotation/"
       ],
-      "source": "https://docs.slack.dev/authentication/using-token-rotation/"
+      "source": "https://docs.slack.dev/authentication/using-token-rotation/",
+      "label": "slack-rotation-format"
     },
     {
       "id": "vault-token",
@@ -209,7 +234,8 @@
       "sources": [
         "https://developer.hashicorp.com/vault/docs/concepts/tokens#token-prefixes"
       ],
-      "source": "https://developer.hashicorp.com/vault/docs/concepts/tokens#token-prefixes"
+      "source": "https://developer.hashicorp.com/vault/docs/concepts/tokens#token-prefixes",
+      "label": "vault-token-format"
     },
     {
       "id": "onepassword-service",
@@ -222,7 +248,8 @@
       "sources": [
         "https://developer.1password.com/docs/service-accounts/security/"
       ],
-      "source": "https://developer.1password.com/docs/service-accounts/security/"
+      "source": "https://developer.1password.com/docs/service-accounts/security/",
+      "label": "onepassword-service-format"
     },
     {
       "id": "vercel-token",
@@ -235,7 +262,8 @@
       "sources": [
         "https://vercel.com/docs/accounts/access-tokens"
       ],
-      "source": "https://vercel.com/docs/accounts/access-tokens"
+      "source": "https://vercel.com/docs/accounts/access-tokens",
+      "label": "vercel-token-format"
     },
     {
       "id": "linear-token",
@@ -250,7 +278,8 @@
         "https://linear.app/changelog/2021-08-19-github-secret-scanning",
         "https://linear.app/developers/graphql"
       ],
-      "source": "https://linear.app/changelog/2021-08-19-github-secret-scanning"
+      "source": "https://linear.app/changelog/2021-08-19-github-secret-scanning",
+      "label": "linear-token-format"
     },
     {
       "id": "notion-token",
@@ -264,7 +293,8 @@
       "sources": [
         "https://developers.notion.com/page/changelog#september-11-2024"
       ],
-      "source": "https://developers.notion.com/page/changelog#september-11-2024"
+      "source": "https://developers.notion.com/page/changelog#september-11-2024",
+      "label": "notion-token-format"
     },
     {
       "id": "digitalocean-token",
@@ -279,7 +309,8 @@
       "sources": [
         "https://www.digitalocean.com/blog/updated-api-tokens-new-management-features"
       ],
-      "source": "https://www.digitalocean.com/blog/updated-api-tokens-new-management-features"
+      "source": "https://www.digitalocean.com/blog/updated-api-tokens-new-management-features",
+      "label": "digitalocean-token-format"
     },
     {
       "id": "pulumi-token",
@@ -292,7 +323,8 @@
       "sources": [
         "https://www.pulumi.com/registry/packages/pulumiservice/api-docs/api/tokens/personaltoken/"
       ],
-      "source": "https://www.pulumi.com/registry/packages/pulumiservice/api-docs/api/tokens/personaltoken/"
+      "source": "https://www.pulumi.com/registry/packages/pulumiservice/api-docs/api/tokens/personaltoken/",
+      "label": "pulumi-token-format"
     },
     {
       "id": "grafana-token",
@@ -306,7 +338,8 @@
         "https://grafana.com/blog/new-in-grafana-9-1-service-accounts-are-now-ga/",
         "https://grafana.com/docs/learning-paths/private-data-source-connect/generate-token/"
       ],
-      "source": "https://grafana.com/blog/new-in-grafana-9-1-service-accounts-are-now-ga/"
+      "source": "https://grafana.com/blog/new-in-grafana-9-1-service-accounts-are-now-ga/",
+      "label": "grafana-token-format"
     },
     {
       "id": "newrelic-key",
@@ -320,7 +353,8 @@
         "https://docs.newrelic.com/docs/apis/intro-apis/new-relic-api-keys/",
         "https://docs.newrelic.com/eol/2025/01/deprecation-notice-rest-api-keys/"
       ],
-      "source": "https://docs.newrelic.com/docs/apis/intro-apis/new-relic-api-keys/"
+      "source": "https://docs.newrelic.com/docs/apis/intro-apis/new-relic-api-keys/",
+      "label": "newrelic-key-format"
     },
     {
       "id": "cloudflare-current",
@@ -335,7 +369,8 @@
       "sources": [
         "https://developers.cloudflare.com/fundamentals/api/get-started/token-formats/"
       ],
-      "source": "https://developers.cloudflare.com/fundamentals/api/get-started/token-formats/"
+      "source": "https://developers.cloudflare.com/fundamentals/api/get-started/token-formats/",
+      "label": "cloudflare-token-format"
     },
     {
       "id": "supabase-current",
@@ -349,7 +384,8 @@
         "https://supabase.com/docs/guides/getting-started/api-keys",
         "https://supabase.com/docs/guides/self-hosting/self-hosted-auth-keys"
       ],
-      "source": "https://supabase.com/docs/guides/getting-started/api-keys"
+      "source": "https://supabase.com/docs/guides/getting-started/api-keys",
+      "label": "supabase-secret-format"
     }
   ],
   "aws": {
@@ -358,7 +394,8 @@
     "evidence": "documented common 20-character shape, conservative evolving suffix",
     "scope": "Access ID only, not paired secret access key. STS input constraints do not define every issued shape.",
     "source": "https://docs.aws.amazon.com/STS/latest/APIReference/API_GetAccessKeyInfo.html",
-    "boundary_pattern": "(?:^|[^\\p{Alphabetic}\\p{Number}_.+-])"
+    "boundary_pattern": "(?:^|[^\\p{Alphabetic}\\p{Number}_.+-])",
+    "label": "aws-access-id-format"
   },
   "patterns": [
     {
@@ -369,7 +406,8 @@
         "https://www.twilio.com/docs/sendgrid/api-reference/api-keys/create-api-keys",
         "https://www.twilio.com/docs/sendgrid/ui/account-and-settings/api-keys"
       ],
-      "boundary_pattern": "(?:^|[^\\p{Alphabetic}\\p{Number}_.+-])"
+      "boundary_pattern": "(?:^|[^\\p{Alphabetic}\\p{Number}_.+-])",
+      "label": "sendgrid-key-format"
     },
     {
       "id": "bcrypt-verifier",
@@ -378,7 +416,8 @@
       "sources": [
         "https://man.openbsd.org/crypt"
       ],
-      "boundary_pattern": ""
+      "boundary_pattern": "",
+      "label": "bcrypt-verifier-format"
     },
     {
       "id": "phc-verifier",
@@ -388,7 +427,8 @@
         "https://github.com/P-H-C/phc-string-format/blob/master/phc-sf-spec.md",
         "https://docs.rs/argon2/latest/argon2/"
       ],
-      "boundary_pattern": ""
+      "boundary_pattern": "",
+      "label": "phc-verifier-format"
     }
   ]
 }

@@ -10,7 +10,7 @@ rprintenv [OPTIONS] [NAME...]
 --allow NAME     Reveal this variable's value; repeatable, exact name only
 --redact NAME    Force this variable's value to remain hidden; repeatable
 --exists         Check presence without printing values or records
---json           Emit the versioned JSON format
+--json           Emit schema version 2 JSON
 -h, --help       Show help
 -V, --version    Show version
 ```
@@ -76,27 +76,29 @@ synthetic value `abc`:
 
 ## JSON output
 
-Emit one JSON object followed by a newline. `schema_version` starts at `1`.
+Emit one JSON object followed by a newline. `schema_version` is `2`.
 Records follow the same ordering as text output. Each record has exactly
-`source`, `name`, `state`, `value`, and `fingerprint`.
+`source`, `name`, `state`, `value`, `fingerprint`, and `redaction_reason`.
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "records": [
     {
       "source": { "kind": "environment" },
       "name": "API_TOKEN",
       "state": "redacted",
       "value": null,
-      "fingerprint": "ba7816bf8f01cfea"
+      "fingerprint": "ba7816bf8f01cfea",
+      "redaction_reason": "default-policy"
     },
     {
       "source": { "kind": "file", "path": ".env" },
       "name": "EMPTY_TOKEN",
       "state": "empty",
       "value": "",
-      "fingerprint": null
+      "fingerprint": null,
+      "redaction_reason": null
     }
   ]
 }
@@ -110,6 +112,11 @@ Records follow the same ordering as text output. Each record has exactly
 | `missing` | `null` | `null` |
 
 The format itself identifies the algorithm through this versioned contract.
+`redaction_reason` is `default-policy` when a populated value is hidden by the
+default disclosure rules, or `explicit-redact` when `--redact NAME` takes
+precedence. It is null for visible, empty, and missing records. This reason is a
+policy explanation, not a credential-format or validity claim. Schema version 1
+did not contain this field; consumers requiring exact schemas must update.
 Never include a second raw or debug value field. Do not emit error objects on
 stdout; failures use sanitized stderr and exit status `2`.
 

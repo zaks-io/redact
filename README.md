@@ -1,95 +1,157 @@
 # redact
 
-Two local Rust CLIs for inspecting configuration and filtering command output.
+Two small command line tools that let agents and people inspect configuration
+and command output without copying secrets into transcripts, logs, or chat.
 
-- `rprintenv` reads the environment and explicitly selected `.env` files. It hides
-  populated values by default and shows stable fingerprints. Missing and empty
-  values have separate states.
-- `rstr` reads stdin only and replaces recognizable secrets. Arbitrary standalone
-  passwords can pass through unchanged. Exit `0` does not certify safe text.
+- `rprintenv` reads environment variables and explicitly named `.env` files. It
+  hides populated values by default, shows a stable fingerprint instead, and
+  tells missing, empty, and populated values apart.
+- `rstr` reads stdin and replaces recognizable secrets with fingerprints. It
+  never looks at the environment or opens files.
 
-## Build and use
+Both run locally on macOS and Linux. They make no network requests, keep no
+configuration, and record no telemetry.
 
-Download prebuilt Linux x86-64 and Apple Silicon macOS binaries from a published
-GitHub Release. Each package includes both commands. See the
-[download and installation guide](docs/releases.md) for authenticated downloads,
-checksum verification, compatibility, and manual release preparation.
+Streaming, detection-evidence reports, and JSON schema 2 describe the current
+source. Published v0.1.0 binaries retain the earlier behavior; build from source
+to use these changes until a new release is published.
 
-The pinned Rust toolchain installs through rustup. macOS and Linux are supported.
+## Install
+
+Prebuilt binaries for Linux x86-64 and Apple Silicon macOS are attached to each
+[GitHub Release](https://github.com/zaks-io/redact/releases). Each archive
+contains both commands and does not require Rust. The
+[installation guide](docs/releases.md#download-and-install) has a copy-paste
+script that downloads, verifies the checksum, and installs into
+`~/.local/bin`. The macOS binaries are not notarized, so browser downloads may
+trigger a security prompt.
+
+To build from source with the pinned Rust toolchain (installed through rustup):
 
 ```sh
-cargo build --locked --release
-target/release/rprintenv --help
-target/release/rstr --help
+cargo install --locked --path .
 ```
 
-To install both binaries locally, run `cargo install --locked --path .`.
-
-Inspect only the configuration you need. `--exists` includes empty values;
-`--json` distinguishes missing, empty, and populated. Neither establishes that a
-credential works with a provider.
+## rprintenv
 
 ```sh
-target/release/rprintenv --exists API_KEY
-target/release/rprintenv --json API_KEY
-target/release/rprintenv --env --file .env --file .env.local API_KEY
+rprintenv --json OPENAI_API_KEY DATABASE_URL   # state of specific variables
+rprintenv --exists OPENAI_API_KEY              # presence only; exit 0 or 1
+rprintenv --env --file .env --file .env.local OPENAI_API_KEY   # compare sources
 ```
 
-Pipe the original producer output so field names and authentication context reach
-the filter. Include stderr when it can contain secrets. Enable shell `pipefail`
-when the producer's failure must remain visible in the pipeline status.
+Text output has one tab-separated record per line: source, name, and value.
+With synthetic values:
+
+```text
+"env"        "API_TOKEN"     [REDACTED sha256=abe6c8011330fbd6]
+"file:.env"  "API_TOKEN"     [REDACTED sha256=abe6c8011330fbd6]
+"file:.env"  "EMPTY_TOKEN"   [EMPTY]
+"file:.env"  "MISSING_TOKEN" [UNSET]
+"file:.env"  "NODE_ENV"      "production"
+```
+
+Matching fingerprints show the two sources likely hold the same value. A small
+built-in set of ordinary variables such as `NODE_ENV` is shown; everything else
+is hidden unless you pass `--allow NAME`, which prints the full value. `--redact
+NAME` always wins.
+
+Without `--file`, the current environment is read. With `--file`, only those
+files are read unless `--env` is also given. Files use a literal dotenv dialect:
+no variable expansion and no shell execution.
+
+Exit status is `0` on success, `1` when a requested variable is missing from a
+selected source, and `2` for usage, input, or parse errors. `--exists` counts
+empty values as present; use `--json` to see whether a value is empty. A
+populated value does not prove a provider will accept it. JSON schema 2 includes
+`redaction_reason`: `default-policy`, `explicit-redact`, or null.
+
+## rstr
+
+Pipe the original command output, including stderr, so field names and headers
+reach the filter:
 
 ```sh
 set -o pipefail
-command 2>&1 | target/release/rstr
+command 2>&1 | rstr
 ```
 
-Both tools use SHA-256 fingerprints of the exact protected bytes, truncated to 16
-lowercase hex characters. Fingerprints permit correlation and guessing of weak
-values. They are not encryption or proof of equality. `--allow` intentionally
-prints full values; use it only when disclosure is appropriate.
+```text
+connecting as admin
+password=[REDACTED sha256=c558f136da60f3aa]
+Authorization: Bearer [REDACTED sha256=b52e2fa25863e5e8]
+done
+```
 
-## Validate
+`rstr` recognizes provider token formats, authentication headers, sensitive
+assignments, URL credentials, private key blocks, and JWTs. Unmatched text
+passes through byte for byte. Completed ordinary records appear before EOF;
+uncertain quotes, containers, private keys, and YAML-like documents stay buffered.
+Colon-style messages such as `ERROR: retry later` may resemble YAML and wait for a
+document separator or EOF. Input must be UTF-8; the 16 MiB limit applies to
+pending input, so longer completed streams are supported.
+
+Successful filtering writes a bounded stderr report with fingerprints, first
+input lines, and detector evidence. Zero matches stay quiet. Failures identify
+the global line and explain whether earlier filtered output exists.
+
+Detection needs recognizable structure or context. An arbitrary standalone
+password can pass through unchanged, so exit `0` or zero replacements does not
+prove the text is safe. `pipefail` keeps the producer's failure visible in the
+pipeline status.
+
+## Fingerprints and limits
+
+Both tools print `[REDACTED sha256=<16 hex>]`: the first 16 lowercase hex
+characters of the SHA-256 of the exact hidden bytes. Fingerprints are stable
+across runs, names, sources, and machines, so they work for correlation. They
+are not encryption, allow guessing of weak values, and are too short to prove
+two values are equal.
+
+These tools prevent accidental disclosure by cooperative agents. They are not
+an access control boundary: anything that can read the environment or file
+directly can read the secret.
+
+## Documentation
+
+- [Agent usage guide](docs/agent-usage.md): preferred commands and safe recovery.
+- [Specifications](docs/README.md): CLI contracts, disclosure rules, detection,
+  acceptance, performance, and fuzzing.
+- [Rule coverage](docs/rules.md) and the
+  [format coverage ledger](docs/secret-formats/coverage.md): which credential
+  formats are detected and their limits.
+- [Binary releases](docs/releases.md): installation, package contents,
+  compatibility, and the release process.
+
+## Development
+
+Run the same checks as CI:
 
 ```sh
-python3 -m unittest discover -s scripts -p 'test_*.py'
 cargo fmt --check
+cargo fmt --manifest-path fuzz/Cargo.toml --check
+python3 -m unittest discover -s scripts -p 'test_*.py'
 cargo clippy --locked --all-targets --all-features -- -D warnings
 cargo test --locked -- --test-threads=2
-cargo build --locked --release
+cargo build --locked --release --bins
 python3 scripts/acceptance.py
-cargo test --locked --release --test workflows --test rstr --test rstr_regressions -- --test-threads=2 --nocapture
-cargo install cargo-deny --version 0.18.9 --locked --jobs 2
+cargo test --locked --release --test workflows --test rstr --test rstr_regressions --test streaming --test streaming_review -- --test-threads=2
+cargo install cargo-deny --version 0.18.9 --locked
 cargo deny --locked check
 cargo deny --manifest-path fuzz/Cargo.toml --locked check --config ../deny.toml
 ```
 
-The workflow suite executes every checked-in synthetic fixture against real
-binaries in isolated temporary directories with cleared child environments. It
-records per-invocation duration and output size without a performance threshold.
-The release command repeats the suite against optimized binaries. CI runs on
-Blacksmith Linux and Apple Silicon macOS with immutable action revisions.
+Tests run real binaries against checked-in synthetic fixtures with cleared child
+environments; never use real secrets in tests, fixtures, or output. Property
+tests run with `cargo test`. The six coverage-guided fuzz targets use a separate
+pinned nightly toolchain; see [fuzz/README.md](fuzz/README.md).
 
-See the [specifications](docs/README.md),
-[agent guide](docs/agent-usage.md), and [rule coverage](docs/rules.md). The research
-inventory now has executable coverage for all 61 entries in the
-[format coverage ledger](docs/secret-formats/coverage.md). Context-only families
-still require recognizable fields or structures. Property
-tests run in normal validation; six coverage-guided fuzz targets have a separate
-pinned nightly toolchain and explicit campaign budgets.
-Hosted CI and macOS results require an
-actual GitHub Actions run.
-The [implementation summary](docs/implementation.md) describes what is built and
-which platform checks remain.
+CI runs on Blacksmith Ubuntu 24.04 x86-64 and macOS 26 Apple Silicon, packages
+both platforms on every run, and runs short fuzz campaigns. Releases are
+prepared as drafts by the manual `Release` workflow and published by hand.
 
-The `.env` parser implements the [documented literal dialect](docs/disclosure.md).
-It never expands variables or executes shell syntax. Core functions take explicit
-inputs for tests and fuzz targets.
+Contributors and agents should read [AGENTS.md](AGENTS.md) first.
 
-Argument parsing uses [clap](https://docs.rs/clap/4.6.7/clap/), but failures map to
-fixed diagnostics instead of echoing rejected arguments. SHA-256 uses
-[sha2](https://docs.rs/sha2/0.10.9/sha2/), and JSON escaping uses
-[serde_json](https://docs.rs/serde_json/1.0.151/serde_json/). Environment reads use
-[vars_os](https://doc.rust-lang.org/std/env/fn.vars_os.html) to handle encoding
-errors explicitly. The parser implements the specified dotenv subset because
-its no-interpolation and duplicate-error rules are part of the product contract.
+## License
+
+[MIT](LICENSE)

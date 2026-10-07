@@ -1,14 +1,15 @@
 # Binary release plan
 
-Status: implemented for local and CI validation. Hosted results and release
-publication must be verified separately. See [release operations](releases.md).
+Status: implemented. v0.1.0 was prepared by the Release workflow and published
+manually. See [release operations](releases.md).
 
 ## Existing foundation
 
 Both commands already use the pinned Rust toolchain, `Cargo.lock`, and the
 canonical optimized profile. The previous main CI run passed on Blacksmith
 Linux x86-64 and Apple Silicon macOS. It had no downloadable binary artifacts.
-The repository is private and Cargo registry publishing is disabled.
+The repository is public under the MIT license. Cargo registry publishing is
+disabled.
 
 ## Reviewed approach
 
@@ -56,10 +57,10 @@ selected source package; Linux never executes the macOS binary.
 
 CI establishes Ubuntu 24.04 x86-64 and macOS 26 Apple Silicon coverage. Runtime
 metadata does not prove that older operating systems work. Linux ARM, Intel
-macOS, Windows, Homebrew, crates.io, automatic installers, Apple Developer ID
-signing/notarization, and public distribution are outside this first release.
+macOS, Windows, Homebrew, crates.io, automatic installers, and Apple Developer ID
+signing/notarization are outside this first release.
 
-GitHub authentication is required to download from this private repository.
+Public release downloads do not require GitHub authentication.
 Unsigned browser downloads need a separate macOS quarantine-flow check on
 Isaac's Mac. Review the draft's source SHA, CI link, and hashes before publishing;
 workflow validation alone is not an access-control boundary for repository

@@ -1,3 +1,6 @@
+#[path = "support/redaction_report.rs"]
+mod report;
+
 #[allow(dead_code, reason = "shared synthetic assertions across test suites")]
 #[path = "support/synthetic.rs"]
 mod synthetic;
@@ -144,7 +147,7 @@ fn workflow_fixtures_exercise_real_binary() {
                 }
             }
             if case.expect.exit_code == 0 {
-                assert!(stderr.is_empty(), "{}", case.id);
+                report::assert_report(stdout.as_bytes(), stderr.as_bytes());
             }
             for canary in case.hidden_canaries {
                 assert!(!stdout.contains(&canary), "{}", case.id);
@@ -237,7 +240,7 @@ fn rejected_prefix_near_matches_have_bounded_processing() {
     let input = format!("{ordinary}\npassword={canary}\n");
     let output = execute(input.as_bytes(), &[]);
     assert!(output.status.success());
-    assert!(output.stderr.is_empty());
+    report::assert_report(&output.stdout, &output.stderr);
     assert_eq!(
         String::from_utf8(output.stdout).must(),
         format!(

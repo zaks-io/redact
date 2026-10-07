@@ -1,3 +1,6 @@
+#[path = "support/redaction_report.rs"]
+mod report;
+
 #[allow(dead_code, reason = "shared synthetic assertions across test suites")]
 #[path = "support/synthetic.rs"]
 mod synthetic;
@@ -266,7 +269,7 @@ fn reviewed_boundaries_protect_cli_canaries() {
         let output = child.wait_with_output().must();
         assert_eq!(output.status.code(), Some(0));
         assert_eq!(output.stdout, expected.as_bytes());
-        assert!(output.stderr.is_empty());
+        report::assert_report(&output.stdout, &output.stderr);
         assert!(
             !output
                 .stdout
@@ -329,7 +332,7 @@ fn recognized_context_survives_malformed_container_shapes() {
         let output = child.wait_with_output().must();
         assert_eq!(output.status.code(), Some(0));
         assert_eq!(output.stdout, expected.as_bytes());
-        assert!(output.stderr.is_empty());
+        report::assert_report(&output.stdout, &output.stderr);
     }
 }
 
@@ -369,8 +372,8 @@ fn unterminated_escaped_quotes_have_bounded_cli_processing() {
     }
     let output = child.wait_with_output().must();
     assert_eq!(output.status.code(), Some(0));
-    assert!(output.stderr.is_empty());
     let stdout = std::fs::read_to_string(stdout_file.path()).must();
+    report::assert_report(stdout.as_bytes(), &output.stderr);
     let expected = format!(
         "\"{} password={}",
         "\\\"".repeat((redact::MAX_INPUT_BYTES - 128) / 2),

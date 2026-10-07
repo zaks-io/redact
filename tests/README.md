@@ -34,7 +34,8 @@ exact `stdout_json`. JSON object key order and insignificant whitespace are
 irrelevant; array order, nulls, fields, and values must match. Extra records and
 fields fail. For stderr, require either byte-exact `stderr_utf8` or all listed
 `stderr_contains` fragments. Additional error text must still satisfy the safe
-error contract. All success cases require empty stderr.
+error contract. Successful `rprintenv` and zero-match `rstr` cases require empty
+stderr. Matching `rstr` cases assert the bounded evidence report exactly.
 
 The fixtures intentionally include a bare value `rstr` cannot recognize. Its
 presence in output is expected and does not belong in `hidden_canaries`. Never
@@ -81,3 +82,8 @@ Some requirements need more than one plain subprocess fixture:
 These cases are mandatory in [the usability spec](../docs/agent-usability.md).
 The fixture corpus is a starting set, not a substitute for the full acceptance
 and fuzzing requirements.
+
+[Streaming review regressions](streaming_review.rs) compare every split and
+generated read schedules, including one-byte reads. They cover assignment
+continuations, quoted JSON log wrappers, exact YAML separators, staged live
+pipes, and late failures that retain only earlier filtered output.

@@ -1,8 +1,12 @@
 # rprintenv and rstr specifications
 
-Status: implemented Rust CLIs with executable acceptance fixtures, property tests,
-and a pinned CI workflow. Hosted platform validation is not implied by this
-document. See the [implementation guide](../README.md) and [rule coverage](rules.md) and the [format ledger](secret-formats/coverage.md).
+Status: implemented and released Rust CLIs with executable acceptance fixtures,
+property tests, fuzz targets, and hosted CI on Linux and macOS. See the
+[project README](../README.md), [implementation summary](implementation.md),
+[rule coverage](rules.md), and [format ledger](secret-formats/coverage.md).
+
+These contracts describe the current source. Published v0.1.0 binaries precede
+streaming, bounded evidence reports, and JSON schema 2.
 
 `rprintenv` is a Rust command line tool that lets agents inspect environment
 variables and `.env` files without accidentally copying full secrets into logs
@@ -46,7 +50,7 @@ cryptographic proof that two values are equal.
 - [Acceptance and validation](acceptance.md): tests and release criteria.
 - [Performance](performance.md): release builds, dependency features,
   performance measurements, and compatibility requirements.
-- [Fuzzing](fuzzing.md): future harnesses, leak oracles, and corpus handling.
+- [Fuzzing](fuzzing.md): fuzz harnesses, leak oracles, and corpus handling.
 - [rstr CLI contract](text-redaction.md): stdin filtering, replacements, and limits.
 - [rstr detection](detection.md): detector categories and rule gates.
 - [Entropy experiment](entropy-evaluation.md): synthetic harness for additive

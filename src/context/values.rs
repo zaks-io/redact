@@ -74,11 +74,7 @@ pub(super) fn yaml_block_end(
             .find(['\r', '\n'])
             .map_or(input.len(), |at| cursor + at);
         let line = &input[cursor..line_end];
-        let leading = line
-            .bytes()
-            .take_while(|byte| matches!(byte, b' ' | b'\t'))
-            .count();
-        if !line.trim().is_empty() && leading <= indentation {
+        if !continues_value(line, indentation) {
             break;
         }
         end = line_end;
@@ -120,7 +116,7 @@ pub(super) fn yaml_indented_value(
             .take_while(|byte| matches!(byte, b' ' | b'\t'))
             .count();
         if !line.trim().is_empty() {
-            if leading <= indentation {
+            if !continues_value(line, indentation) {
                 break;
             }
             start.get_or_insert(cursor + leading);
@@ -139,7 +135,7 @@ pub(super) fn yaml_indented_value(
     Ok(start.map(|start| start..end))
 }
 
-fn yaml_indentation(bytes: &[u8], name: usize) -> Option<usize> {
+pub(crate) fn yaml_indentation(bytes: &[u8], name: usize) -> Option<usize> {
     let mut at = name;
     loop {
         let before_spaces = at;
@@ -158,6 +154,15 @@ fn yaml_indentation(bytes: &[u8], name: usize) -> Option<usize> {
             return None;
         }
     }
+}
+
+pub(crate) fn continues_value(line: &str, indentation: usize) -> bool {
+    line.trim().is_empty()
+        || line
+            .bytes()
+            .take_while(|byte| matches!(byte, b' ' | b'\t'))
+            .count()
+            > indentation
 }
 
 fn next_line(bytes: &[u8], end: usize) -> usize {

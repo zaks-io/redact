@@ -56,7 +56,7 @@
       "expect": {
         "exit_code": 1,
         "stdout_json": {
-          "schema_version": 1,
+          "schema_version": 2,
           "records": [
             {
               "source": {
@@ -65,7 +65,8 @@
               "name": "EMPTY_KEY",
               "state": "empty",
               "value": "",
-              "fingerprint": null
+              "fingerprint": null,
+              "redaction_reason": null
             },
             {
               "source": {
@@ -74,7 +75,8 @@
               "name": "MISSING_KEY",
               "state": "missing",
               "value": null,
-              "fingerprint": null
+              "fingerprint": null,
+              "redaction_reason": null
             },
             {
               "source": {
@@ -83,7 +85,8 @@
               "name": "POPULATED_KEY",
               "state": "redacted",
               "value": null,
-              "fingerprint": "1d5a8919184510ff"
+              "fingerprint": "1d5a8919184510ff",
+              "redaction_reason": "default-policy"
             }
           ]
         },
@@ -110,7 +113,7 @@
       "expect": {
         "exit_code": 0,
         "stdout_json": {
-          "schema_version": 1,
+          "schema_version": 2,
           "records": [
             {
               "source": {
@@ -119,7 +122,8 @@
               "name": "API_KEY",
               "state": "redacted",
               "value": null,
-              "fingerprint": "1d5a8919184510ff"
+              "fingerprint": "1d5a8919184510ff",
+              "redaction_reason": "default-policy"
             }
           ]
         },
@@ -153,7 +157,7 @@
       "expect": {
         "exit_code": 0,
         "stdout_json": {
-          "schema_version": 1,
+          "schema_version": 2,
           "records": [
             {
               "source": {
@@ -162,7 +166,8 @@
               "name": "API_KEY",
               "state": "redacted",
               "value": null,
-              "fingerprint": "1d5a8919184510ff"
+              "fingerprint": "1d5a8919184510ff",
+              "redaction_reason": "default-policy"
             },
             {
               "source": {
@@ -172,7 +177,8 @@
               "name": "API_KEY",
               "state": "redacted",
               "value": null,
-              "fingerprint": "1d5a8919184510ff"
+              "fingerprint": "1d5a8919184510ff",
+              "redaction_reason": "default-policy"
             },
             {
               "source": {
@@ -182,7 +188,8 @@
               "name": "API_KEY",
               "state": "redacted",
               "value": null,
-              "fingerprint": "2ebfd630ac26e5f8"
+              "fingerprint": "2ebfd630ac26e5f8",
+              "redaction_reason": "default-policy"
             }
           ]
         },

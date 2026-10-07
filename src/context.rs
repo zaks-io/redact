@@ -1,10 +1,15 @@
 use crate::{Span, error::SafeError};
 
+mod assignment;
 mod embedded;
 mod names;
 mod values;
 
+pub(crate) use assignment::{
+    ClosedQuote, delimiter as assignment_delimiter, sensitive_assignment, yaml_colon_assignment,
+};
 pub(crate) use names::sensitive_name;
+pub(crate) use values::{continues_value, yaml_indentation};
 
 /// Sensitive-name assignments outside `structured` framing; quoted text recurses via `embedded`.
 pub(crate) fn detect(
@@ -57,13 +62,8 @@ pub(crate) fn detect(
             };
             at = end + 1;
             (name, at)
-        } else if bytes[at].is_ascii_alphabetic() || bytes[at] == b'_' {
-            at += 1;
-            while at < bytes.len()
-                && (bytes[at].is_ascii_alphanumeric() || matches!(bytes[at], b'_' | b'-' | b'.'))
-            {
-                at += 1;
-            }
+        } else if let Some(end) = assignment::plain_name_end(bytes, at) {
+            at = end;
             (Some(input[name_start..at].to_owned()), at)
         } else {
             match bytes[at] {
@@ -77,24 +77,11 @@ pub(crate) fn detect(
         let Some(name) = name else {
             continue;
         };
-        let closing_quote = !quoted_name && matches!(bytes.get(name_end), Some(b'"' | b'\''));
-        let escaped_closing = !quoted_name
-            && bytes.get(name_end) == Some(&b'\\')
-            && matches!(bytes.get(name_end + 1), Some(b'"' | b'\''));
-        let mut delimiter =
-            name_end + usize::from(closing_quote) + 2 * usize::from(escaped_closing);
-        while delimiter < bytes.len()
-            && (matches!(bytes[delimiter], b' ' | b'\t')
-                || quoted_name && matches!(bytes[delimiter], b'\r' | b'\n'))
-        {
-            delimiter += 1;
-        }
+        let (delimiter, quote_framing) = assignment::delimiter(bytes, name_end, quoted_name);
         if delimiter == bytes.len() || !matches!(bytes[delimiter], b'=' | b':') {
             continue;
         }
-        let json = (quoted_name || closing_quote || escaped_closing)
-            && bytes[delimiter] == b':'
-            && container_depth > 0;
+        let json = quote_framing && bytes[delimiter] == b':' && container_depth > 0;
         let mut value = delimiter + 1;
         while value < bytes.len()
             && (matches!(bytes[value], b' ' | b'\t')

@@ -311,7 +311,7 @@ fn usage_and_encoding_failures_never_echo_arguments_or_values() {
     assert!(
         String::from_utf8(output.stderr)
             .must()
-            .contains("read failed")
+            .contains("file not found")
     );
     let directory = tempfile::tempdir().must();
     for contents in [b"TOKEN=\xff".as_slice(), b"TOKEN=secret\0".as_slice()] {
@@ -457,7 +457,7 @@ fn missing_and_empty_states_have_exact_json_fields() {
     assert_eq!(output.status.code(), Some(1));
     assert_eq!(
         serde_json::from_slice::<Value>(&output.stdout).must(),
-        json!({"schema_version":1,"records":[{"source":{"kind":"environment"},"name":"EMPTY","state":"empty","value":"","fingerprint":null},{"source":{"kind":"environment"},"name":"MISSING","state":"missing","value":null,"fingerprint":null}]})
+        json!({"schema_version":2,"records":[{"source":{"kind":"environment"},"name":"EMPTY","state":"empty","value":"","fingerprint":null,"redaction_reason":null},{"source":{"kind":"environment"},"name":"MISSING","state":"missing","value":null,"fingerprint":null,"redaction_reason":null}]})
     );
     let output = run(&["--exists", "EMPTY", "MISSING"], &[("EMPTY", "")]);
     assert_eq!(output.status.code(), Some(1));

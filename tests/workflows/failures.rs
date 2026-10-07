@@ -33,7 +33,26 @@ fn encoding_and_nul_fail_without_unchecked_output() {
         b"password=synthetic-secret-lilac-48\n\xff".as_slice(),
         b"password=synthetic-secret-lilac-48\0",
     ] {
-        safe_failure(&support::capture(&mut support::command("rstr"), input));
+        let output = support::capture(&mut support::command("rstr"), input);
+        assert_eq!(output.status.code(), Some(2));
+        let expected: &[u8] = if input.contains(&b'\n') {
+            b"password=[REDACTED sha256=1d5a8919184510ff]\n"
+        } else {
+            b""
+        };
+        assert_eq!(output.stdout, expected);
+        let diagnostic = String::from_utf8_lossy(&output.stderr);
+        assert!(!diagnostic.contains(CANARY));
+        assert!(diagnostic.contains(if input.contains(&b'\n') {
+            "line 2"
+        } else {
+            "line 1"
+        }));
+        if !expected.is_empty() {
+            assert!(diagnostic.contains(
+                "Earlier filtered output was emitted; the unfinished record was withheld."
+            ));
+        }
         let temp = tempfile::tempdir().unwrap_or_else(|_| panic!("fixture setup failed"));
         std::fs::write(temp.path().join("input.env"), input)
             .unwrap_or_else(|_| panic!("fixture setup failed"));

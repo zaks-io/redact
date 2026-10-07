@@ -1,4 +1,5 @@
 use crate::error::{ErrorKind, SafeError};
+use crate::evidence::{Evidence, Filtered, Finding, Redaction};
 use crate::{context, fingerprint, providers, structured};
 
 pub const MAX_INPUT_BYTES: usize = 16 * 1024 * 1024;
@@ -58,11 +59,68 @@ pub fn detect(input: &str) -> Result<Vec<Span>, SafeError> {
 
 /// Every detector family over one input; quoted text re-enters at a greater depth.
 pub(crate) fn detect_at_depth(input: &str, depth: usize) -> Result<Vec<Span>, SafeError> {
+    Ok(merge_findings(input, &detect_findings(input, depth)?)?
+        .into_iter()
+        .map(|finding| finding.span)
+        .collect())
+}
+
+fn detect_findings(input: &str, depth: usize) -> Result<Vec<Finding>, SafeError> {
     let detection = structured::detect_with_contexts(input)?;
-    let mut spans = detection.spans;
-    spans.extend(context::detect(input, &detection.contexts, depth)?);
-    spans.extend(providers::detect(input)?);
-    merge_spans(input, &spans)
+    let mut findings = detection.findings;
+    findings.extend(
+        context::detect(input, &detection.contexts, depth)?
+            .into_iter()
+            .map(|span| Finding {
+                span,
+                label: Evidence::SensitiveFieldOrQuotedCredential,
+            }),
+    );
+    findings.extend(providers::detect(input)?);
+    Ok(findings)
+}
+
+struct MergedFinding {
+    span: Span,
+    labels: Vec<Evidence>,
+}
+
+fn merge_findings(input: &str, findings: &[Finding]) -> Result<Vec<MergedFinding>, SafeError> {
+    let mut sorted = Vec::with_capacity(findings.len());
+    for finding in findings {
+        validate(input, &finding.span)?;
+        if !finding.span.is_empty() {
+            sorted.push(finding);
+        }
+    }
+    sorted.sort_unstable_by_key(|finding| (finding.span.start, finding.span.end, finding.label));
+    let mut merged: Vec<MergedFinding> = Vec::with_capacity(sorted.len());
+    for finding in sorted {
+        if let Some(last) = merged.last_mut()
+            && finding.span.start < last.span.end
+        {
+            last.span.end = last.span.end.max(finding.span.end);
+            last.labels.push(finding.label);
+            continue;
+        }
+        merged.push(MergedFinding {
+            span: finding.span.clone(),
+            labels: vec![finding.label],
+        });
+    }
+    for finding in &mut merged {
+        finding.labels.sort_unstable();
+        finding.labels.dedup();
+    }
+    Ok(merged)
+}
+
+fn append_marker(output: &mut String, input: &str, span: &Span) -> String {
+    let hash = fingerprint(&input[span.clone()]);
+    output.push_str("[REDACTED sha256=");
+    output.push_str(&hash);
+    output.push(']');
+    hash
 }
 
 pub fn render_spans(input: &str, spans: &[Span]) -> Result<String, SafeError> {
@@ -71,9 +129,7 @@ pub fn render_spans(input: &str, spans: &[Span]) -> Result<String, SafeError> {
     let mut cursor = 0;
     for span in spans {
         output.push_str(&input[cursor..span.start]);
-        output.push_str("[REDACTED sha256=");
-        output.push_str(&fingerprint(&input[span.clone()]));
-        output.push(']');
+        append_marker(&mut output, input, &span);
         cursor = span.end;
     }
     output.push_str(&input[cursor..]);
@@ -81,8 +137,36 @@ pub fn render_spans(input: &str, spans: &[Span]) -> Result<String, SafeError> {
 }
 
 pub fn filter(bytes: &[u8]) -> Result<String, SafeError> {
+    Ok(filter_with_evidence(bytes)?.output)
+}
+
+pub fn filter_with_evidence(bytes: &[u8]) -> Result<Filtered, SafeError> {
     let input = validate_input(bytes)?;
-    render_spans(input, &detect(input)?)
+    let findings = merge_findings(input, &detect_findings(input, 0)?)?;
+    let mut output = String::new();
+    let mut redactions = Vec::with_capacity(findings.len());
+    let mut cursor = 0;
+    let mut line = 1;
+    for finding in findings {
+        output.push_str(&input[cursor..finding.span.start]);
+        line += bytes[cursor..finding.span.start]
+            .iter()
+            .filter(|byte| **byte == b'\n')
+            .count();
+        let hash = append_marker(&mut output, input, &finding.span);
+        redactions.push(Redaction {
+            fingerprint: hash,
+            line,
+            labels: finding.labels,
+        });
+        line += bytes[finding.span.clone()]
+            .iter()
+            .filter(|byte| **byte == b'\n')
+            .count();
+        cursor = finding.span.end;
+    }
+    output.push_str(&input[cursor..]);
+    Ok(Filtered { output, redactions })
 }
 
 #[cfg(test)]
@@ -101,6 +185,17 @@ mod tests {
         );
         let inside_character: Span = 1..2;
         assert!(render_spans("é", &[inside_character]).is_err());
+    }
+
+    #[test]
+    fn invalid_evidence_spans_fail_before_rendering() {
+        let findings = [Finding {
+            span: 1..2,
+            label: Evidence::PrivateKey,
+        }];
+        let error = merge_findings("é SYNTHETIC_CANARY", &findings).must_err();
+        assert!(!format!("{:?} {error}", Some(vec![error.clone()])).contains("SYNTHETIC_CANARY"));
+        assert!(error.source().is_none());
     }
 
     proptest! {
@@ -126,6 +221,28 @@ mod tests {
                 prop_assert_eq!(spans.iter().any(|s| s.contains(&index)), merged.iter().any(|s| s.contains(&index)));
             }
             prop_assert!(merged.windows(2).all(|s| s[0].end<=s[1].start));
+        }
+
+        #[test]
+        fn evidence_union_keeps_existing_spans_and_all_contributing_labels(
+            pairs in prop::collection::vec((0usize..128,0usize..128, any::<bool>()),0..64)
+        ) {
+            let input = "x".repeat(128);
+            let findings: Vec<_> = pairs.iter().map(|&(a, b, provider)| Finding {
+                span: a.min(b)..a.max(b),
+                label: if provider { Evidence::GithubTokenFormat } else { Evidence::AuthHeader },
+            }).collect();
+            let spans: Vec<_> = findings.iter().map(|finding| finding.span.clone()).collect();
+            let merged = merge_findings(&input, &findings).must();
+            prop_assert_eq!(merged.iter().map(|finding| finding.span.clone()).collect::<Vec<_>>(), merge_spans(&input, &spans).must());
+            for finding in merged {
+                let mut labels: Vec<_> = findings.iter()
+                    .filter(|source| !source.span.is_empty() && source.span.start < finding.span.end && finding.span.start < source.span.end)
+                    .map(|source| source.label).collect();
+                labels.sort_unstable();
+                labels.dedup();
+                prop_assert_eq!(finding.labels, labels);
+            }
         }
     }
 }

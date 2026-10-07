@@ -1,8 +1,8 @@
 # Agent usage guide
 
-These commands describe the intended interface. The binaries are not implemented
-yet. Use synthetic fixtures during development; never test a new redactor by
-printing real secrets into a transcript.
+These are the preferred commands for agents using `rprintenv` and `rstr`. Use
+synthetic fixtures during development; never test a redactor by printing real
+secrets into a transcript.
 
 ## Choose the command
 
@@ -52,6 +52,22 @@ a password field can be detected when the bare password alone cannot. Avoid
 capturing the raw output into a tool result before passing it through `rstr`.
 `pipefail` preserves producer failure in the pipeline's exit status.
 
+Complete ordinary log records can appear before the producer exits. Unfinished
+quoted values, JSON containers, private keys, and YAML documents wait for a safe
+boundary. Colon-style messages such as `ERROR: retry later` can resemble YAML
+keys. URLs, clock times, and file locations normally remain ordinary records.
+YAML-like documents may wait until the next document
+separator or EOF because a later field can identify earlier data as credentials. No timeout
+releases unchecked input. The 16 MiB limit applies to pending input, so longer
+streams of completed records are supported.
+Cargo warnings, Node errors, uvicorn `INFO:` lines, BuildKit `#1` comments and
+`- ` lists can resemble YAML and hold later output too. A short first line can
+therefore make a long log reach the pending limit. Keep any retry inside the
+filter; do not inspect the raw log to identify the hold.
+Unquoted sensitive values containing quotes or brackets and some inline escaped
+quoted values also retain their record through EOF. Their delimiters can change
+the interpretation of later lines.
+
 `rstr` reads no environment values or `.env` files. No matches means unchanged
 output, not proof that no secret was present. Use `rprintenv` directly for
 variable inspection instead of piping an environment dump through a detector.
@@ -67,6 +83,11 @@ secrets to get the command through.
 
 `--allow NAME` on `rprintenv` deliberately prints the complete value. It is not
 an error-recovery technique and should not be used just to inspect a credential.
+
+Streaming errors identify the global line and say when earlier filtered output
+was emitted. Treat that output as incomplete. The unfinished input record stays
+withheld when input validation or detection fails. Output-write failures can
+leave a partial filtered record; never retry with raw input.
 
 ## Future format hints
 

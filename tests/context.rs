@@ -1,3 +1,6 @@
+#[path = "support/redaction_report.rs"]
+mod report;
+
 #[allow(dead_code, reason = "shared synthetic assertions across test suites")]
 #[path = "support/synthetic.rs"]
 mod synthetic;
@@ -279,7 +282,7 @@ fn reviewed_contexts_work_through_real_cli_with_safe_errors() {
         if let Some(expected) = expected {
             assert_eq!(output.status.code(), Some(0));
             assert_eq!(output.stdout, expected.as_bytes());
-            assert!(output.stderr.is_empty());
+            report::assert_report(&output.stdout, &output.stderr);
         } else {
             assert_eq!(output.status.code(), Some(2));
             assert!(output.stdout.is_empty());

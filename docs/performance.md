@@ -41,11 +41,11 @@ measured performance. Test, fuzz, and evaluation dependencies must not become
 runtime requirements. Keep root and fuzz lockfiles consistent with selected
 features without unrelated dependency upgrades.
 
-Clap must retain argument parsing, derive support, help, usage, and
-standard-library support. Help and version output must remain plain text.
-Rejected arguments must produce the fixed safe diagnostics required by the
-CLI contracts. Rich rejected-argument context, spelling suggestions, and color
-rendering are outside the required feature set. See the
+Clap must retain argument parsing, derive support, help, usage, typed error
+context, and standard-library support. Help and version output remain plain
+text. Error context identifies missing values for a closed set of known flags;
+only approved static syntax is rendered. Rejected values, spelling suggestions,
+raw parser diagnostics, and color rendering are never forwarded. See the
 [clap feature documentation](https://docs.rs/crate/clap/4.6.7/features).
 
 Regex must retain its performance engines and every Unicode capability used by
@@ -80,8 +80,9 @@ each candidate within one invocation. Any retained initialization failure must
 remain a safe operational error. Do not add persistent caches, background
 processes, environment lookup, or configuration layers for performance.
 
-Memory use must remain bounded by the documented input limits and the records
-or spans needed to produce output. Changes to input buffering, retained state,
+Memory use must remain bounded by the documented pending-input and file limits
+and the records or spans needed to produce output. Completed stream records can
+exceed 16 MiB in total; undecided input cannot. Changes to input buffering, retained state,
 or detection passes must include peak-memory measurements at the input limits
 and on adversarial synthetic fixtures. Do not introduce an undocumented input
 limit to reduce memory or runtime.
@@ -122,6 +123,10 @@ The executable comparison command is:
 ```sh
 python3 scripts/benchmark.py target/optimization/baseline target/optimization/candidate --repeats 21
 ```
+
+When comparing with v0.1.0's quiet stderr contract, add
+`--legacy-bin-dir target/optimization/baseline`. This applies only to the saved
+baseline; the candidate's bounded redaction report is verified byte for byte.
 
 ## Acceptance criteria
 

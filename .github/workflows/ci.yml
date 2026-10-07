@@ -90,7 +90,7 @@ jobs:
             --run-id "$GITHUB_RUN_ID" --attempt "$GITHUB_RUN_ATTEMPT"
           python3 scripts/acceptance.py --bin-dir dist/package-acceptance
       - name: Release workflow acceptance and timing
-        run: cargo test --locked --release --test workflows --test rstr --test rstr_regressions -- --test-threads=2 --nocapture
+        run: cargo test --locked --release --test workflows --test rstr --test rstr_regressions --test streaming --test streaming_review -- --test-threads=2 --nocapture
       - name: Upload tested platform package
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:

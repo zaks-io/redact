@@ -77,6 +77,8 @@ scheduled token spending are required for these deterministic checks.
 Performance and binary size work must also satisfy the
 [performance specification](performance.md), including
 standalone release feature validation and reproducible comparisons.
+The native release checks also execute streaming regressions and live pipes,
+including read-boundary invariance and withholding unfinished records on failure.
 
 ## Binary package validation and release
 

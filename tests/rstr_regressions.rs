@@ -1,4 +1,6 @@
 //! Deterministic replays of confirmed rstr disclosure findings, using synthetic canaries.
+#[path = "support/redaction_report.rs"]
+mod report;
 #[allow(dead_code, reason = "shared harness; this suite only pipes stdin")]
 mod support;
 
@@ -27,7 +29,7 @@ fn assert_filters(cases: &[(String, String)]) {
             output.stdout == expected.as_bytes(),
             "binary output differs for synthetic regression {index}"
         );
-        assert!(output.stderr.is_empty());
+        report::assert_report(&output.stdout, &output.stderr);
         assert!(!String::from_utf8_lossy(&output.stdout).contains(CANARY));
     }
 }
@@ -136,7 +138,7 @@ fn repeated_candidates_stay_linear_within_the_subprocess_timeout() {
         let input = format!("x{}", unit.repeat(size / unit.len()));
         let output = support::capture(&mut support::command("rstr"), input.as_bytes());
         assert_eq!(output.status.code(), Some(0));
-        assert!(output.stderr.is_empty());
+        report::assert_report(&output.stdout, &output.stderr);
     }
 }
 
