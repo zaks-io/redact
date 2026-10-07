@@ -4,12 +4,18 @@ on:
   pull_request:
   push:
     branches: [main]
+  workflow_call:
+    inputs:
+      package:
+        description: Upload combined verified assets for draft preparation
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && github.run_id || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
@@ -32,6 +38,8 @@ jobs:
           cache-on-failure: false
       - run: cargo fmt --check
       - run: cargo fmt --manifest-path fuzz/Cargo.toml --check
+      - name: Test release packaging and draft preparation
+        run: python3 -m unittest discover -s scripts -p 'test_*.py'
       - run: cargo clippy --locked --all-targets --all-features -- -D warnings
       - name: Install dependency checker
         run: cargo install cargo-deny --version 0.18.9 --locked
@@ -43,7 +51,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        runner: [blacksmith-2vcpu-ubuntu-2404, blacksmith-6vcpu-macos-26]
+        include:
+          - runner: blacksmith-2vcpu-ubuntu-2404
+            target: x86_64-unknown-linux-gnu
+          - runner: blacksmith-6vcpu-macos-26
+            target: aarch64-apple-darwin
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 20
     steps:
@@ -57,10 +69,64 @@ jobs:
           prefix-key: acceptance
           cache-on-failure: false
       - run: cargo test --locked -- --test-threads=2
-      - run: cargo build --locked --release
+      - run: cargo build --locked --release --bins
       - run: python3 scripts/acceptance.py
+      - name: Install pinned Rust license notices
+        run: rustup component add rust-docs
+      - name: Package standalone production binaries
+        env:
+          RELEASE_TARGET: ${{ matrix.target }}
+        run: |
+          python3 scripts/release.py package --target "$RELEASE_TARGET" \
+            --output-dir dist/packages --run-id "$GITHUB_RUN_ID" --attempt "$GITHUB_RUN_ATTEMPT"
+      - name: Verify extracted package and run acceptance
+        env:
+          RELEASE_TARGET: ${{ matrix.target }}
+        run: |
+          version=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' "dist/packages/$RELEASE_TARGET.json")
+          python3 scripts/release.py extract --target "$RELEASE_TARGET" \
+            --input-dir dist/packages --output-dir dist/package-acceptance \
+            --version "$version" --source-sha "$GITHUB_SHA" \
+            --run-id "$GITHUB_RUN_ID" --attempt "$GITHUB_RUN_ATTEMPT"
+          python3 scripts/acceptance.py --bin-dir dist/package-acceptance
       - name: Release workflow acceptance and timing
         run: cargo test --locked --release --test workflows --test rstr --test rstr_regressions -- --test-threads=2 --nocapture
+      - name: Upload tested platform package
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-${{ matrix.target }}-${{ github.run_attempt }}
+          path: dist/packages/*
+          if-no-files-found: error
+          retention-days: ${{ github.event_name == 'pull_request' && 7 || 30 }}
+
+  packages:
+    needs: [quality, acceptance, fuzz-harness]
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: release-*
+          path: target/artifacts
+          digest-mismatch: error
+      - name: Verify native packages from this source and workflow run
+        run: |
+          version=$(python3 -c 'import tomllib; print(tomllib.load(open("Cargo.toml", "rb"))["package"]["version"])')
+          python3 scripts/release.py prepare --input-dir target/artifacts \
+            --output-dir target/release-assets --version "$version" \
+            --source-sha "$GITHUB_SHA" --run-id "$GITHUB_RUN_ID" --attempt "$GITHUB_RUN_ATTEMPT"
+      - name: Upload assets for the draft job
+        if: ${{ inputs.package }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: prepared-release
+          path: target/release-assets/*
+          if-no-files-found: error
+          retention-days: 30
+          overwrite: true
 
   fuzz-harness:
     runs-on: blacksmith-2vcpu-ubuntu-2404
