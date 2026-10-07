@@ -54,6 +54,8 @@ cryptographic proof that two values are equal.
 - [Secret formats](secret-formats/README.md): sourced provider/structure inventory,
   classification limits, and format-evolution tests.
 - [CI](ci.md): Blacksmith on macOS and Linux, plus agent workflow checks.
+- [Binary releases](releases.md): downloadable packages, installation, draft
+  preparation, and explicit publication.
 - [Agent usage](agent-usage.md): preferred commands and safe recovery.
 - [Agent usability acceptance](agent-usability.md): required workflows and
   [synthetic test fixtures](../tests/README.md).

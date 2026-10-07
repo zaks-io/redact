@@ -78,6 +78,35 @@ Performance and binary size work must also satisfy the
 [performance specification](performance.md), including
 standalone release feature validation and reproducible comparisons.
 
+## Binary package validation and release
+
+Ordinary CI and reusable release CI execute the same checks. Acceptance packages
+both standalone executables before release tests can enable extra dependency
+features. It verifies archive paths, complete file hashes, executable permissions,
+versions, and license notices, then runs synthetic acceptance against extracted
+packages. `rust-docs` is installed explicitly to supply standard-library notices.
+Native host targets are asserted rather than using host-specific CPU flags.
+
+The quality job runs Python `unittest` release tests with synthetic package and
+GitHub fixtures. These cover provenance and archive failures, failed-job-only
+reruns, duplicate/conflicting drafts, partial uploads, and safe diagnostics.
+
+The manual [Release workflow](../.github/workflows/release.yml) calls CI with
+draft-transfer uploads enabled. Successful acceptance jobs upload platform/attempt
+artifacts on every CI run. The packages job waits for all other required jobs,
+downloads both targets in one action step, and verifies the combined packages.
+This exercises actual artifact layout on PRs before the first release. Package
+artifacts have 30-day retention, or seven days on PRs; a new release run builds
+fresh packages and requires no historical CI artifact. Different concurrency prefixes keep the caller and
+reusable workflow from cancelling or waiting on each other's own group. Manual
+release CI uses the workflow run ID so different versions do not share its queue.
+
+Draft preparation runs with read-only repository access. Only its subsequent
+upload job receives `contents: write`, and it never executes application binaries.
+New upload/download actions are pinned. Repeated preparation replaces only the
+generated transfer artifact in the same run; release assets are never replaced.
+See [release operations](releases.md) for retries, permissions, and publication.
+
 ## Done
 
 Both Blacksmith platform jobs pass against the current commit; both release

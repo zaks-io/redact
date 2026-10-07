@@ -10,6 +10,11 @@ Two local Rust CLIs for inspecting configuration and filtering command output.
 
 ## Build and use
 
+Download prebuilt Linux x86-64 and Apple Silicon macOS binaries from a published
+GitHub Release. Each package includes both commands. See the
+[download and installation guide](docs/releases.md) for authenticated downloads,
+checksum verification, compatibility, and manual release preparation.
+
 The pinned Rust toolchain installs through rustup. macOS and Linux are supported.
 
 ```sh
@@ -47,6 +52,7 @@ prints full values; use it only when disclosure is appropriate.
 ## Validate
 
 ```sh
+python3 -m unittest discover -s scripts -p 'test_*.py'
 cargo fmt --check
 cargo clippy --locked --all-targets --all-features -- -D warnings
 cargo test --locked -- --test-threads=2
