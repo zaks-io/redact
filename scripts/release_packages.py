@@ -242,7 +242,7 @@ def prepare(input_dir, output_dir, release_version, sha, run_id, attempt):
         "Download the archive for your platform, verify its SHA-256 checksum, and follow INSTALL.md.\n"
         "Tested on Blacksmith Ubuntu 24.04 x86-64 and macOS 26 Apple Silicon.\n"
         "Older systems are not certified. The macOS binaries are not Developer ID signed or notarized.\n"
-        "This private repository requires an authorized GitHub account to download.\n"
+        "Public downloads do not require a GitHub account. Source code is MIT licensed.\n"
         "rstr filters recognizable secrets; arbitrary passwords may pass through.\n\n"
         + "".join(f"- {manifest['target']}: {json.dumps(manifest['runtime'], sort_keys=True)}\n"
                   for manifest, _ in selected)

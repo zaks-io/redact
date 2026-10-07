@@ -6,9 +6,10 @@ Linux ARM, Intel macOS, and Windows packages are not provided.
 
 ## Download and install
 
-This repository is private. Use an authorized GitHub account to download assets
-from [Releases](https://github.com/zaks-io/redact/releases), or use authenticated
-`gh` commands. GitHub's automatic source-code archives do not contain executables.
+Download assets from [Releases](https://github.com/zaks-io/redact/releases)
+without a GitHub account. GitHub's automatic source-code archives do not contain
+executables. The source code is available under the
+[MIT license](https://github.com/zaks-io/redact/blob/main/LICENSE).
 
 For Linux x86-64, run the following in a new directory. Substitute the published
 version. For Apple Silicon, change the target to `aarch64-apple-darwin`.
@@ -19,8 +20,11 @@ set -euo pipefail
 version=0.1.0
 target=x86_64-unknown-linux-gnu
 archive="redact-v${version}-${target}.tar.gz"
-gh release download "v${version}" --repo zaks-io/redact \
-  --pattern "$archive" --pattern SHA256SUMS --pattern release-manifest.json
+release_url="https://github.com/zaks-io/redact/releases/download/v${version}"
+for asset in "$archive" SHA256SUMS release-manifest.json; do
+  curl --fail --show-error --silent --location \
+    "$release_url/$asset" --output "$asset"
+done
 grep -F "  $archive" SHA256SUMS | shasum -a 256 -c -
 tar -xzf "$archive"
 mkdir -p "$HOME/.local/bin"
