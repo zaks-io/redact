@@ -1,7 +1,7 @@
 # Binary release plan
 
-Status: implemented for local and CI validation. Hosted results and release
-publication must be verified separately. See [release operations](releases.md).
+Status: implemented. v0.1.0 was prepared by the Release workflow and published
+manually. See [release operations](releases.md).
 
 ## Existing foundation
 
