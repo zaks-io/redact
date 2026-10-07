@@ -1,8 +1,8 @@
 # Agent usage guide
 
-These commands describe the intended interface. The binaries are not implemented
-yet. Use synthetic fixtures during development; never test a new redactor by
-printing real secrets into a transcript.
+These are the preferred commands for agents using `rprintenv` and `rstr`. Use
+synthetic fixtures during development; never test a redactor by printing real
+secrets into a transcript.
 
 ## Choose the command
 

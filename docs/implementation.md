@@ -22,12 +22,13 @@ Release builds strip symbols and use fat LTO with one codegen unit. The
 [performance specification](performance.md) defines release settings, required
 dependency features, behavior compatibility, and measurement procedures.
 
-## Remaining platform evidence
+## Platform evidence
 
-The [workflow](../.github/workflows/ci.yml) defines Blacksmith Linux and Apple
-Silicon macOS test/release jobs and a separate Linux nightly fuzz-harness job.
-No hosted run, GitHub App access check, or macOS execution has been performed
-locally. A hosted run is required before claiming that platform acceptance.
+The [workflow](../.github/workflows/ci.yml) runs tests, acceptance, and native
+packaging on Blacksmith Ubuntu 24.04 x86-64 and macOS 26 Apple Silicon, plus a
+separate Linux nightly fuzz-harness job. Hosted runs pass on both platforms, and
+v0.1.0 was published from a successful Release workflow run. Older operating
+system versions remain unverified.
 
 ## Done
 
