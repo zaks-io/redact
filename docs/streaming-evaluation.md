@@ -22,7 +22,8 @@ oracle composes syntax fragments independently of the fixed review reproductions
 ```sh
 cargo test --locked --jobs 2 -- --test-threads=2
 cargo test --locked --release --test workflows --test rstr --test rstr_regressions \
-  --test streaming --test streaming_review --jobs 2 -- --test-threads=2
+  --test streaming --test streaming_review --test streaming_detector_state \
+  --jobs 2 -- --test-threads=2
 cargo build --locked --release --bins --jobs 2
 python3 scripts/acceptance.py --bin-dir target/release --repeats 10
 ```

@@ -1,0 +1,2 @@
+level=info dsn="host=db dbname=app user=app password=" msg="x"
+level=info msg="ready"

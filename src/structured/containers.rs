@@ -1,12 +1,26 @@
 use super::STRUCTURE_LIMIT;
-use crate::{Span, error::SafeError};
+use crate::{
+    Span,
+    error::{ErrorKind, SafeError},
+};
 use serde_json::Value;
+
+pub(crate) struct JsonEndState {
+    open_objects: usize,
+    unmatched_quote: bool,
+}
+
+impl JsonEndState {
+    pub(crate) fn settled(&self) -> bool {
+        self.open_objects == 0 && !self.unmatched_quote
+    }
+}
 
 pub(super) fn json_containers(
     input: &str,
     private_spans: &[Span],
     spans: &mut Vec<Span>,
-) -> Result<(), SafeError> {
+) -> Result<JsonEndState, SafeError> {
     let bytes = input.as_bytes();
     let private_spans = crate::merge_spans(input, private_spans)?;
     let mut private_at = 0;
@@ -93,11 +107,12 @@ pub(super) fn json_containers(
     if let Some(start) = stack.first()
         && credential_object_hint(&input[*start..])
     {
-        return Err(SafeError::new(
-            "unterminated credential container. Close the JSON object and retry.",
-        ));
+        return Err(SafeError::new(ErrorKind::UnterminatedCredentialContainer));
     }
-    Ok(())
+    Ok(JsonEndState {
+        open_objects: stack.len(),
+        unmatched_quote: !quoted_regions_available,
+    })
 }
 
 fn parse_object(input: &str) -> Result<Value, serde_json::Error> {

@@ -18,12 +18,15 @@ impl Read for InterruptedPrefix<'_> {
     }
 }
 
-fn probes() -> [String; 4] {
+fn probes() -> [String; 7] {
     [
         format!("\"token\":\n\"{CANARY}\"\n"),
         format!("x \"token\":\n  \"{CANARY}\"\n"),
         format!(" {CANARY}\nx\n"),
         format!("\"password\": {{\n\"inner\": \"{CANARY}\"\n}}\n"),
+        format!("x\" {{\"kty\":\"oct\",\"k\":\"{CANARY}\"}}x\"\n"),
+        format!("\"{{\"auths\":{{\"registry\":{{\"auth\":\"{CANARY}\"}}}}}}\n"),
+        format!("x\" {{\"kind\":\"Secret\",\"data\":{{\"key\":\"{CANARY}\"}}}}x\"\n"),
     ]
 }
 
@@ -104,6 +107,16 @@ pub fn exercise(data: &[u8]) {
         "MII",
         "-----BEGIN RSA PRIVATE KEY-----",
         "-----END RSA PRIVATE KEY-----",
+        "\\",
+        "-----BEGIN A PRIVATE KEY-----",
+        "-----END A PRIVATE KEY-----",
+        "-----BEGIN B PRIVATE KEY-----",
+        "-----END B PRIVATE KEY-----",
+        "BEGIN B PRIVATE KEY-----",
+        "END A PRIVATE KEY-----",
+        "{\"conn\":\"AccountName=dev;AccountKey=\"}",
+        "dsn=\"host=db dbname=app user=app password=\"",
+        "INFO started \"ok\"",
     ];
     let selector = usize::from(data.first().copied().unwrap_or_default());
     let mut input = String::new();
@@ -120,6 +133,10 @@ pub fn exercise(data: &[u8]) {
         .filter_map(|(at, byte)| (byte == b'\n').then_some(at + 1))
         .collect();
     let probes = probes();
+    assert!(
+        filter(input.as_bytes()).is_err() || filter_to_writer(input.as_bytes(), Vec::new()).is_ok(),
+        "composed stream rejected complete input accepted by batch"
+    );
     // Bound per-iteration cost while sampling all ends across generated mutations.
     for sample in 0..ends.len().min(8) {
         let at = ends[(sample + selector) % ends.len()];
@@ -145,6 +162,19 @@ mod tests {
     }
 
     #[test]
+    fn json_probe_rejects_private_marker_quote_parity_drift() {
+        let prefix = b"'\\-----END A PRIVATE KEY-----\"'\n";
+        let expected = filter(prefix);
+        assert!(expected.is_ok(), "synthetic parity fixture failed");
+        if let Ok(expected) = expected {
+            assert!(
+                !neutral_with_probe(prefix, &expected, &probes()[4]),
+                "JSON boundary oracle missed a deliberately unsafe emission"
+            );
+        }
+    }
+
+    #[test]
     fn boundary_oracle_accepts_complete_ordinary_and_quoted_json_records() {
         for prefix in [
             b"ordinary log\n".as_slice(),
@@ -157,7 +187,7 @@ mod tests {
     #[test]
     fn token_composition_covers_every_fragment_and_line_ending() {
         for selector in 0..=1 {
-            for byte in 0..42 {
+            for byte in 0..52 {
                 exercise(&[selector, byte, 13, 22, 8, 13, 4, 25, 13]);
             }
         }

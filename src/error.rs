@@ -14,11 +14,29 @@ pub enum ErrorKind {
     InvalidAssignment,
     DuplicateName,
     UnterminatedQuote,
+    UnterminatedEscapedQuote,
+    UnterminatedSensitiveContainer,
+    UnterminatedCredentialContainer,
+    UnterminatedPrivateKey,
     InvalidEscape,
     TrailingText,
     TooLarge,
     Interactive,
     Detector,
+    PendingDetectorContext,
+}
+
+impl ErrorKind {
+    pub(crate) fn can_complete(self) -> bool {
+        matches!(
+            self,
+            Self::UnterminatedQuote
+                | Self::UnterminatedEscapedQuote
+                | Self::UnterminatedSensitiveContainer
+                | Self::UnterminatedCredentialContainer
+                | Self::UnterminatedPrivateKey
+        )
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -105,6 +123,18 @@ impl fmt::Display for SafeError {
             ErrorKind::UnterminatedQuote => {
                 "unterminated quoted value. Close the quoted value and retry."
             }
+            ErrorKind::UnterminatedEscapedQuote => {
+                "unterminated escaped quoted value. Close its escaped quote and retry."
+            }
+            ErrorKind::UnterminatedSensitiveContainer => {
+                "unterminated sensitive container. Close its delimiters and retry."
+            }
+            ErrorKind::UnterminatedCredentialContainer => {
+                "unterminated credential container. Close the JSON object and retry."
+            }
+            ErrorKind::UnterminatedPrivateKey => {
+                "unterminated private-key block. Add its matching END marker and retry."
+            }
             ErrorKind::InvalidEscape => "unsupported escape. Use a documented escape and retry.",
             ErrorKind::TrailingText => {
                 "unexpected text after quoted value. Remove trailing text and retry."
@@ -117,6 +147,9 @@ impl fmt::Display for SafeError {
             }
             ErrorKind::Detector => {
                 "detector failed. Report the version and a synthetic reproduction."
+            }
+            ErrorKind::PendingDetectorContext => {
+                "unfinished record exceeds 16 MiB while holding uncertain detector context. The retained record must remain together through EOF; use smaller complete input and retry."
             }
         })?;
         if self.kind == ErrorKind::Output && self.earlier_output_emitted {

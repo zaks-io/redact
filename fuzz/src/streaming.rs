@@ -60,9 +60,14 @@ pub fn exercise(data: &[u8]) {
     // This is a campaign cost bound, not a production input limit.
     let input = &data[..data.len().min(4096)];
     let size = 1 + usize::from(data.first().copied().unwrap_or_default()) % 31;
+    let whole = streamed(input, usize::MAX);
     assert!(
-        streamed(input, usize::MAX) == streamed(input, size),
+        whole == streamed(input, size),
         "stream output, report or error changed with read size"
+    );
+    assert!(
+        filter(input).is_err() || whole.error.is_none(),
+        "stream rejected complete input accepted by batch"
     );
     supported_record(data);
     super::streaming_boundaries::exercise(data);

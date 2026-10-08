@@ -59,16 +59,21 @@ pub fn detect(input: &str) -> Result<Vec<Span>, SafeError> {
 
 /// Every detector family over one input; quoted text re-enters at a greater depth.
 pub(crate) fn detect_at_depth(input: &str, depth: usize) -> Result<Vec<Span>, SafeError> {
-    Ok(merge_findings(input, &detect_findings(input, depth)?.0)?
-        .into_iter()
-        .map(|finding| finding.span)
-        .collect())
+    Ok(
+        merge_findings(input, &detect_findings(input, depth)?.findings)?
+            .into_iter()
+            .map(|finding| finding.span)
+            .collect(),
+    )
 }
 
-fn detect_findings(
-    input: &str,
-    depth: usize,
-) -> Result<(Vec<Finding>, context::EndState), SafeError> {
+struct Detection {
+    findings: Vec<Finding>,
+    context_end: context::EndState,
+    json_end: structured::JsonEndState,
+}
+
+fn detect_findings(input: &str, depth: usize) -> Result<Detection, SafeError> {
     let detection = structured::detect_with_contexts(input)?;
     let mut findings = detection.findings;
     let context = context::detect_with_state(input, &detection.contexts, depth)?;
@@ -77,7 +82,11 @@ fn detect_findings(
         label: Evidence::SensitiveFieldOrQuotedCredential,
     }));
     findings.extend(providers::detect(input)?);
-    Ok((findings, context.end))
+    Ok(Detection {
+        findings,
+        context_end: context.end,
+        json_end: detection.json_end,
+    })
 }
 
 struct MergedFinding {
@@ -142,7 +151,7 @@ pub fn filter(bytes: &[u8]) -> Result<String, SafeError> {
 
 pub fn filter_with_evidence(bytes: &[u8]) -> Result<Filtered, SafeError> {
     let input = validate_input(bytes)?;
-    render_findings(input, bytes, &detect_findings(input, 0)?.0)
+    render_findings(input, bytes, &detect_findings(input, 0)?.findings)
 }
 
 pub(crate) fn filter_candidate(
@@ -150,11 +159,15 @@ pub(crate) fn filter_candidate(
     boundary: context::RecordEnd,
 ) -> Result<Option<Filtered>, SafeError> {
     let input = validate_input(bytes)?;
-    let (findings, end) = detect_findings(input, 0)?;
-    if !end.settled(boundary) {
+    let detection = match detect_findings(input, 0) {
+        Ok(detection) => detection,
+        Err(error) if error.kind.can_complete() => return Ok(None),
+        Err(error) => return Err(error),
+    };
+    if !detection.context_end.settled(boundary) || !detection.json_end.settled() {
         return Ok(None);
     }
-    render_findings(input, bytes, &findings).map(Some)
+    render_findings(input, bytes, &detection.findings).map(Some)
 }
 
 fn render_findings(input: &str, bytes: &[u8], findings: &[Finding]) -> Result<Filtered, SafeError> {
@@ -184,6 +197,10 @@ fn render_findings(input: &str, bytes: &[u8], findings: &[Finding]) -> Result<Fi
     output.push_str(&input[cursor..]);
     Ok(Filtered { output, redactions })
 }
+
+#[cfg(test)]
+#[path = "text/candidate_tests.rs"]
+mod candidate_tests;
 
 #[cfg(test)]
 mod tests {

@@ -64,7 +64,11 @@ An independent boundary oracle composes names, delimiters, quotes, URL contexts,
 private-key markers and line endings. It interrupts the reader instead of closing
 stdin, then checks fully emitted prefixes against batch filtering with additional
 probe lines. Later input must not change the prefix or the detection of those
-probes. Authentication-header quote pairing and Kubernetes scope are excluded by
+probes. JSON-parity probes cover JWK, registry-auth and Kubernetes JSON objects.
+The vocabulary includes bare backslashes, overlapping private-marker labels and
+quoted connection strings. Complete inputs accepted by batch filtering must also
+succeed in streaming mode, including prefixes withheld until EOF.
+Authentication-header quote pairing and cross-record Kubernetes scope are excluded by
 the generated vocabulary because those contexts are documented as record-local.
 The oracle's normal tests reject a deliberately unsafe early emission. Each
 iteration samples up to eight newline boundaries to bound campaign cost.

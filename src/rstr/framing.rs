@@ -1,4 +1,4 @@
-use crate::error::SafeError;
+use crate::error::{ErrorKind, SafeError};
 use regex::Regex;
 use std::{collections::HashSet, sync::OnceLock};
 
@@ -42,10 +42,11 @@ impl Framer {
         self.detector_hold = true;
     }
 
-    pub(super) fn pending_limit_diagnostic(&self) -> &'static str {
+    pub(super) fn pending_limit_diagnostic(&self) -> ErrorKind {
         if self.detector_hold {
-            HoldReason::Ambiguous
-        } else if !self.private.is_empty() {
+            return ErrorKind::PendingDetectorContext;
+        }
+        if !self.private.is_empty() {
             HoldReason::PrivateKey
         } else if self.yaml && !matches!(self.syntax.hold_reason(), HoldReason::Ambiguous) {
             HoldReason::Yaml
@@ -53,6 +54,7 @@ impl Framer {
             self.syntax.hold_reason()
         }
         .diagnostic()
+        .into()
     }
 
     pub(super) fn line(

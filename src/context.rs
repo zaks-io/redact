@@ -1,4 +1,7 @@
-use crate::{Span, error::SafeError};
+use crate::{
+    Span,
+    error::{ErrorKind, SafeError},
+};
 
 mod assignment;
 mod embedded;
@@ -233,13 +236,13 @@ pub(crate) fn quoted_end(
         }
         at += 1;
     }
-    let category = if fail {
-        "unterminated quoted value. Close the quoted value and retry."
+    let kind = if fail {
+        ErrorKind::UnterminatedQuote
     } else {
-        "invalid quoted field"
+        ErrorKind::Category("invalid quoted field")
     };
     Err(SafeError::at(
-        category,
+        kind,
         crate::error::line_number(input.as_bytes(), start),
     ))
 }

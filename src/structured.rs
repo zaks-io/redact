@@ -1,5 +1,8 @@
 use crate::evidence::{Evidence, Finding};
-use crate::{Span, error::SafeError};
+use crate::{
+    Span,
+    error::{ErrorKind, SafeError},
+};
 
 const STRUCTURE_LIMIT: usize = 1_048_576;
 
@@ -22,6 +25,7 @@ macro_rules! pattern {
 }
 
 mod containers;
+pub(crate) use containers::JsonEndState;
 mod jose;
 mod urls;
 pub(crate) use urls::connection_context;
@@ -41,6 +45,7 @@ pub(crate) fn json_quote_starts_string(byte: u8, escaped_outside: bool) -> bool 
 pub(crate) struct Detection {
     pub findings: Vec<Finding>,
     pub contexts: Vec<Span>,
+    pub json_end: JsonEndState,
 }
 
 pub(crate) fn detect_with_contexts(input: &str) -> Result<Detection, SafeError> {
@@ -61,12 +66,16 @@ pub(crate) fn detect_with_contexts(input: &str) -> Result<Detection, SafeError> 
     jose::detect(input, &mut spans)?;
     start = tag(&spans, start, Evidence::JoseFormat, &mut findings);
     let container_start = spans.len();
-    containers::json_containers(input, &private_spans, &mut spans)?;
+    let json_end = containers::json_containers(input, &private_spans, &mut spans)?;
     start = tag(&spans, start, Evidence::CredentialContainer, &mut findings);
     containers::kubernetes_yaml(input, &mut spans)?;
     tag(&spans, start, Evidence::KubernetesSecret, &mut findings);
     contexts.extend_from_slice(&spans[container_start..]);
-    Ok(Detection { findings, contexts })
+    Ok(Detection {
+        findings,
+        contexts,
+        json_end,
+    })
 }
 
 fn tag(spans: &[Span], start: usize, label: Evidence, findings: &mut Vec<Finding>) -> usize {
@@ -147,7 +156,7 @@ fn private_blocks(input: &str, spans: &mut Vec<Span>) -> Result<(), SafeError> {
         });
         let Some((_, end)) = end else {
             return Err(SafeError::at(
-                "unterminated private-key block. Add its matching END marker and retry.",
+                ErrorKind::UnterminatedPrivateKey,
                 crate::error::line_number(input.as_bytes(), begin.start()),
             ));
         };

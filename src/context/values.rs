@@ -1,4 +1,4 @@
-use crate::error::SafeError;
+use crate::error::{ErrorKind, SafeError};
 
 const VALUE_LIMIT: usize = 1_048_576;
 
@@ -46,9 +46,7 @@ pub(super) fn balanced_end(input: &str, start: usize) -> Result<usize, SafeError
         }
         at += 1;
     }
-    Err(SafeError::new(
-        "unterminated sensitive container. Close its delimiters and retry.",
-    ))
+    Err(SafeError::new(ErrorKind::UnterminatedSensitiveContainer))
 }
 
 pub(super) fn yaml_block_end(
@@ -209,7 +207,5 @@ pub(super) fn escaped_quoted_end(input: &str, start: usize) -> Result<usize, Saf
             at += 1;
         }
     }
-    Err(SafeError::new(
-        "unterminated escaped quoted value. Close its escaped quote and retry.",
-    ))
+    Err(SafeError::new(ErrorKind::UnterminatedEscapedQuote))
 }

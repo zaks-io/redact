@@ -1,0 +1,3 @@
+dsn="host=db dbname=app user=app password="
+INFO started "ok"
+GET /health 200

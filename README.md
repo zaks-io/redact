@@ -138,7 +138,7 @@ cargo clippy --locked --all-targets --all-features -- -D warnings
 cargo test --locked -- --test-threads=2
 cargo build --locked --release --bins
 python3 scripts/acceptance.py
-cargo test --locked --release --test workflows --test rstr --test rstr_regressions --test streaming --test streaming_review -- --test-threads=2
+cargo test --locked --release --test workflows --test rstr --test rstr_regressions --test streaming --test streaming_review --test streaming_detector_state -- --test-threads=2
 cargo install cargo-deny --version 0.18.9 --locked
 cargo deny --locked check
 cargo deny --manifest-path fuzz/Cargo.toml --locked check --config ../deny.toml
