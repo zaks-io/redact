@@ -40,3 +40,9 @@ expect_used = "deny"
 strip = true
 lto = "fat"
 codegen-units = 1
+
+# Large subprocess watchdog cases need optimization on the two-vCPU CI runners.
+[profile.test]
+opt-level = 1
+debug-assertions = true
+overflow-checks = true

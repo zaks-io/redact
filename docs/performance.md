@@ -22,6 +22,11 @@ The canonical release profile is:
 the same release profile. Development and test profiles may retain debug
 information; they do not establish shipped binary size or performance.
 
+The test profile uses optimization level `1` with debug assertions and overflow
+checks enabled. This keeps large synthetic subprocess watchdog cases within
+their existing deadlines on the two-vCPU CI runners. Test inputs, output
+assertions, and process deadlines remain the same.
+
 Release executables must run on supported Linux and macOS targets without
 depending on the build machine's CPU features. Do not use host-specific CPU
 flags for distributed builds. Keep target and architecture selection explicit
