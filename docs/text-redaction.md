@@ -139,12 +139,15 @@ later bytes can identify as credentials. A record ending with a quoted name can
 wait for the next non-whitespace character, because a later colon or equals sign
 may turn it into a sensitive assignment.
 
-Ambiguous assignment quoting can require EOF. A plain sensitive value containing
-quote or bracket syntax can change how later lines are parsed. Inline escaped
-quoted values can also overlap URL or connection-string context. Retain those
-records through EOF instead of guessing which context owns their delimiters.
-Standalone completed escaped quoted assignments still stream. Multiline quoted
-mapping names retain the document from the name's opening line.
+Ambiguous assignment quoting can require EOF. Quote or bracket syntax in a plain
+sensitive value or its indented continuation can change how later lines are
+parsed. Plain sensitive JSON values followed by more quote or bracket syntax on
+the same line also require EOF. Escaped quoted values can overlap URL or
+connection-string context, including a connection string that starts at column
+zero. Retain ambiguous records through EOF instead of guessing which context owns
+their delimiters. Standalone completed escaped quoted assignments without that
+overlap still stream. Multiline quoted mapping names retain the document from
+the name's opening line.
 
 Require UTF-8 input and reject NUL bytes. Preserve valid unmatched line endings,
 whitespace, and other characters. This filter removes matched secrets; it does

@@ -24,6 +24,7 @@ macro_rules! pattern {
 mod containers;
 mod jose;
 mod urls;
+pub(crate) use urls::connection_context;
 
 pub(crate) fn yaml_document_separators() -> Result<&'static regex::Regex, SafeError> {
     pattern!(r"(?m)^---[ \t]*(?:#.*)?\r?$")

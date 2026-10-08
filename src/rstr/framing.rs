@@ -99,6 +99,7 @@ impl Framer {
     }
 
     fn scan(&mut self, line: &str, record: &[u8], start: usize) -> Result<(), SafeError> {
+        self.syntax.connection_context(line);
         let matcher = private_markers()?;
         let mut cursor = 0;
         let mut at = 0;
@@ -117,12 +118,18 @@ impl Framer {
                     record,
                     start + cursor,
                 );
+            } else if marker.start() > cursor {
+                self.syntax.skip_private(&line[cursor..marker.start()]);
+            }
+            if self.private.is_empty() {
+                self.syntax.private_start(record, start + marker.start());
             }
             if direction.as_str() == "BEGIN" {
                 self.private.insert(label.as_str().to_owned());
             } else {
                 self.private.remove(label.as_str());
             }
+            self.syntax.skip_private(&line[cursor..marker.end()]);
             cursor = cursor.max(marker.end());
             // BEGIN can reuse an END marker's closing five dashes.
             at = marker.end().saturating_sub(5).max(marker.start() + 1);
@@ -134,6 +141,8 @@ impl Framer {
                 record,
                 start + cursor,
             );
+        } else {
+            self.syntax.skip_private(&line[cursor..]);
         }
         Ok(())
     }

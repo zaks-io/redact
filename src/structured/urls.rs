@@ -154,6 +154,26 @@ pub(super) fn urls(
     Ok(())
 }
 
+pub(crate) fn connection_context(line: &str) -> (bool, bool) {
+    let lower = line.to_ascii_lowercase();
+    let azure = lower.contains("accountname=")
+        || lower.contains("defaultendpointsprotocol=")
+        || lower.contains("sharedaccesssignature=");
+    let postgres = [
+        "host=",
+        "dbname=",
+        "user=",
+        "port=",
+        "hostaddr=",
+        "sslmode=",
+    ]
+    .iter()
+    .filter(|name| lower.contains(**name))
+    .count()
+        >= 2;
+    (azure, postgres)
+}
+
 pub(super) fn connections(
     input: &str,
     spans: &mut Vec<Span>,
@@ -162,22 +182,7 @@ pub(super) fn connections(
     let fields = pattern!(r"(?i)\b(accountkey|sharedaccesssignature|password)[ \t]*=[ \t]*")?;
     let mut offset = 0;
     for line in input.split_inclusive('\n') {
-        let lower = line.to_ascii_lowercase();
-        let azure = lower.contains("accountname=")
-            || lower.contains("defaultendpointsprotocol=")
-            || lower.contains("sharedaccesssignature=");
-        let postgres = [
-            "host=",
-            "dbname=",
-            "user=",
-            "port=",
-            "hostaddr=",
-            "sslmode=",
-        ]
-        .iter()
-        .filter(|name| lower.contains(**name))
-        .count()
-            >= 2;
+        let (azure, postgres) = connection_context(line);
         if !azure && !postgres {
             offset += line.len();
             continue;

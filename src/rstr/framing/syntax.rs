@@ -1,4 +1,6 @@
 use super::holds::HoldReason;
+mod json;
+use json::JsonSyntax;
 
 #[derive(Default)]
 pub(super) struct Syntax {
@@ -13,11 +15,14 @@ pub(super) struct Syntax {
     wire_slashes: usize,
     known_value: Option<bool>,
     plain_value: Option<bool>,
+    plain_tail: bool,
     embedded_value: bool,
     ambiguous: bool,
     stack: Vec<u8>,
     json: JsonSyntax,
     continuation: Option<usize>,
+    continuation_value: bool,
+    connection: bool,
 }
 
 struct OpenQuote {
@@ -49,6 +54,25 @@ impl Syntax {
                 .is_some_and(|indentation| !crate::context::continues_value(line, indentation))
         {
             self.continuation = None;
+        }
+    }
+
+    pub(super) fn connection_context(&mut self, line: &str) {
+        let (azure, postgres) = crate::structured::connection_context(line);
+        self.connection = azure || postgres;
+    }
+
+    pub(super) fn private_start(&mut self, record: &[u8], at: usize) {
+        self.byte(b'-', record, at);
+    }
+
+    pub(super) fn skip_private(&mut self, input: &str) {
+        if input.bytes().any(|byte| matches!(byte, b'\r' | b'\n')) {
+            self.plain_value = None;
+            self.plain_tail = false;
+        }
+        if let Some(byte) = input.as_bytes().last() {
+            self.previous = Some(*byte);
         }
     }
 
@@ -88,11 +112,17 @@ impl Syntax {
         let mut offset = 0;
         let mut awaited_colon = false;
         for line in input.split_inclusive(['\r', '\n']) {
+            let mut continuing = false;
             if line_start {
                 self.advance_continuation(line);
+                continuing =
+                    self.continuation.is_some() && self.continuation_value && !self.awaiting_value;
                 awaited_colon |= self.awaiting_delimiter
                     && line.bytes().find(|byte| !byte.is_ascii_whitespace()) == Some(b':');
-                if let Some(indentation) = crate::context::yaml_colon_assignment(&input[offset..]) {
+                if !continuing
+                    && let Some(indentation) =
+                        crate::context::yaml_colon_assignment(&input[offset..])
+                {
                     self.continuation = Some(
                         self.continuation
                             .map_or(indentation, |active| active.min(indentation)),
@@ -101,7 +131,12 @@ impl Syntax {
             }
             for (at, &byte) in line.as_bytes().iter().enumerate() {
                 self.json.byte(byte);
-                awaited_colon |= self.byte(byte, record, start + offset + at);
+                if continuing {
+                    self.ambiguous |= grammar_byte(byte);
+                    self.previous = Some(byte);
+                } else {
+                    awaited_colon |= self.byte(byte, record, start + offset + at);
+                }
             }
             line_start = line.ends_with(['\r', '\n']);
             offset += line.len();
@@ -116,11 +151,17 @@ impl Syntax {
     }
 
     fn context_byte(&mut self, byte: u8, record: &[u8], at: usize) -> bool {
+        if matches!(byte, b'\r' | b'\n') {
+            self.plain_tail = false;
+        } else if self.plain_tail {
+            self.ambiguous |= grammar_byte(byte);
+        }
         if let Some(json) = self.plain_value {
             if matches!(byte, b'\r' | b'\n') || json && matches!(byte, b',' | b'}' | b']') {
                 self.plain_value = None;
+                self.plain_tail = json && !matches!(byte, b'\r' | b'\n');
             } else {
-                self.ambiguous |= matches!(byte, b'"' | b'\'' | b'{' | b'}' | b'[' | b']');
+                self.ambiguous |= grammar_byte(byte);
                 return false;
             }
         }
@@ -135,7 +176,7 @@ impl Syntax {
                 if byte == quote && self.wire_slashes % 4 == 1 {
                     self.wire_quote = None;
                 } else if self.embedded_value {
-                    self.ambiguous |= matches!(byte, b'"' | b'\'' | b'{' | b'}' | b'[' | b']');
+                    self.ambiguous |= grammar_byte(byte);
                 }
                 self.wire_slashes = 0;
             }
@@ -163,11 +204,13 @@ impl Syntax {
                     self.closed_quote = None;
                     match byte {
                         b'\\' if matches!(record.get(at + 1), Some(b'"' | b'\'')) => {
+                            self.continuation_value = false;
                             self.wire_quote = record.get(at + 1).copied();
                             self.wire_opening = true;
                             return false;
                         }
                         b'"' | b'\'' => {
+                            self.continuation_value = false;
                             self.quote = Some(OpenQuote {
                                 byte,
                                 start: at,
@@ -175,13 +218,18 @@ impl Syntax {
                             });
                             return false;
                         }
-                        b'{' | b'[' if json => {}
+                        b'{' | b'[' if json => {
+                            self.continuation_value = false;
+                        }
                         _ => {
+                            self.continuation_value = true;
                             self.plain_value = Some(json);
                             self.ambiguous |= matches!(byte, b'{' | b'}' | b'[' | b']');
                             return false;
                         }
                     }
+                } else {
+                    self.continuation_value = true;
                 }
             }
             if !byte.is_ascii_whitespace() {
@@ -205,7 +253,8 @@ impl Syntax {
                     crate::context::sensitive_assignment(record, at, self.closed_quote.as_ref())
                 {
                     self.known_value = Some(quoted && byte == b':' && !self.stack.is_empty());
-                    self.embedded_value = crate::context::yaml_indentation(record, name).is_none();
+                    self.embedded_value =
+                        self.connection || crate::context::yaml_indentation(record, name).is_none();
                     if byte == b':'
                         && let Some(indentation) = crate::context::yaml_indentation(record, name)
                     {
@@ -242,45 +291,6 @@ impl Syntax {
     }
 }
 
-// The JSON detector skips double-quoted regions, but single quotes are log text.
-// Keep that grammar independent of assignment quoting so wrappers cannot hide objects.
-#[derive(Default)]
-struct JsonSyntax {
-    quote: bool,
-    escaped: bool,
-    escaped_outside: bool,
-    depth: usize,
-    first_member: bool,
-}
-
-impl JsonSyntax {
-    fn byte(&mut self, byte: u8) {
-        let quote_starts = crate::structured::json_quote_starts_string(byte, self.escaped_outside);
-        self.escaped_outside = byte == b'\\' && !self.escaped_outside;
-        if self.first_member && !byte.is_ascii_whitespace() {
-            self.first_member = false;
-            if !matches!(byte, b'"' | b'}') {
-                self.depth = 0;
-            }
-        }
-        if self.quote {
-            if self.escaped {
-                self.escaped = false;
-            } else if byte == b'\\' {
-                self.escaped = true;
-            } else if byte == b'"' {
-                self.quote = false;
-            }
-        } else {
-            match byte {
-                b'"' if quote_starts => self.quote = true,
-                b'{' => {
-                    self.first_member = self.depth == 0;
-                    self.depth += 1;
-                }
-                b'}' => self.depth = self.depth.saturating_sub(1),
-                _ => {}
-            }
-        }
-    }
+fn grammar_byte(byte: u8) -> bool {
+    matches!(byte, b'"' | b'\'' | b'{' | b'}' | b'[' | b']')
 }

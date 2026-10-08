@@ -64,9 +64,12 @@ Cargo warnings, Node errors, uvicorn `INFO:` lines, BuildKit `#1` comments and
 `- ` lists can resemble YAML and hold later output too. A short first line can
 therefore make a long log reach the pending limit. Keep any retry inside the
 filter; do not inspect the raw log to identify the hold.
-Unquoted sensitive values containing quotes or brackets and some inline escaped
-quoted values also retain their record through EOF. Their delimiters can change
-the interpretation of later lines.
+Unquoted sensitive values or their continuations containing quotes or brackets
+also retain their record through EOF. Plain sensitive JSON values followed by
+more quote or bracket syntax on the same line can wait too. Escaped quoted values
+with ambiguous URL or connection-string context require EOF, even when the
+connection string starts the line. Their delimiters can change the interpretation
+of later lines.
 
 `rstr` reads no environment values or `.env` files. No matches means unchanged
 output, not proof that no secret was present. Use `rprintenv` directly for

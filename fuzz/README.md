@@ -53,6 +53,13 @@ and safe errors beyond the documented nesting budget.
 The text filter also uses arbitrary structured spans and an independent
 endpoint-count union oracle. It checks Unicode boundaries, overlapping unions,
 separate adjacency, exact original-byte hashing, and preserved unmatched bytes.
+It compares streaming output, evidence and errors across read sizes on up to
+4 KiB of arbitrary input per iteration. Generated complete records compare
+streaming with batch filtering for connection-string escaped values, sensitive
+continuations, differing container syntax and assignments beside private-key
+blocks. These records use synthetic canaries and retain their whole detection
+context. Arbitrary mixed streams have record-local context, so the harness does
+not require their output to equal whole-input batch filtering.
 All corpus fixtures contain synthetic data; never add host environment snapshots
 or real credential material.
 

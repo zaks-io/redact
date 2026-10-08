@@ -774,6 +774,285 @@ fn fourth_review_grammar() -> impl Strategy<Value = (String, String)> {
         )
 }
 
+#[derive(serde::Deserialize)]
+struct FifthReviewRecord {
+    #[serde(flatten)]
+    record: ReviewRecord,
+    withhold: bool,
+}
+
+#[derive(serde::Deserialize)]
+struct ReviewFailure {
+    name: String,
+    input: String,
+    canaries: Vec<String>,
+}
+
+fn fifth_review_records() -> Vec<FifthReviewRecord> {
+    serde_json::from_str(r###"[
+{"name":"B1 continuation bracket pops container, JSON-mode tail","family":"B","input":"[\npassword: a\n ]\nx\n\"token\":\n\"SYNCANB1\"\n]\n","expected":"[\npassword: [REDACTED sha256=92d80e1bc0c58f80]\nx\n\"token\":\n\"[REDACTED sha256=3291632a2ee78218]\"\n]\n","protected":["SYNCANB1"],"withhold":true},
+{"name":"B2 block scalar line pops container","family":"B","input":"[\npassword: |\n ]\nx\n\"token\":\n\"SYNCANB2\"\n]\n","expected":"[\npassword: [REDACTED sha256=cbee5301206b6c2c]\nx\n\"token\":\n\"[REDACTED sha256=307950fa9bbe00f6]\"\n]\n","protected":["SYNCANB2"],"withhold":true},
+{"name":"B3 newline value line pops container","family":"B","input":"[\npassword:\n ]\nx\n\"token\":\n\"SYNCANB3\"\n]\n","expected":"[\npassword:\n [REDACTED sha256=cfae0d4248f7142f]\nx\n\"token\":\n\"[REDACTED sha256=157e59727cbe7424]\"\n]\n","protected":["SYNCANB3"],"withhold":true},
+{"name":"B4 continuation quote flips parity","family":"B","input":"[\npassword: a\n  'x\n[\n'\n]\n token':\n\"SYNCANB4\"\n]\n]\n","expected":"[\npassword: [REDACTED sha256=a56bc440d04e44af]\n[\n'\n]\n token':\n\"[REDACTED sha256=b223dfc140f56c1f]\"\n]\n]\n","protected":["SYNCANB4"],"withhold":true},
+{"name":"B0 control: same without container","family":"B","input":"password: a\n ]\nx\n\"token\":\n\"SYNCANB0\"\n","expected":"password: [REDACTED sha256=92d80e1bc0c58f80]\nx\n\"token\":\n\"SYNCANB0\"\n","protected":[],"withhold":false},
+{"name":"B0b control: continuation without bracket","family":"B","input":"[\npassword: a\n b\nx\n\"token\":\n\"SYNCANB5\"\n]\n","expected":"[\npassword: [REDACTED sha256=91b3097f7eef76e9]\nx\n\"token\":\n\"[REDACTED sha256=66e3e5657f0fbf63]\"\n]\n","protected":["SYNCANB5"],"withhold":false},
+{"name":"A1 postgres line-start wire value, bracket after context end","family":"A","input":"password=\\\"a [x\\\" host=h dbname=d\n\"token\":\n\"SYNCANA1\"\n]\n","expected":"password=[REDACTED sha256=290522c611c697fe] [x\\\" host=h dbname=d\n\"token\":\n\"[REDACTED sha256=7da9188336fd4a08]\"\n]\n","protected":["SYNCANA1"],"withhold":true},
+{"name":"A2 azure line-start wire value","family":"A","input":"AccountKey=\\\"a;[x\\\";AccountName=n\n\"token\":\n\"SYNCANA2\"\n]\n","expected":"AccountKey=[REDACTED sha256=290522c611c697fe];[x\\\";AccountName=n\n\"token\":\n\"[REDACTED sha256=1226d52bf1cd6bc7]\"\n]\n","protected":["SYNCANA2"],"withhold":true},
+{"name":"A0 control: wire value bracket no connection","family":"A","input":"password=\\\"a [x\\\" note\n\"token\":\n\"SYNCANA0\"\n]\n","expected":"password=\\\"[REDACTED sha256=7b7e25b95a61e941]\\\" note\n\"token\":\n\"SYNCANA0\"\n]\n","protected":[],"withhold":false},
+{"name":"C1 json flag mismatch via [} then plain value ends at ]","family":"C","input":"[}\n'token': a] 'x\n'\n password': v\n SYNCANC1\n","expected":"[}\n'token': [REDACTED sha256=2553003aed6cd71d]\n'\n password': [REDACTED sha256=e3588f7f0f65e9b6]\n","protected":["SYNCANC1"],"withhold":true},
+{"name":"B5 json-mode | header then block line pops container","family":"B","input":"[\n\"api_key\":\n|\n ]\nx\n\"token\":\n\"SYNCANB6\"\n]\n","expected":"[\n\"api_key\":\n[REDACTED sha256=cbee5301206b6c2c]\nx\n\"token\":\n\"[REDACTED sha256=75b418a0e25249b9]\"\n]\n","protected":["SYNCANB6"],"withhold":true},
+{"name":"B6 json-mode # header","family":"B","input":"[\n\"api_key\":\n# n\n ]\nx\n\"token\":\n\"SYNCANB7\"\n]\n","expected":"[\n\"api_key\":\n# n\n [REDACTED sha256=cfae0d4248f7142f]\nx\n\"token\":\n\"[REDACTED sha256=0da241e6b8b075f3]\"\n]\n","protected":["SYNCANB7"],"withhold":true},
+{"name":"B7 dash-prefixed sensitive mapping in container","family":"B","input":"[\n- password: a\n   ]\nx\nsee http://h/x[\n\"token\":\n\"SYNCANB8\"\n]\nafter\n","expected":"[\n- password: [REDACTED sha256=a277badc9d96d0cb]\nx\nsee http://h/x[\n\"token\":\n\"[REDACTED sha256=d76dec2741ccc572]\"\n]\nafter\n","protected":["SYNCANB8"],"withhold":true},
+{"name":"B8 continuation opens quote (no container), quoted-name tail","family":"B","input":"{\npassword: a\n  'x\n}\n'\n}\n token':\n\"SYNCANB9\"\n}\n","expected":"{\npassword: [REDACTED sha256=a56bc440d04e44af]\n}\n'\n}\n token':\n\"SYNCANB9\"\n}\n","protected":[],"withhold":true},
+{"name":"C2 URL bracket json mismatch, plain value ends at ]","family":"C","input":"see http://h/x[\n'token': a] 'x\n'\n password': v\n SYNCANC2\n","expected":"see http://h/x[\n'token': [REDACTED sha256=2553003aed6cd71d]\n'\n password': [REDACTED sha256=19afff100d99599a]\n","protected":["SYNCANC2"],"withhold":true},
+{"name":"C0 control: [} then value without trailing quote","family":"C","input":"[}\n'token': a] x\n password': v\n SYNCANC0\n","expected":"[}\n'token': [REDACTED sha256=54fcfb81f2331ce5]\n","protected":["SYNCANC0"],"withhold":false},
+{"name":"A3 dash postgres wire","family":"A","input":"- password=\\\"a [x\\\" host=h dbname=d\nsee http://h/x[\n\"token\":\n\"SYNCANA3\"\n]\nafter\n","expected":"- password=[REDACTED sha256=290522c611c697fe] [x\\\" host=h dbname=d\nsee http://h/x[\n\"token\":\n\"[REDACTED sha256=5b7ef98edb8b4de9]\"\n]\nafter\n","protected":["SYNCANA3"],"withhold":true},
+{"name":"A4 postgres wire with quote after context end","family":"A","input":"password=\\\"a 'x\\\" host=h dbname=d\n'\n password': v\n SYNCANA4\n","expected":"password=[REDACTED sha256=290522c611c697fe] 'x\\\" host=h dbname=d\n'\n password': [REDACTED sha256=4c94485e0c21ae6c]\n SYNCANA4\n","protected":[],"withhold":true},
+{"name":"CL json-flag mismatch, live tail","family":"C","input":"see http://h/x[\n'token': a] '\n[\n'\nx\nsee http://h/x[\n\"token\":\n\"SYNCANCL\"\n]\nafter\n","expected":"see http://h/x[\n'token': [REDACTED sha256=944b821f83790a60]\n[\n'\nx\nsee http://h/x[\n\"token\":\n\"[REDACTED sha256=f20d1c77d1fa463d]\"\n]\nafter\n","protected":["SYNCANCL"],"withhold":true},
+{"name":"CL0 control: no trailing quote after ]","family":"C","input":"see http://h/x[\n'token': a] q\n[\nq\nx\nsee http://h/x[\n\"token\":\n\"SYNCANC9\"\n]\n]\nafter\n","expected":"see http://h/x[\n'token': [REDACTED sha256=9ccba56e4b5e0190]\n[\nq\nx\nsee http://h/x[\n\"token\":\n\"[REDACTED sha256=74bb4ee3928c50e5]\"\n]\n]\nafter\n","protected":["SYNCANC9"],"withhold":false},
+{"name":"D1 known_value survives private block, quote after END","family":"D","input":"password=-----BEGIN RSA PRIVATE KEY-----\nMII\n-----END RSA PRIVATE KEY----- 'token': \\\"a 'q\\\"\n'\n password': v\n SYNCAND1\n","expected":"password=[REDACTED sha256=ebaa958246477fae] 'token': \\\"[REDACTED sha256=929bcf27168cc00b]\\\"\n'\n password': [REDACTED sha256=fd4471a34c2d24f0]\n","protected":["SYNCAND1"],"withhold":true},
+{"name":"D2 same, live tail via URL bracket","family":"D","input":"[\npassword=-----BEGIN RSA PRIVATE KEY-----\nMII\n-----END RSA PRIVATE KEY----- 'token': \\\"a ]\\\"\nx\nsee http://h/x[\n\"token\":\n\"SYNCAND2\"\n]\nafter\n","expected":"[\npassword=[REDACTED sha256=ebaa958246477fae] 'token': \\\"[REDACTED sha256=927fca517a95f1e8]\\\"\nx\nsee http://h/x[\n\"token\":\n\"[REDACTED sha256=273ad4a999f2bcdd]\"\n]\nafter\n","protected":["SYNCAND2"],"withhold":true},
+{"name":"D0 control: no private block","family":"D","input":"password=x 'token': \\\"a 'q\\\"\n'\n password': v\n SYNCAND0\n","expected":"password=[REDACTED sha256=41d7216796925d79]\n'\n password': [REDACTED sha256=8346517c6d19243d]\n","protected":["SYNCAND0"],"withhold":false},
+{"name":"BL continuation ] then URL-bracket tail record","family":"B","input":"[\npassword: a\n ]\nx\nsee http://h/x[\n\"token\":\n\"SYNCANBL\"\n]\nafter\n","expected":"[\npassword: [REDACTED sha256=92d80e1bc0c58f80]\nx\nsee http://h/x[\n\"token\":\n\"[REDACTED sha256=f472031d20c576e7]\"\n]\nafter\n","protected":["SYNCANBL"],"withhold":true},
+{"name":"AL postgres wire bracket then URL-bracket tail","family":"A","input":"password=\\\"a [x\\\" host=h dbname=d\nsee http://h/x[\n\"token\":\n\"SYNCANAL\"\n]\nafter\n","expected":"password=[REDACTED sha256=290522c611c697fe] [x\\\" host=h dbname=d\nsee http://h/x[\n\"token\":\n\"[REDACTED sha256=14f5af925bbe9ed0]\"\n]\nafter\n","protected":["SYNCANAL"],"withhold":true},
+{"name":"TL control: tail alone","family":"T","input":"see http://h/x[\n\"token\":\n\"SYNCANTL\"\n]\nafter\n","expected":"see http://h/x[\n\"token\":\n\"SYNCANTL\"\n]\nafter\n","protected":[],"withhold":false},
+{"name":"TL2 control: real container then tail","family":"T","input":"[\nsee http://h/x[\n\"token\":\n\"SYNCANT2\"\n]\n]\nafter\n","expected":"[\nsee http://h/x[\n\"token\":\n\"[REDACTED sha256=bc82152ab63a1c47]\"\n]\n]\nafter\n","protected":["SYNCANT2"],"withhold":false},
+{"name":"fuzz5-52.json availability 2","family":"K","input":"password=\\\"a '\\\" host=h dbname=d\n}\n{\n\"a\": 1,\n'x\n token': \n  'x\nx\npassword: v\n SYNTHR5004551T0\nsee http://h/x[\n\"token\":\n\"SYNTHR5004551T1\"\n]\nafter\n","expected":"password=[REDACTED sha256=290522c611c697fe] '\\\" host=h dbname=d\n}\n{\n\"a\": 1,\n'x\n token': \n  [REDACTED sha256=bda486ab1e8e6cc1]\nx\npassword: [REDACTED sha256=3adbfb1242a12f01]\nsee http://h/x[\n\"token\":\n\"SYNTHR5004551T1\"\n]\nafter\n","protected":["SYNTHR5004551T0"],"withhold":false},
+{"name":"fuzz5-55.json availability 0","family":"K","input":"{\n\"token\":\n>\n 'x\n}\nsee http://h/x[\npassword='\n}\n'token'=\\\"SYNTHR5001143T0\\\"\n","expected":"{\n\"token\":\n[REDACTED sha256=c6a0caa48f59b9dc]\n}\nsee http://h/x[\npassword='[REDACTED sha256=804f89fc0ec98c98]'token'=\\\"[REDACTED sha256=19417b81b391b0b5]\\\"\n","protected":["SYNTHR5001143T0"],"withhold":false},
+{"name":"fuzz5-55.json availability 1","family":"K","input":"AccountKey=\\\"a;'\\\";AccountName=n\n}\ntoken='x\nx\n\"token\":\n\"SYNTHR5004106T0\"\n]\n","expected":"AccountKey=[REDACTED sha256=290522c611c697fe];'\\\";AccountName=n\n}\ntoken='x\nx\n\"token\":\n\"SYNTHR5004106T0\"\n]\n","protected":[],"withhold":false}
+]"###).must()
+}
+
+fn fifth_review_failures() -> Vec<ReviewFailure> {
+    serde_json::from_str(r###"[
+{"name":"fuzz5-52.json batch-fail 0","input":"[\nAccountKey=\\\"a;'\\\";AccountName=n\n]\n{\n\"a\": 1,\npassword=\\\"a 'x\\\" host=h dbname=d\nx\n'token'=\\\"SYNTHR5001244T0\\\"\n","canaries":["SYNTHR5001244T0"]},
+{"name":"fuzz5-52.json batch-fail 1","input":"{\npassword=\\\"a a] 'x\\\" host=h dbname=d\n}\nx [\nAccountKey=\\\"a;a] 'x\\\";AccountName=n\n\n'token'=\\\"SYNTHR5003294T0\\\"\n'\n password': v\n SYNTHR5003294T1\n","canaries":["SYNTHR5003294T0","SYNTHR5003294T1"]},
+{"name":"fuzz5-54.json batch-fail 0","input":"[}\nAccountKey=\\\"a;a] 'x\\\";AccountName=n\n]\n[}\nAccountKey=\\\"a;'x\\\";AccountName=n\n\npassword: v\n SYNTHR5000293T0\n","canaries":["SYNTHR5000293T0"]},
+{"name":"fuzz5-54.json batch-fail 1","input":"see http://h/x[\npassword=\\\"a '\\\" host=h dbname=d\n]\nsee http://h/x[\nAccountKey=\\\"a;'\\\";AccountName=n\n]\n\"token\":\n\"SYNTHR5004976T0\"\n]\n token':\n\"SYNTHR5004976T1\"\n]\n","canaries":["SYNTHR5004976T0","SYNTHR5004976T1"]}
+]"###).must()
+}
+
+fn check_fifth_review_family(family: &str) {
+    for case in fifth_review_records()
+        .iter()
+        .filter(|case| case.record.family == family)
+    {
+        assert_pinned_review_record(&case.record);
+    }
+}
+
+fn assert_review_failure(case: &ReviewFailure) -> Outcome {
+    let batch = filter(case.input.as_bytes()).must_err();
+    let whole = streamed(case.input.as_bytes(), Vec::new(), usize::MAX);
+    let error = whole.error.as_ref().must();
+    assert!(
+        error.kind == batch.kind,
+        "stream did not preserve failed detection for {}",
+        case.name
+    );
+    for canary in &case.canaries {
+        assert!(
+            !whole
+                .output
+                .windows(canary.len())
+                .any(|bytes| bytes == canary.as_bytes()),
+            "failed synthetic record released a canary"
+        );
+        assert!(
+            !format!("{error:?} {error}").contains(canary),
+            "failed synthetic record exposed a diagnostic canary"
+        );
+    }
+    for split in 0..=case.input.len() {
+        assert!(
+            streamed(case.input.as_bytes(), vec![split], usize::MAX) == whole,
+            "{} changed at split {split}",
+            case.name
+        );
+    }
+    for size in [1, 2, 7, 31, 4096] {
+        assert!(
+            streamed(case.input.as_bytes(), Vec::new(), size) == whole,
+            "{} changed at read size {size}",
+            case.name
+        );
+    }
+    assert!(
+        streamed(
+            case.input.as_bytes(),
+            line_ends(case.input.as_bytes()),
+            usize::MAX
+        ) == whole,
+        "{} changed with line reads",
+        case.name
+    );
+    whole
+}
+
+#[test]
+fn fifth_review_connection_wire_contexts_preserve_exact_batch_spans() {
+    check_fifth_review_family("A");
+}
+
+#[test]
+fn fifth_review_sensitive_continuation_syntax_preserves_exact_batch_spans() {
+    check_fifth_review_family("B");
+}
+
+#[test]
+fn fifth_review_json_depth_mismatches_preserve_exact_batch_spans() {
+    check_fifth_review_family("C");
+}
+
+#[test]
+fn fifth_review_pem_markers_consume_pending_values_without_changing_spans() {
+    check_fifth_review_family("D");
+}
+
+#[test]
+fn fifth_review_controls_and_availability_preserve_exact_batch_results() {
+    check_fifth_review_family("T");
+    check_fifth_review_family("K");
+}
+
+#[test]
+fn fifth_review_batch_failures_stay_closed_at_every_read_boundary() {
+    for case in fifth_review_failures() {
+        assert_review_failure(&case);
+    }
+}
+
+fn fifth_review_poison(variant: usize, eol: &str) -> String {
+    let input = [
+        "password=\\\"a [x\\\" host=h dbname=d",
+        "AccountKey=\\\"a;[x\\\";AccountName=n",
+        "[\npassword: a\n ]\nx",
+        "[\npassword: |\n ]\nx",
+        "[\n\"api_key\":\n|\n ]\nx",
+        "see http://h/x[\n'token': a] '\n[\n'\nx",
+        "[\npassword=-----BEGIN RSA PRIVATE KEY-----\nMII synthetic\n-----END RSA PRIVATE KEY----- 'token': \\\"a ]\\\"\nx",
+        "password=-----BEGIN RSA PRIVATE KEY-----\nMII synthetic\n-----END RSA PRIVATE KEY----- 'token': \\\"a 'q\\\"\n'\n password': v",
+    ][variant];
+    input.replace('\n', eol)
+}
+
+fn fifth_review_grammar() -> impl Strategy<Value = (String, String)> {
+    (
+        prop::collection::vec(0usize..8, 1..4),
+        prop::sample::select(vec!["\n", "\r\n"]),
+        0usize..3,
+        prop::sample::select(vec!["token", "api_key", "password"]),
+        prop::sample::select(vec!["", " ", "\t"]),
+        "[a-z0-9秘密é_-]{1,16}",
+    )
+        .prop_map(|(poisons, eol, tail_kind, name, gap, suffix)| {
+            let canary = format!("{CANARY}_{suffix}");
+            let mut input = poisons
+                .into_iter()
+                .map(|variant| fifth_review_poison(variant, eol))
+                .collect::<Vec<_>>()
+                .join(eol);
+            input.push_str(eol);
+            let tail = match tail_kind {
+                0 => format!("see http://h/x[{eol}\"{name}\"{gap}:{gap}{eol}\"{canary}\"{eol}]{eol}after{eol}"),
+                1 => format!("'{eol} {name}'{gap}:{gap}v{eol} {canary}{eol}"),
+                _ => format!("{name}{gap}={gap}'{canary}'{eol}"),
+            };
+            input.push_str(&tail);
+            (input, canary)
+        })
+}
+
+fn assert_batch_outcome(input: &str, canaries: &[&str]) -> Outcome {
+    let whole = streamed(input.as_bytes(), Vec::new(), usize::MAX);
+    match filter(input.as_bytes()) {
+        Ok(expected) => {
+            assert!(
+                whole.error.is_none() && whole.output == expected.as_bytes(),
+                "synthetic complete record differs from actual batch"
+            );
+        }
+        Err(batch) => {
+            let error = whole.error.as_ref().must();
+            assert!(
+                error.kind == batch.kind,
+                "synthetic batch failure became success"
+            );
+            for canary in canaries {
+                assert!(
+                    !whole
+                        .output
+                        .windows(canary.len())
+                        .any(|bytes| bytes == canary.as_bytes()),
+                    "batch failure released a synthetic canary"
+                );
+            }
+        }
+    }
+    for canary in canaries {
+        assert!(
+            !String::from_utf8_lossy(&whole.report).contains(canary),
+            "synthetic metadata exposed a canary"
+        );
+        if let Some(error) = &whole.error {
+            assert!(!format!("{error:?} {error}").contains(canary));
+        }
+    }
+    whole
+}
+
+fn private_marker_tail_records() -> Vec<String> {
+    let mut records = Vec::new();
+    for eol in ["\n", "\r\n", "\r"] {
+        for spacing in ["", " ", "\t"] {
+            let bodies = [
+                format!(
+                    "-----BEGIN RSA PRIVATE KEY-----{eol}MII synthetic{eol}-----END RSA PRIVATE KEY-----"
+                ),
+                "-----END RSA PRIVATE KEY-----".to_owned(),
+                format!(
+                    "-----END RSA PRIVATE KEY-----BEGIN RSA PRIVATE KEY-----{eol}MII synthetic{eol}-----END RSA PRIVATE KEY-----"
+                ),
+                format!(
+                    "-----BEGIN RSA PRIVATE KEY-----{eol}MII synthetic{eol}-----END RSA PRIVATE KEY-----BEGIN RSA PRIVATE KEY-----{eol}MII synthetic second{eol}-----END RSA PRIVATE KEY-----"
+                ),
+            ];
+            for body in bodies {
+                records.push(format!(
+                    "[{eol}password={body}{spacing}'token': \\\"a ]\\\"{eol}x{eol}see http://h/x[{eol}\"token\":{eol}\"{CANARY}\"{eol}]{eol}after{eol}"
+                ));
+                records.push(format!(
+                    "password={body}{spacing}'token': \\\"a 'q\\\"{eol}'{eol} password': v{eol} {CANARY}{eol}"
+                ));
+            }
+        }
+    }
+    records
+}
+
+#[test]
+fn unmatched_and_overlapping_private_markers_preserve_actual_batch_at_every_boundary() {
+    for (index, input) in private_marker_tail_records().into_iter().enumerate() {
+        let whole = assert_batch_outcome(&input, &[CANARY]);
+        for split in 0..=input.len() {
+            assert!(
+                streamed(input.as_bytes(), vec![split], usize::MAX) == whole,
+                "private marker tail {index} changed at split {split}"
+            );
+        }
+        for size in [1, 2, 7, 31] {
+            assert!(
+                streamed(input.as_bytes(), Vec::new(), size) == whole,
+                "private marker tail {index} changed at size {size}"
+            );
+        }
+        assert!(
+            streamed(input.as_bytes(), line_ends(input.as_bytes()), usize::MAX) == whole,
+            "private marker tail {index} changed with line reads"
+        );
+    }
+}
+
 fn schedule(input: &[u8], cuts: &[usize]) -> Vec<usize> {
     let mut ends: Vec<_> = cuts.iter().map(|cut| cut % (input.len() + 1)).collect();
     ends.sort_unstable();
@@ -875,6 +1154,45 @@ proptest! {
         prop_assert!(whole.error.is_none() && whole.output == case.expected.as_bytes(), "pinned review record differs from actual batch spans");
         prop_assert!(streamed(case.input.as_bytes(), schedule(case.input.as_bytes(), &cuts), size) == whole, "pinned review record changed under generated read schedules");
     }
+
+#[test]
+    fn generated_fifth_review_poison_mixtures_match_actual_batch_and_schedules(
+        fixture in fifth_review_grammar(),
+        size in 1usize..128,
+        cuts in prop::collection::vec(0usize..4096, 0..12),
+    ) {
+        let (input, canary) = fixture;
+        let whole = assert_batch_outcome(&input, &[&canary]);
+        for result in [streamed(input.as_bytes(), Vec::new(), 1), streamed(input.as_bytes(), line_ends(input.as_bytes()), usize::MAX), streamed(input.as_bytes(), schedule(input.as_bytes(), &cuts), size)] {
+            prop_assert!(result == whole, "generated fifth-review mixture changed output, report, or safe error with reads");
+        }
+    }
+
+    #[test]
+    fn pinned_fifth_review_successes_and_failures_preserve_random_read_schedules(
+        index in 0usize..34,
+        size in 1usize..128,
+        cuts in prop::collection::vec(0usize..4096, 0..12),
+    ) {
+        let input = if index < 30 {
+            fifth_review_records().into_iter().nth(index).must().record.input
+        } else {
+            fifth_review_failures().into_iter().nth(index - 30).must().input
+        };
+        let whole = streamed(input.as_bytes(), Vec::new(), usize::MAX);
+        prop_assert!(streamed(input.as_bytes(), schedule(input.as_bytes(), &cuts), size) == whole, "pinned fifth-review record changed under generated read schedules");
+    }
+
+    #[test]
+    fn private_marker_tail_records_preserve_random_read_schedules(
+        index in 0usize..72,
+        size in 1usize..128,
+        cuts in prop::collection::vec(0usize..4096, 0..12),
+    ) {
+        let input = private_marker_tail_records().into_iter().nth(index).must();
+        let whole = assert_batch_outcome(&input, &[CANARY]);
+        prop_assert!(streamed(input.as_bytes(), schedule(input.as_bytes(), &cuts), size) == whole, "private marker tail changed under generated read schedules");
+    }
 }
 
 #[test]
@@ -887,6 +1205,7 @@ fn live_staged_pipes_never_release_a_prefix_inconsistent_with_batch() {
             serde_json::json!({"input": input, "expected": expected})
         })
         .chain(fourth_review_records().into_iter().map(|case| serde_json::json!({"input": case.input, "expected": case.expected, "protected": case.protected})))
+        .chain(fifth_review_records().into_iter().map(|case| serde_json::json!({"input": case.record.input, "expected": case.record.expected, "protected": case.record.protected})))
         .collect();
     let output = Command::new("python3").env_clear().env("PATH", "/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin")
         .args(["-c", r#"
@@ -916,6 +1235,94 @@ for case in json.loads(sys.argv[2]):
     assert!(
         output.status.success(),
         "staged streaming subprocess failed"
+    );
+}
+
+#[test]
+fn fifth_review_ambiguous_records_withhold_every_staged_line_until_eof() {
+    let cases: Vec<_> = fifth_review_records()
+        .into_iter()
+        .filter(|case| case.withhold)
+        .map(|case| {
+            let whole = streamed(case.record.input.as_bytes(), Vec::new(), usize::MAX);
+            assert!(whole.error.is_none());
+            serde_json::json!({
+                "name": case.record.name,
+                "input": case.record.input,
+                "expected": case.record.expected,
+                "report": String::from_utf8(whole.report).must(),
+                "protected": case.record.protected
+            })
+        })
+        .collect();
+    assert_eq!(cases.len(), 19);
+    let output = Command::new("python3")
+        .env_clear()
+        .env("PATH", "/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin")
+        .args(["-c", r#"
+import json, select, subprocess, sys
+for case in json.loads(sys.argv[2]):
+    p = subprocess.Popen([sys.argv[1]], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env={})
+    try:
+        for line in case['input'].splitlines(keepends=True):
+            p.stdin.write(line.encode()); p.stdin.flush()
+            assert not select.select([p.stdout], [], [], .02)[0], 'ambiguous record emitted before EOF: ' + case['name']
+            assert p.poll() is None, 'ambiguous record exited before EOF'
+        p.stdin.close(); p.stdin = None
+        out, err = p.communicate(timeout=5)
+        assert p.returncode == 0, 'ambiguous record failed'
+        assert out == case['expected'].encode(), 'held output differed from batch'
+        assert err == case['report'].encode(), 'held report differed from library'
+        for canary in case['protected']:
+            assert canary.encode() not in out + err, 'held record disclosed a protected canary'
+    finally:
+        if p.poll() is None: p.kill(); p.wait()
+"#, env!("CARGO_BIN_EXE_rstr"), &serde_json::to_string(&cases).must()])
+        .output()
+        .must();
+    assert!(
+        output.status.success(),
+        "fifth-review withholding subprocess failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+#[test]
+fn fifth_review_batch_failures_exit_two_with_exact_safe_library_output() {
+    let cases: Vec<_> = fifth_review_failures()
+        .into_iter()
+        .map(|case| {
+            let canaries: Vec<_> = case.canaries.iter().map(String::as_str).collect();
+            let whole = assert_batch_outcome(&case.input, &canaries);
+            let error = whole.error.must();
+            serde_json::json!({
+                "input": case.input,
+                "stdout": String::from_utf8(whole.output).must(),
+                "stderr": format!("rstr: {error}\n"),
+                "canaries": case.canaries
+            })
+        })
+        .collect();
+    let output = Command::new("python3")
+        .env_clear()
+        .env("PATH", "/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin")
+        .args(["-c", r#"
+import json, subprocess, sys
+for case in json.loads(sys.argv[2]):
+    p = subprocess.run([sys.argv[1]], input=case['input'].encode(), capture_output=True, env={}, timeout=5)
+    assert p.returncode == 2, 'batch failure did not exit with code 2'
+    assert p.stdout == case['stdout'].encode(), 'failed stdout differed from library'
+    assert p.stderr == case['stderr'].encode(), 'safe error differed from library'
+    assert b'synthetic reproduction' in p.stderr or b'retry' in p.stderr, 'failure omitted recovery guidance'
+    for canary in case['canaries']:
+        assert canary.encode() not in p.stdout + p.stderr, 'batch failure disclosed a canary'
+"#, env!("CARGO_BIN_EXE_rstr"), &serde_json::to_string(&cases).must()])
+        .output()
+        .must();
+    assert!(
+        output.status.success(),
+        "fifth-review failure subprocess failed: {}",
+        String::from_utf8_lossy(&output.stderr)
     );
 }
 
@@ -969,6 +1376,10 @@ fn live_pretty_json_with_sensitive_quoted_keys_emits_when_the_object_closes() {
     let cases: Vec<_> = [
         format!("{{\n  \"password\": \"{CANARY}\"\n}}\n"),
         format!("{{\n  \"password\": \"{CANARY}\",\n  \"status\": 401\n}}\n"),
+        format!("{{\"password\":\"{CANARY}\",\"token\":\"{CANARY}\"}}\n"),
+        format!("{{\n  \"password\": \"{CANARY}\",\n  \"token\": \"{CANARY}\"\n}}\n"),
+        format!("{{\n  \"token\": {{\n    \"value\": \"{CANARY}\"\n  }},\n  \"status\": 401\n}}\n"),
+        format!("INFO {{\"password\":\"{CANARY}\",\"token\":\"{CANARY}\"}}\n"),
     ]
     .into_iter()
     .map(|input| {
