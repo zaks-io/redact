@@ -90,6 +90,9 @@ uncertain quotes, containers, private keys, and YAML-like documents stay buffere
 Colon-style messages such as `ERROR: retry later` may resemble YAML and wait for a
 document separator or EOF. Input must be UTF-8; the 16 MiB limit applies to
 pending input, so longer completed streams are supported.
+The detector checks each proposed boundary too. Uncertain quote, container or
+continuation state holds the remaining stream through EOF; Go-style URL lists
+can trigger this conservative hold.
 
 Successful filtering writes a bounded stderr report with fingerprints, first
 input lines, and detector evidence. Zero matches stay quiet. Failures identify

@@ -65,6 +65,7 @@ pub fn exercise(data: &[u8]) {
         "stream output, report or error changed with read size"
     );
     supported_record(data);
+    super::streaming_boundaries::exercise(data);
 }
 
 fn supported_record(data: &[u8]) {

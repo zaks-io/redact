@@ -1053,6 +1053,505 @@ fn unmatched_and_overlapping_private_markers_preserve_actual_batch_at_every_boun
     }
 }
 
+fn sixth_review_records() -> Vec<ReviewRecord> {
+    serde_json::from_str(r###"[
+{"name":"cases_min.json E-eof","family":"E","input":"[ http://h/x]\n\"token\":\n\"SYNCAN6E00\"\n","expected":"[ http://h/x]\n\"token\":\n\"[REDACTED sha256=390cd8aa56b1c5ed]\"\n","protected":["SYNCAN6E00"]},
+{"name":"cases_min.json E-live","family":"E","input":"[ http://h/x]\nsee http://h/y[\n\"token\":\n\"SYNCAN6E01\"\n]\nafter\n","expected":"[ http://h/x]\nsee http://h/y[\n\"token\":\n\"[REDACTED sha256=dbac78995e498b8f]\"\n]\nafter\n","protected":["SYNCAN6E01"]},
+{"name":"cases_min.json E-go-list-live","family":"E","input":"targets=[http://a/x http://b/y]\nsee http://h/y[\n\"token\":\n\"SYNCAN6E02\"\n]\nafter\n","expected":"targets=[http://a/x http://b/y]\nsee http://h/y[\n\"token\":\n\"[REDACTED sha256=1fdec2eea54abbad]\"\n]\nafter\n","protected":["SYNCAN6E02"]},
+{"name":"cases_min.json E-control-adjacent","family":"E","input":"[http://h/x]\nsee http://h/y[\n\"token\":\n\"SYNCAN6E03\"\n]\nafter\n","expected":"[http://h/x]\nsee http://h/y[\n\"token\":\n\"SYNCAN6E03\"\n]\nafter\n","protected":[]},
+{"name":"cases_min.json E-control-no-url","family":"E","input":"[ h/x]\nsee http://h/y[\n\"token\":\n\"SYNCAN6E04\"\n]\nafter\n","expected":"[ h/x]\nsee http://h/y[\n\"token\":\n\"SYNCAN6E04\"\n]\nafter\n","protected":[]},
+{"name":"cases_min.json F-eof","family":"F","input":"[}\n\"password\":\n 'q\n[[\n'\n]\n\"token\":\n\"SYNCAN6F05\"\n","expected":"[}\n\"password\":\n [REDACTED sha256=64bc7b400090f5dd]\n[[\n'\n]\n\"token\":\n\"[REDACTED sha256=be9b666042441199]\"\n","protected":["SYNCAN6F05"]},
+{"name":"cases_min.json F-live","family":"F","input":"[}\n\"password\":\n 'q\n[[\n'\n]\nsee http://h/y[\n\"token\":\n\"SYNCAN6F06\"\n]\nafter\n","expected":"[}\n\"password\":\n [REDACTED sha256=64bc7b400090f5dd]\n[[\n'\n]\nsee http://h/y[\n\"token\":\n\"[REDACTED sha256=a06af887b6ebe4da]\"\n]\nafter\n","protected":["SYNCAN6F06"]},
+{"name":"cases_min.json F-container-live","family":"F","input":"see http://h/x[\n\"password\": [\n 'q\n[[[\n'\n]\n]\nsee http://h/y[\n\"token\":\n\"SYNCAN6F07\"\n]\nafter\n","expected":"see http://h/x[\n\"password\": [REDACTED sha256=71130c2163f61ce6]\n[[[\n'\n]\n]\nsee http://h/y[\n\"token\":\n\"[REDACTED sha256=9d2b23ce6b4f3956]\"\n]\nafter\n","protected":["SYNCAN6F07"]},
+{"name":"cases_min.json F-control-not-indented","family":"F","input":"[}\n\"password\":\n'q\n[[\n'\n]\nsee http://h/y[\n\"token\":\n\"SYNCAN6F08\"\n]\nafter\n","expected":"[}\n\"password\":\n'q\n[[\n'\n]\nsee http://h/y[\n\"token\":\n\"SYNCAN6F08\"\n]\nafter\n","protected":[]},
+{"name":"cases_min.json F-control-real-container","family":"F","input":"[\n\"password\":\n 'q\n[[\n'\n]\nsee http://h/y[\n\"token\":\n\"SYNCAN6F09\"\n]\nafter\n","expected":"[\n\"password\":\n '[REDACTED sha256=99f3ea2c7b20174d]'\n]\nsee http://h/y[\n\"token\":\n\"SYNCAN6F09\"\n]\nafter\n","protected":[]},
+{"name":"cases_min.json G-eof","family":"G","input":"[\npassword: a\n -----BEGIN RSA PRIVATE KEY-----MII-----END RSA PRIVATE KEY-----]\nx\n\"token\":\n\"SYNCAN6G10\"\n","expected":"[\npassword: [REDACTED sha256=fd9a2d6295df5085]\nx\n\"token\":\n\"[REDACTED sha256=cb326d9a01bac634]\"\n","protected":["SYNCAN6G10"]},
+{"name":"cases_min.json G-live","family":"G","input":"[\npassword: a\n -----BEGIN RSA PRIVATE KEY-----MII-----END RSA PRIVATE KEY-----]\nx\nsee http://h/y[\n\"token\":\n\"SYNCAN6G11\"\n]\nafter\n","expected":"[\npassword: [REDACTED sha256=fd9a2d6295df5085]\nx\nsee http://h/y[\n\"token\":\n\"[REDACTED sha256=17a2596bb4db7250]\"\n]\nafter\n","protected":["SYNCAN6G11"]},
+{"name":"cases_min.json G-multiline-live","family":"G","input":"[\npassword: |\n -----BEGIN RSA PRIVATE KEY-----\n MII\n -----END RSA PRIVATE KEY----- ]\nx\nsee http://h/y[\n\"token\":\n\"SYNCAN6G12\"\n]\nafter\n","expected":"[\npassword: [REDACTED sha256=681e84f763a9f303]\nx\nsee http://h/y[\n\"token\":\n\"[REDACTED sha256=091a30a48a321b8b]\"\n]\nafter\n","protected":["SYNCAN6G12"]},
+{"name":"cases_min.json G-control-before-marker","family":"G","input":"[\npassword: a\n ] -----BEGIN RSA PRIVATE KEY-----MII-----END RSA PRIVATE KEY-----\nx\nsee http://h/y[\n\"token\":\n\"SYNCAN6G13\"\n]\nafter\n","expected":"[\npassword: [REDACTED sha256=c28ecb38306a99ff]\nx\nsee http://h/y[\n\"token\":\n\"[REDACTED sha256=e6053459c1e6db15]\"\n]\nafter\n","protected":["SYNCAN6G13"]},
+{"name":"cases_min.json G-control-no-container","family":"G","input":"password: a\n -----BEGIN RSA PRIVATE KEY-----MII-----END RSA PRIVATE KEY-----]\nx\nsee http://h/y[\n\"token\":\n\"SYNCAN6G14\"\n]\nafter\n","expected":"password: [REDACTED sha256=fd9a2d6295df5085]\nx\nsee http://h/y[\n\"token\":\n\"SYNCAN6G14\"\n]\nafter\n","protected":[]},
+{"name":"cases_min.json H-eof","family":"H","input":"x '{\"a\": 1'\n\"password\":\n 'q\n[[\n'\n}\n\"token\":\n\"SYNCAN6H15\"\n","expected":"x '{\"a\": 1'\n\"password\":\n [REDACTED sha256=64bc7b400090f5dd]\n[[\n'\n}\n\"token\":\n\"[REDACTED sha256=55ee4eafb117879b]\"\n","protected":["SYNCAN6H15"]},
+{"name":"cases_min.json H-live","family":"H","input":"x '{\"a\": 1'\n\"password\":\n 'q\n[[\n'\n}\nsee http://h/y[\n\"token\":\n\"SYNCAN6H16\"\n]\nafter\n","expected":"x '{\"a\": 1'\n\"password\":\n [REDACTED sha256=64bc7b400090f5dd]\n[[\n'\n}\nsee http://h/y[\n\"token\":\n\"[REDACTED sha256=4abca93ec09599d0]\"\n]\nafter\n","protected":["SYNCAN6H16"]},
+{"name":"cases_min.json H-control-plain-name","family":"H","input":"x '{\"a\": 1'\npassword:\n 'q\n[[\n'\n}\nsee http://h/y[\n\"token\":\n\"SYNCAN6H17\"\n]\nafter\n","expected":"x '{\"a\": 1'\npassword:\n [REDACTED sha256=64bc7b400090f5dd]\n[[\n'\n}\nsee http://h/y[\n\"token\":\n\"[REDACTED sha256=1526882b4e00c096]\"\n]\nafter\n","protected":["SYNCAN6H17"]},
+{"name":"cases_url.json U1 URL context hides ] from detector, framer pops; JSON-mode tail","family":"E","input":"[ http://h/x]\n\"token\":\n\"SYNCANU1\"\n","expected":"[ http://h/x]\n\"token\":\n\"[REDACTED sha256=0cb9df275e4e0a79]\"\n","protected":["SYNCANU1"]},
+{"name":"cases_url.json U2 same, live URL-bracket tail","family":"E","input":"[ http://h/x]\nsee http://h/y[\n\"token\":\n\"SYNCANU2\"\n]\nafter\n","expected":"[ http://h/x]\nsee http://h/y[\n\"token\":\n\"[REDACTED sha256=0961ef7e74da3abf]\"\n]\nafter\n","protected":["SYNCANU2"]},
+{"name":"cases_url.json U3 bracketed URL list, live tail","family":"E","input":"mirrors=[http://a/x http://b/y]\nsee http://h/y[\n\"token\":\n\"SYNCANU3\"\n]\nafter\n","expected":"mirrors=[http://a/x http://b/y]\nsee http://h/y[\n\"token\":\n\"[REDACTED sha256=5a470b7f67f55a0c]\"\n]\nafter\n","protected":["SYNCANU3"]},
+{"name":"cases_url.json U4 control: [http://h/x] adjacent (closer stripped)","family":"E","input":"[http://h/x]\nsee http://h/y[\n\"token\":\n\"SYNCANU4\"\n]\nafter\n","expected":"[http://h/x]\nsee http://h/y[\n\"token\":\n\"SYNCANU4\"\n]\nafter\n","protected":[]},
+{"name":"cases_url.json U5 control: tail alone","family":"E","input":"see http://h/y[\n\"token\":\n\"SYNCANU5\"\n]\nafter\n","expected":"see http://h/y[\n\"token\":\n\"SYNCANU5\"\n]\nafter\n","protected":[]},
+{"name":"cases_url.json U6 brace container, URL bracket","family":"E","input":"{ \"a\": [ http://h/x] }\nsee http://h/y[\n\"token\":\n\"SYNCANU6\"\n]\nafter\n","expected":"{ \"a\": [ http://h/x] }\nsee http://h/y[\n\"token\":\n\"[REDACTED sha256=3080e202c49fa902]\"\n]\nafter\n","protected":["SYNCANU6"]},
+{"name":"cases_url.json U7 log-ish: urls list then pretty JSON body (plain sensitive next line)","family":"E","input":"INFO targets [primary http://db/a backup http://db/b]\nbody: {\n\"password\":\n\"SYNCANU7\"\n}\n","expected":"INFO targets [primary http://db/a backup http://db/b]\nbody: {\n\"password\":\n\"[REDACTED sha256=5146d11be7b7c955]\"\n}\n","protected":["SYNCANU7"]},
+{"name":"cases_url.json U8 json-mode next-line block value after URL ]","family":"E","input":"[ http://h/x]\nsee http://h/y[\n\"api_key\":\n|\n SYNCANU8\n]\nafter\n","expected":"[ http://h/x]\nsee http://h/y[\n\"api_key\":\n[REDACTED sha256=b329c335561a9a24]\n]\nafter\n","protected":["SYNCANU8"]},
+{"name":"cases_residual.json P1 B residual: post-END tail on a continuation line pops container","family":"G","input":"[\npassword: a\n  -----BEGIN RSA PRIVATE KEY-----\n  MII\n  -----END RSA PRIVATE KEY----- ]\nx\nsee http://h/y[\n\"token\":\n\"SYNCANP1\"\n]\nafter\n","expected":"[\npassword: [REDACTED sha256=2fbb36dfc5886ed9]\nx\nsee http://h/y[\n\"token\":\n\"[REDACTED sha256=61037a70b48371b5]\"\n]\nafter\n","protected":["SYNCANP1"]},
+{"name":"cases_residual.json P1c control: no ] after END","family":"G","input":"[\npassword: a\n  -----BEGIN RSA PRIVATE KEY-----\n  MII\n  -----END RSA PRIVATE KEY----- b\nx\n]\nsee http://h/y[\n\"token\":\n\"SYNCANP1C\"\n]\nafter\n","expected":"[\npassword: [REDACTED sha256=4e699e4fc132d40e]\nx\n]\nsee http://h/y[\n\"token\":\n\"SYNCANP1C\"\n]\nafter\n","protected":[]},
+{"name":"cases_residual.json P2 B residual: one-line private block on continuation line, tail ]","family":"G","input":"[\npassword: a\n  -----BEGIN RSA PRIVATE KEY-----MII-----END RSA PRIVATE KEY----- ]\nx\nsee http://h/y[\n\"token\":\n\"SYNCANP2\"\n]\nafter\n","expected":"[\npassword: [REDACTED sha256=83041b072006dc61]\nx\nsee http://h/y[\n\"token\":\n\"[REDACTED sha256=22accfa43f54265d]\"\n]\nafter\n","protected":["SYNCANP2"]},
+{"name":"cases_residual.json W1 B residual: quoted-name newline value, first continuation line opens quote (JsonSyntax-held record)","family":"H","input":"x '{\"a\": 1'\n\"password\":\n 'q\n[[\n'\n}\nsee http://h/y[\n\"token\":\n\"SYNCANW1\"\n]\nafter\n","expected":"x '{\"a\": 1'\n\"password\":\n [REDACTED sha256=64bc7b400090f5dd]\n[[\n'\n}\nsee http://h/y[\n\"token\":\n\"[REDACTED sha256=b08abac3103e16af]\"\n]\nafter\n","protected":["SYNCANW1"]},
+{"name":"cases_residual.json W2 C residual: framer JSON mode via URL [, next-line quoted value in YAML continuation","family":"F","input":"see http://h/x[\n\"password\":\n 'q\n[[\n'\n]\nsee http://h/y[\n\"token\":\n\"SYNCANW2\"\n]\nafter\n","expected":"see http://h/x[\n\"password\":\n [REDACTED sha256=64bc7b400090f5dd]\n[[\n'\n]\nsee http://h/y[\n\"token\":\n\"[REDACTED sha256=82b4222d8b548827]\"\n]\nafter\n","protected":["SYNCANW2"]},
+{"name":"cases_residual.json W2c control: value line not indented","family":"F","input":"see http://h/x[\n\"password\":\n'q\n[[\n'\n]\nsee http://h/y[\n\"token\":\n\"SYNCANW2C\"\n]\nafter\n","expected":"see http://h/x[\n\"password\":\n'q\n[[\n'\n]\nsee http://h/y[\n\"token\":\n\"SYNCANW2C\"\n]\nafter\n","protected":[]},
+{"name":"cases_residual.json W3 C residual: framer JSON mode via [}, next-line quoted value","family":"F","input":"[}\n\"password\":\n 'q\n[[\n'\n]\nsee http://h/y[\n\"token\":\n\"SYNCANW3\"\n]\nafter\n","expected":"[}\n\"password\":\n [REDACTED sha256=64bc7b400090f5dd]\n[[\n'\n]\nsee http://h/y[\n\"token\":\n\"[REDACTED sha256=5a483bee52e0ba72]\"\n]\nafter\n","protected":["SYNCANW3"]},
+{"name":"cases_eol.json E-crlf","family":"E","input":"[ http://h/x]\r\nsee http://h/y[\r\n\"token\":\r\n\"SYNCAN6ECRLF\"\r\n]\r\nafter\r\n","expected":"[ http://h/x]\r\nsee http://h/y[\r\n\"token\":\r\n\"[REDACTED sha256=3509f8c767028c5b]\"\r\n]\r\nafter\r\n","protected":["SYNCAN6ECRLF"]},
+{"name":"cases_eol.json E-cr","family":"E","input":"[ http://h/x]\rsee http://h/y[\r\"token\":\r\"SYNCAN6ECR\"\r]\rafter\r","expected":"[ http://h/x]\rsee http://h/y[\r\"token\":\r\"[REDACTED sha256=74e478a1e8cf16ee]\"\r]\rafter\r","protected":["SYNCAN6ECR"]},
+{"name":"cases_eol.json E-tab","family":"E","input":"[ http://h/x]\nsee http://h/y[\n\"token\":\n\"SYNCAN6ETAB\"\n]\nafter\n","expected":"[ http://h/x]\nsee http://h/y[\n\"token\":\n\"[REDACTED sha256=f95e8ea570bbcec6]\"\n]\nafter\n","protected":["SYNCAN6ETAB"]},
+{"name":"cases_eol.json F-crlf","family":"F","input":"[}\r\n\"password\":\r\n 'q\r\n[[\r\n'\r\n]\r\nsee http://h/y[\r\n\"token\":\r\n\"SYNCAN6FCRLF\"\r\n]\r\nafter\r\n","expected":"[}\r\n\"password\":\r\n [REDACTED sha256=64bc7b400090f5dd]\r\n[[\r\n'\r\n]\r\nsee http://h/y[\r\n\"token\":\r\n\"[REDACTED sha256=27d63a548155ecea]\"\r\n]\r\nafter\r\n","protected":["SYNCAN6FCRLF"]},
+{"name":"cases_eol.json F-cr","family":"F","input":"[}\r\"password\":\r 'q\r[[\r'\r]\rsee http://h/y[\r\"token\":\r\"SYNCAN6FCR\"\r]\rafter\r","expected":"[}\r\"password\":\r [REDACTED sha256=64bc7b400090f5dd]\r[[\r'\r]\rsee http://h/y[\r\"token\":\r\"[REDACTED sha256=e490780767f274c1]\"\r]\rafter\r","protected":["SYNCAN6FCR"]},
+{"name":"cases_eol.json F-tab","family":"F","input":"[}\n\"password\":\n\t'q\n[[\n'\n]\nsee http://h/y[\n\"token\":\n\"SYNCAN6FTAB\"\n]\nafter\n","expected":"[}\n\"password\":\n\t[REDACTED sha256=64bc7b400090f5dd]\n[[\n'\n]\nsee http://h/y[\n\"token\":\n\"[REDACTED sha256=c35d64e2a27631f7]\"\n]\nafter\n","protected":["SYNCAN6FTAB"]},
+{"name":"cases_eol.json G-crlf","family":"G","input":"[\r\npassword: a\r\n -----BEGIN RSA PRIVATE KEY-----MII-----END RSA PRIVATE KEY-----]\r\nx\r\nsee http://h/y[\r\n\"token\":\r\n\"SYNCAN6GCRLF\"\r\n]\r\nafter\r\n","expected":"[\r\npassword: [REDACTED sha256=6edb2e525aca6b7c]\r\nx\r\nsee http://h/y[\r\n\"token\":\r\n\"[REDACTED sha256=66fe918879986416]\"\r\n]\r\nafter\r\n","protected":["SYNCAN6GCRLF"]},
+{"name":"cases_eol.json G-cr","family":"G","input":"[\rpassword: a\r -----BEGIN RSA PRIVATE KEY-----MII-----END RSA PRIVATE KEY-----]\rx\rsee http://h/y[\r\"token\":\r\"SYNCAN6GCR\"\r]\rafter\r","expected":"[\rpassword: [REDACTED sha256=cf922bbac6440e6f]\rx\rsee http://h/y[\r\"token\":\r\"[REDACTED sha256=f5873dce798fb4c9]\"\r]\rafter\r","protected":["SYNCAN6GCR"]},
+{"name":"cases_eol.json G-tab","family":"G","input":"[\npassword: a\n\t-----BEGIN RSA PRIVATE KEY-----MII-----END RSA PRIVATE KEY-----]\nx\nsee http://h/y[\n\"token\":\n\"SYNCAN6GTAB\"\n]\nafter\n","expected":"[\npassword: [REDACTED sha256=8a7d175190431751]\nx\nsee http://h/y[\n\"token\":\n\"[REDACTED sha256=53e802373c5c26ec]\"\n]\nafter\n","protected":["SYNCAN6GTAB"]},
+{"name":"cases_eol.json H-crlf","family":"H","input":"x '{\"a\": 1'\r\n\"password\":\r\n 'q\r\n[[\r\n'\r\n}\r\nsee http://h/y[\r\n\"token\":\r\n\"SYNCAN6HCRLF\"\r\n]\r\nafter\r\n","expected":"x '{\"a\": 1'\r\n\"password\":\r\n [REDACTED sha256=64bc7b400090f5dd]\r\n[[\r\n'\r\n}\r\nsee http://h/y[\r\n\"token\":\r\n\"[REDACTED sha256=b889d30595332ed9]\"\r\n]\r\nafter\r\n","protected":["SYNCAN6HCRLF"]},
+{"name":"cases_eol.json H-cr","family":"H","input":"x '{\"a\": 1'\r\"password\":\r 'q\r[[\r'\r}\rsee http://h/y[\r\"token\":\r\"SYNCAN6HCR\"\r]\rafter\r","expected":"x '{\"a\": 1'\r\"password\":\r [REDACTED sha256=64bc7b400090f5dd]\r[[\r'\r}\rsee http://h/y[\r\"token\":\r\"[REDACTED sha256=aad682b99652dc27]\"\r]\rafter\r","protected":["SYNCAN6HCR"]},
+{"name":"cases_eol.json H-tab","family":"H","input":"x '{\"a\": 1'\n\"password\":\n\t'q\n[[\n'\n}\nsee http://h/y[\n\"token\":\n\"SYNCAN6HTAB\"\n]\nafter\n","expected":"x '{\"a\": 1'\n\"password\":\n\t[REDACTED sha256=64bc7b400090f5dd]\n[[\n'\n}\nsee http://h/y[\n\"token\":\n\"[REDACTED sha256=59255ae1bf1e8025]\"\n]\nafter\n","protected":["SYNCAN6HTAB"]},
+{"name":"cases_eol.json I-crlf","family":"I","input":"[\r\ntoken':\r\n|\r\n ]\r\n SYNCAN6ICRLF\r\nafter\r\n","expected":"[\r\ntoken':\r\n[REDACTED sha256=418c17778b20a102]\r\nafter\r\n","protected":["SYNCAN6ICRLF"]},
+{"name":"cases_eol.json I-cr","family":"I","input":"[\rtoken':\r|\r ]\r SYNCAN6ICR\rafter\r","expected":"[\rtoken':\r[REDACTED sha256=498e3a646bb2f231]\rafter\r","protected":["SYNCAN6ICR"]},
+{"name":"cases_eol.json I-tab","family":"I","input":"[\ntoken':\n|\n\t]\n\tSYNCAN6ITAB\nafter\n","expected":"[\ntoken':\n[REDACTED sha256=e6719491b32e0fe4]\nafter\n","protected":["SYNCAN6ITAB"]},
+{"name":"cases_i.json I-closing-quote-eof","family":"I","input":"[\ntoken':\n|\n ]\n SYNCAN6I00\n","expected":"[\ntoken':\n[REDACTED sha256=95d003cdd70360a4]\n","protected":["SYNCAN6I00"]},
+{"name":"cases_i.json I-escaped-closing-eof","family":"I","input":"[\ntoken\\\":\n|\n ]\n SYNCAN6I01\n","expected":"[\ntoken\\\":\n[REDACTED sha256=a37f36c25a1a003d]\n","protected":["SYNCAN6I01"]},
+{"name":"cases_i.json I-gt-header","family":"I","input":"[\ntoken':\n>\n ]\n SYNCAN6I02\n","expected":"[\ntoken':\n[REDACTED sha256=9955fe0a03fa8868]\n","protected":["SYNCAN6I02"]},
+{"name":"cases_i.json I-comment-header","family":"I","input":"[\ntoken':\n# n\n ]\n SYNCAN6I03\n","expected":"[\ntoken':\n# n\n [REDACTED sha256=f53b166080b7881b]\n","protected":["SYNCAN6I03"]},
+{"name":"cases_i.json I-brace-container","family":"I","input":"x {\nclient_secret\\':\n|\n\tq\n }\n    SYNCAN6I04\n","expected":"x {\nclient_secret\\':\n[REDACTED sha256=bc2420d23b02806c]\n","protected":["SYNCAN6I04"]},
+{"name":"cases_i.json I-live","family":"I","input":"[\ntoken':\n|\n ]\n SYNCAN6I05\nafter\n","expected":"[\ntoken':\n[REDACTED sha256=c355d74f735f866f]\nafter\n","protected":["SYNCAN6I05"]},
+{"name":"cases_i.json I-control-quoted-name","family":"I","input":"[\n\"token\":\n|\n ]\n SYNCAN6I06\n","expected":"[\n\"token\":\n[REDACTED sha256=2be07af48b5b17a5]\n","protected":["SYNCAN6I06"]},
+{"name":"cases_i.json I-control-same-line-header","family":"I","input":"[\ntoken': |\n ]\n SYNCAN6I07\n","expected":"[\ntoken': [REDACTED sha256=e571340b6262af42]\n","protected":["SYNCAN6I07"]},
+{"name":"cases_i.json I-control-no-container","family":"I","input":"token':\n|\n ]\n SYNCAN6I08\n","expected":"token':\n|\n ]\n SYNCAN6I08\n","protected":[]},
+{"name":"fuzz7-71.json token soup 0","family":"E","input":"[\np://]x\"token\":\nSYNTHR7000040T0","expected":"[\np://]x\"token\":\n[REDACTED sha256=35382ef656d64f2b]","protected":["SYNTHR7000040T0"]},
+{"name":"fuzz7-71.json token soup 1","family":"E","input":"[ p://]\ntoken\":\nSYNTHR7000064T0","expected":"[ p://]\ntoken\":\n[REDACTED sha256=46c9590864f24e93]","protected":["SYNTHR7000064T0"]},
+{"name":"fuzz7-71.json token soup 2","family":"E","input":"[p://]x{}\ntoken\":\nSYNTHR7000109T1","expected":"[p://]x{}\ntoken\":\n[REDACTED sha256=92c70b1d0091ef08]","protected":["SYNTHR7000109T1"]},
+{"name":"fuzz7-71.json token soup 3","family":"E","input":"a\"[ p://]\"\nx\"token\":\nSYNTHR7000146T0","expected":"a\"[ p://]\"\nx\"token\":\n[REDACTED sha256=7e2b43664ff9e193]","protected":["SYNTHR7000146T0"]},
+{"name":"fuzz7-71.json token soup 4","family":"E","input":"{\\'\"\"\"\"[p://]1}\ntoken\":\nSYNTHR7000195T0","expected":"{\\'\"\"\"\"[p://]1}\ntoken\":\n[REDACTED sha256=5f17fd28f70ab02f]","protected":["SYNTHR7000195T0"]},
+{"name":"fuzz7-71.json token soup 5","family":"E","input":"[p://]n\ntoken\":\nSYNTHR7000198T1","expected":"[p://]n\ntoken\":\n[REDACTED sha256=f32c83a9b2d43e90]","protected":["SYNTHR7000198T1"]},
+{"name":"fuzz7-71.json token soup 6","family":"E","input":"[p://]a\ntoken\":\nSYNTHR7000204T0","expected":"[p://]a\ntoken\":\n[REDACTED sha256=3bc1af1cc66bc55f]","protected":["SYNTHR7000204T0"]},
+{"name":"fuzz7-71.json token soup 7","family":"E","input":"[p://]=\ntoken\":\nSYNTHR7000350T0","expected":"[p://]=\ntoken\":\n[REDACTED sha256=bf007a10619db704]","protected":["SYNTHR7000350T0"]},
+{"name":"fuzz7-71.json token soup 8","family":"E","input":"[ p://]\nsecret\":\nSYNTHR7000544T0","expected":"[ p://]\nsecret\":\n[REDACTED sha256=691e166c78757782]","protected":["SYNTHR7000544T0"]},
+{"name":"fuzz7-71.json token soup 9","family":"E","input":"[ p://]\ntoken\":\nSYNTHR7000551T0","expected":"[ p://]\ntoken\":\n[REDACTED sha256=6ad3d85d2798ce70]","protected":["SYNTHR7000551T0"]},
+{"name":"fuzz7-71.json token soup 10","family":"E","input":"[p://]x\ntoken\":\nSYNTHR7000572T1","expected":"[p://]x\ntoken\":\n[REDACTED sha256=a41787f3a75096ea]","protected":["SYNTHR7000572T1"]},
+{"name":"fuzz7-71.json token soup 11","family":"E","input":"[p://]1\ntoken\":\nSYNTHR7000613T0","expected":"[p://]1\ntoken\":\n[REDACTED sha256=719740feb6d1a1b1]","protected":["SYNTHR7000613T0"]},
+{"name":"fuzz7-71.json token soup 12","family":"E","input":"[p://]1\ntoken\":\nSYNTHR7000677T0","expected":"[p://]1\ntoken\":\n[REDACTED sha256=268466381da4f1f4]","protected":["SYNTHR7000677T0"]},
+{"name":"fuzz7-71.json token soup 13","family":"E","input":"[p://]a\ntoken\":\nSYNTHR7000778T0","expected":"[p://]a\ntoken\":\n[REDACTED sha256=2f4c1bc59bfb3355]","protected":["SYNTHR7000778T0"]},
+{"name":"fuzz7-71.json token soup 14","family":"E","input":"[ p://]\ntoken\":\nSYNTHR7000786T0","expected":"[ p://]\ntoken\":\n[REDACTED sha256=fefdefa221d589df]","protected":["SYNTHR7000786T0"]},
+{"name":"fuzz7-71.json token soup 15","family":"E","input":"[p://]1\ntoken\":\nSYNTHR7000875T0","expected":"[p://]1\ntoken\":\n[REDACTED sha256=a1115049f34f547f]","protected":["SYNTHR7000875T0"]},
+{"name":"fuzzcli2r6-okdiff.json compound continuation 0","family":"I","input":"x {\nclient_secret\\':\n|\n\tSYNTHFY000821L0\n }\n    SYNTHFY000821L0C\nx {\n  user'={\n\"kty\": \"oct\",\n\"k\": \"SYNTHFY000821L1\"\n}\n  db password = SYNTHFY000821L1\n\t}\n","expected":"x {\nclient_secret\\':\n[REDACTED sha256=dd4a8d3d9010daa6]\nx {\n  user'=[REDACTED sha256=b4da67130458ee87]\n  db password = [REDACTED sha256=1cb41842bc55cba5]\n\t}\n","protected":["SYNTHFY000821L0","SYNTHFY000821L0C","SYNTHFY000821L1"]},
+{"name":"fuzzcli2r6-okdiff.json compound continuation 1","family":"I","input":"x x=[\nx.password':\n|\n SYNTHFY000995L0\n  api_key = SYNTHFY000995L0\n  ]\n SYNTHFY000995L0C\n","expected":"x x=[\nx.password':\n[REDACTED sha256=db93fb308a00e8a1]\n","protected":["SYNTHFY000995L0","SYNTHFY000995L0C"]},
+{"name":"fuzzcli2r6-okdiff.json compound continuation 2","family":"I","input":"INFO {\n    x.password=\\\"SYNTHFY005216L0\"\\\"\nx.password\":\n|\n    SYNTHFY005216L0\n\t}\n[1/2] \\\"\n\t\"api_key\":\n\"SYNTHFY005216L1\"\nx,password\"=SYNTHFY005216L1\n    \\\"\n","expected":"INFO {\n    x.password=\\\"[REDACTED sha256=68e2fc9580e7d69a]\\\"\nx.password\":\n[REDACTED sha256=45f842f513290237]\n[1/2] \\\"\n\t\"api_key\":\n\"[REDACTED sha256=4b615b9693b87a6f]\"\nx,password\"=[REDACTED sha256=4b615b9693b87a6f]\n    \\\"\n","protected":["SYNTHFY005216L0","SYNTHFY005216L1"]}
+]"###).must()
+}
+
+fn sixth_review_failures() -> Vec<ReviewFailure> {
+    serde_json::from_str(r###"[
+{"name":"fuzz6-61.json closed batch error 0","input":"see http://h/x[\n\"secret\": [\n  'q\n[[[\n'\n]\n]\nx '{\"a\": 1'\n'password':\n \"q\n[[\n\"\n}\nsee http://h/y[\n\"token\":\n\"SYNTHR6000065T0\"\n]\nafter\nsee http://h/y[\n\"token\":\n\"SYNTHR6000065T1\"\n]\nafter\n","canaries":["SYNTHR6000065T0","SYNTHR6000065T1"]},
+{"name":"fuzz6-61.json closed batch error 1","input":"see http://h/x[\n\"token\": [\n  'q\n[[[\n'\n]\n]\nx http://h/[a\n'token':\n \"q\n[[[\n\"\n]\nsee http://h/y[\n\"api_key\":\n|\n SYNTHR6000361T0\n]\nafter\nsee http://h/y[\n\"password\": {\n\"inner\": \"SYNTHR6000361T1\"\n}\n]\nafter\n","canaries":["SYNTHR6000361T0","SYNTHR6000361T1"]},
+{"name":"fuzz6-61.json closed batch error 2","input":"x http://h/[a\n'password':\n\t'q\n[[[\n'\n]\nx '{\"a\": 1'\n\"token\":\n\t\"q\n[[\n\"\n}\n'\n password': v\n SYNTHR6000545T0\n","canaries":["SYNTHR6000545T0"]},
+{"name":"fuzz6-61.json closed batch error 3","input":"x '{\"a\": 1'\n\"api_key\":\n 'q\n[[\n'\n}\nx '{\"a\": 1'\n\"token\":\n \"q\n[[\n\"\n}\n'\n password': v\n SYNTHR6000642T0\n","canaries":["SYNTHR6000642T0"]},
+{"name":"fuzz6-61.json closed batch error 4","input":"[http://a/x, http://b/y]\nx http://h/[a\n\"api_key\":\n  \"q\n[[[\n\"\n]\nlog \"token\":\n  \"SYNTHR6000782T0\"\n","canaries":["SYNTHR6000782T0"]},
+{"name":"fuzz6-61.json closed batch error 5","input":"x '{\"a\": 1'\n\"api_key\":\n\t\"q\n[[\n\"\n}\n[}\n\"api_key\":\n\t\"q\n[[[\n\"\n]\nsee http://h/y[\n\"token\":\n\"SYNTHR6000870T0\"\n]\nafter\nsee http://h/y[\n\"token\":\n\"SYNTHR6000870T1\"\n]\nafter\n","canaries":["SYNTHR6000870T0","SYNTHR6000870T1"]},
+{"name":"fuzz6-61.json closed batch error 6","input":"see http://h/x[\n\"secret\": [\n\t'q\n[[[\n'\n]\n]\n{]\n'secret':\n \"q\n[[[\n\"\n]\nsee http://h/y[\n\"password\": {\n\"inner\": \"SYNTHR6001129T0\"\n}\n]\nafter\n\"token\":\n\"SYNTHR6001129T1\"\n","canaries":["SYNTHR6001129T0","SYNTHR6001129T1"]},
+{"name":"fuzz6-61.json closed batch error 7","input":"[}\n\"secret\":\n  'q\n[[[\n'\n]\nsee http://h/x[\n'token':\n  \"q\n[[[\n\"\n]\nlog \"token\":\n  \"SYNTHR6001298T0\"\n","canaries":["SYNTHR6001298T0"]},
+{"name":"fuzz6-61.json closed batch error 8","input":"[}\n'secret': [\n 'q\n[[[\n'\n]\n]\nx '{\"a\": 1'\n'password':\n\t\"q\n[[\n\"\n}\n'\n password': v\n SYNTHR6001337T0\n","canaries":["SYNTHR6001337T0"]},
+{"name":"fuzz6-61.json closed batch error 9","input":"{ \"u\": [ http://h/x] }\nx http://h/[a\n'token':\n  \"q\n[[[\n\"\n]\n\"token\":\n\"SYNTHR6001360T0\"\nlog \"token\":\n  \"SYNTHR6001360T1\"\n","canaries":["SYNTHR6001360T0","SYNTHR6001360T1"]},
+{"name":"fuzz6-61.json closed batch error 10","input":"x '{\"a\": 1'\n'secret':\n 'q\n[[\n'\n}\nx '{\"a\": 1'\n\"token\":\n\t\"q\n[[\n\"\n}\nsee http://h/y[\n\"token\":\n\"SYNTHR6001455T0\"\n]\nafter\nsee http://h/y[\n\"api_key\":\n|\n SYNTHR6001455T1\n]\nafter\n","canaries":["SYNTHR6001455T0","SYNTHR6001455T1"]},
+{"name":"fuzz6-61.json closed batch error 11","input":"[}\n\"token\": [\n  'q\n[[[\n'\n]\n]\nx '{\"a\": 1'\n'password':\n  \"q\n[[\n\"\n}\n\"token\":\n\"SYNTHR6001812T0\"\n\"token\":\n\"SYNTHR6001812T1\"\n","canaries":["SYNTHR6001812T0","SYNTHR6001812T1"]},
+{"name":"fuzz6-61.json closed batch error 12","input":"{ \"u\": [ http://h/x] }\nx http://h/[a\n\"token\":\n\t\"q\n[[[\n\"\n]\nsee http://h/y[\n\"password\": {\n\"inner\": \"SYNTHR6001855T0\"\n}\n]\nafter\nsee http://h/y[\n\"token\":\n\"SYNTHR6001855T1\"\n]\nafter\n","canaries":["SYNTHR6001855T0","SYNTHR6001855T1"]},
+{"name":"fuzz6-61.json closed batch error 13","input":"[}\n\"token\": [\n 'q\n[[[\n'\n]\n]\nx '{\"a\": 1'\n\"secret\":\n \"q\n[[\n\"\n}\nsee http://h/y[\n\"token\":\n\"SYNTHR6001867T0\"\n]\nafter\n","canaries":["SYNTHR6001867T0"]},
+{"name":"fuzz6-61.json closed batch error 14","input":"[}\n\"token\":\n \"q\n[[[\n\"\n]\nx '{\"a\": 1'\n'password':\n \"q\n[[\n\"\n}\nsee http://h/y[\n\"token\":\n\"SYNTHR6001981T0\"\n]\nafter\nsee http://h/y[\n\"token\":\n\"SYNTHR6001981T1\"\n]\nafter\n","canaries":["SYNTHR6001981T0","SYNTHR6001981T1"]},
+{"name":"fuzz6-61.json closed batch error 15","input":"{ \"u\": [ http://h/x] }\n{]\n'token':\n \"q\n[[[\n\"\n]\nsee http://h/y[\n\"password\": {\n\"inner\": \"SYNTHR6002059T0\"\n}\n]\nafter\n\"token\":\n\"SYNTHR6002059T1\"\n","canaries":["SYNTHR6002059T0","SYNTHR6002059T1"]},
+{"name":"fuzz6-61.json closed batch error 16","input":"[}\n'api_key': [\n  'q\n[[[\n'\n]\n]\nsee http://h/x[\n'token':\n \"q\n[[[\n\"\n]\nlog \"token\":\n  \"SYNTHR6002184T0\"\n","canaries":["SYNTHR6002184T0"]},
+{"name":"fuzz6-61.json closed batch error 17","input":"[}\n'api_key': [\n\t'q\n[[[\n'\n]\n]\nx '{\"a\": 1'\n'token':\n\t\"q\n[[\n\"\n}\n\"token\":\n\"SYNTHR6002237T0\"\n","canaries":["SYNTHR6002237T0"]},
+{"name":"fuzz6-61.json closed batch error 18","input":"see http://h/x[\n\"password\": [\n  'q\n[[[\n'\n]\n]\nx '{\"a\": 1'\n\"api_key\":\n \"q\n[[\n\"\n}\nsee http://h/y[\n\"password\": {\n\"inner\": \"SYNTHR6002295T0\"\n}\n]\nafter\n","canaries":["SYNTHR6002295T0"]},
+{"name":"fuzz6-61.json closed batch error 19","input":"[ https://h/p] tail\nx http://h/[a\n'password':\n \"q\n[[[\n\"\n]\nx {\n\"secret\":\n  \"SYNTHR6002433T0\"\n}\nx {\n\"secret\":\n  \"SYNTHR6002433T1\"\n}\n","canaries":["SYNTHR6002433T0","SYNTHR6002433T1"]},
+{"name":"fuzz6-61.json closed batch error 20","input":"[}\n\"token\": [\n 'q\n[[[\n'\n]\n]\nx '{\"a\": 1'\n'api_key':\n  \"q\n[[\n\"\n}\n'\n password': v\n SYNTHR6002494T0\n\"token\":\n\"SYNTHR6002494T1\"\n","canaries":["SYNTHR6002494T0","SYNTHR6002494T1"]},
+{"name":"fuzz6-61.json closed batch error 21","input":"[ https://h/p] tail\nx '{\"a\": 1'\n'api_key':\n\t\"q\n[[\n\"\n}\nsee http://h/y[\n\"password\": {\n\"inner\": \"SYNTHR6002562T0\"\n}\n]\nafter\nx {\n\"secret\":\n  \"SYNTHR6002562T1\"\n}\n","canaries":["SYNTHR6002562T0","SYNTHR6002562T1"]},
+{"name":"fuzz6-61.json closed batch error 22","input":"[}\n'secret': [\n\t'q\n[[[\n'\n]\n]\n[}\n\"api_key\":\n  \"q\n[[[\n\"\n]\nsee http://h/y[\n\"password\": {\n\"inner\": \"SYNTHR6002623T0\"\n}\n]\nafter\n","canaries":["SYNTHR6002623T0"]},
+{"name":"fuzz6-61.json closed batch error 23","input":"x '{\"a\": 1'\n\"api_key\":\n\t'q\n[[\n'\n}\n[}\n'secret':\n\t\"q\n[[[\n\"\n]\nsee http://h/y[\n\"api_key\":\n|\n SYNTHR6002668T0\n]\nafter\nx {\n\"secret\":\n  \"SYNTHR6002668T1\"\n}\n","canaries":["SYNTHR6002668T0","SYNTHR6002668T1"]},
+{"name":"fuzz6-61.json closed batch error 24","input":"[}\n'password': [\n\t'q\n[[[\n'\n]\n]\nsee http://h/x[\n'token':\n \"q\n[[[\n\"\n]\nx {\n\"secret\":\n  \"SYNTHR6002702T0\"\n}\n'\n password': v\n SYNTHR6002702T1\n","canaries":["SYNTHR6002702T0","SYNTHR6002702T1"]},
+{"name":"fuzz6-61.json closed batch error 25","input":"[}\n'secret':\n \"q\n[[[\n\"\n]\nx '{\"a\": 1'\n'secret':\n \"q\n[[\n\"\n}\n'\n password': v\n SYNTHR6002752T0\nsee http://h/y[\n\"password\": {\n\"inner\": \"SYNTHR6002752T1\"\n}\n]\nafter\n","canaries":["SYNTHR6002752T0","SYNTHR6002752T1"]},
+{"name":"fuzz6-62.json closed batch error 0","input":"see http://h/x[\n\"secret\": [\n\t'q\n[[[\n'\n]\n]\n{]\n'password':\n\t\"q\n[[[\n\"\n]\nlog \"token\":\n  \"SYNTHR6000063T0\"\n","canaries":["SYNTHR6000063T0"]},
+{"name":"fuzz6-62.json closed batch error 1","input":"[}\n'api_key': [\n\t'q\n[[[\n'\n]\n]\nx '{\"a\": 1'\n'password':\n\t\"q\n[[\n\"\n}\nsee http://h/y[\n\"api_key\":\n|\n SYNTHR6000114T0\n]\nafter\n","canaries":["SYNTHR6000114T0"]},
+{"name":"fuzz6-62.json closed batch error 2","input":"see http://h/x[\n'secret': [\n 'q\n[[[\n'\n]\n]\nsee http://h/x[\n'password':\n \"q\n[[[\n\"\n]\nsee http://h/y[\n\"api_key\":\n|\n SYNTHR6000237T0\n]\nafter\n","canaries":["SYNTHR6000237T0"]},
+{"name":"fuzz6-62.json closed batch error 3","input":"see http://h/x[\n\"password\":\n \"q\n[[[\n\"\n]\nx '{\"a\": 1'\n'api_key':\n\t\"q\n[[\n\"\n}\nsee http://h/y[\n\"api_key\":\n|\n SYNTHR6000585T0\n]\nafter\n'\n password': v\n SYNTHR6000585T1\n","canaries":["SYNTHR6000585T0","SYNTHR6000585T1"]},
+{"name":"fuzz6-62.json closed batch error 4","input":"[}\n'api_key': [\n 'q\n[[[\n'\n]\n]\nx http://h/[a\n\"secret\":\n \"q\n[[[\n\"\n]\nx {\n\"secret\":\n  \"SYNTHR6000730T0\"\n}\n","canaries":["SYNTHR6000730T0"]},
+{"name":"fuzz6-62.json closed batch error 5","input":"[}\n\"password\": [\n  'q\n[[[\n'\n]\n]\nx '{\"a\": 1'\n'token':\n \"q\n[[\n\"\n}\nsee http://h/y[\n\"token\":\n\"SYNTHR6000861T0\"\n]\nafter\n'\n password': v\n SYNTHR6000861T1\n","canaries":["SYNTHR6000861T0","SYNTHR6000861T1"]},
+{"name":"fuzz6-62.json closed batch error 6","input":"x http://h/[a\n'secret':\n 'q\n[[[\n'\n]\n{]\n\"password\":\n  \"q\n[[[\n\"\n]\n\"token\":\n\"SYNTHR6001109T0\"\n\"token\":\n\"SYNTHR6001109T1\"\n","canaries":["SYNTHR6001109T0","SYNTHR6001109T1"]},
+{"name":"fuzz6-62.json closed batch error 7","input":"{ \"u\": [ http://h/x] }\nsee http://h/x[\n\"password\":\n\t\"q\n[[[\n\"\n]\n'\n password': v\n SYNTHR6001152T0\n","canaries":["SYNTHR6001152T0"]},
+{"name":"fuzz6-62.json closed batch error 8","input":"[}\n'token': [\n 'q\n[[[\n'\n]\n]\n{]\n\"api_key\":\n\t\"q\n[[[\n\"\n]\nsee http://h/y[\n\"token\":\n\"SYNTHR6001235T0\"\n]\nafter\nlog \"token\":\n  \"SYNTHR6001235T1\"\n","canaries":["SYNTHR6001235T0","SYNTHR6001235T1"]},
+{"name":"fuzz6-62.json closed batch error 9","input":"[ https://h/p] tail\nx '{\"a\": 1'\n\"password\":\n\t\"q\n[[\n\"\n}\nsee http://h/y[\n\"token\":\n\"SYNTHR6001261T0\"\n]\nafter\n\"token\":\n\"SYNTHR6001261T1\"\n","canaries":["SYNTHR6001261T0","SYNTHR6001261T1"]},
+{"name":"fuzz6-62.json closed batch error 10","input":"see http://h/x[\n'token': [\n  'q\n[[[\n'\n]\n]\nx '{\"a\": 1'\n'password':\n  \"q\n[[\n\"\n}\nx {\n\"secret\":\n  \"SYNTHR6001385T0\"\n}\n'\n password': v\n SYNTHR6001385T1\n","canaries":["SYNTHR6001385T0","SYNTHR6001385T1"]},
+{"name":"fuzz6-62.json closed batch error 11","input":"{ \"u\": [ http://h/x] }\nsee http://h/x[\n'token':\n \"q\n[[[\n\"\n]\nsee http://h/y[\n\"token\":\n\"SYNTHR6001483T0\"\n]\nafter\nlog \"token\":\n  \"SYNTHR6001483T1\"\n","canaries":["SYNTHR6001483T0","SYNTHR6001483T1"]},
+{"name":"fuzz6-62.json closed batch error 12","input":"see http://h/x[\n\"password\":\n\t\"q\n[[[\n\"\n]\n[}\n\"password\":\n  \"q\n[[[\n\"\n]\nlog \"token\":\n  \"SYNTHR6001561T0\"\n","canaries":["SYNTHR6001561T0"]},
+{"name":"fuzz6-62.json closed batch error 13","input":"see http://h/x[\n\"secret\": [\n  'q\n[[[\n'\n]\n]\nsee http://h/x[\n'password':\n\t\"q\n[[[\n\"\n]\nsee http://h/y[\n\"token\":\n\"SYNTHR6001679T0\"\n]\nafter\nsee http://h/y[\n\"password\": {\n\"inner\": \"SYNTHR6001679T1\"\n}\n]\nafter\n","canaries":["SYNTHR6001679T0","SYNTHR6001679T1"]},
+{"name":"fuzz6-62.json closed batch error 14","input":"x '{\"a\": 1'\n'token':\n\t'q\n[[\n'\n}\nx '{\"a\": 1'\n'password':\n  \"q\n[[\n\"\n}\nsee http://h/y[\n\"password\": {\n\"inner\": \"SYNTHR6001724T0\"\n}\n]\nafter\n","canaries":["SYNTHR6001724T0"]},
+{"name":"fuzz6-62.json closed batch error 15","input":"[}\n\"api_key\": [\n\t'q\n[[[\n'\n]\n]\nx '{\"a\": 1'\n'api_key':\n  \"q\n[[\n\"\n}\nx {\n\"secret\":\n  \"SYNTHR6001968T0\"\n}\n'\n password': v\n SYNTHR6001968T1\n","canaries":["SYNTHR6001968T0","SYNTHR6001968T1"]},
+{"name":"fuzz6-62.json closed batch error 16","input":"see http://h/x[\n'secret':\n  'q\n[[[\n'\n]\nx '{\"a\": 1'\n\"api_key\":\n  \"q\n[[\n\"\n}\nsee http://h/y[\n\"api_key\":\n|\n SYNTHR6001974T0\n]\nafter\nx {\n\"secret\":\n  \"SYNTHR6001974T1\"\n}\n","canaries":["SYNTHR6001974T0","SYNTHR6001974T1"]},
+{"name":"fuzz6-62.json closed batch error 17","input":"x '{\"a\": 1'\n\"token\":\n  'q\n[[\n'\n}\nx '{\"a\": 1'\n\"api_key\":\n\t\"q\n[[\n\"\n}\n\"token\":\n\"SYNTHR6002155T0\"\n'\n password': v\n SYNTHR6002155T1\n","canaries":["SYNTHR6002155T0","SYNTHR6002155T1"]},
+{"name":"fuzz6-62.json closed batch error 18","input":"x '{\"a\": 1'\n'secret':\n  'q\n[[\n'\n}\nx '{\"a\": 1'\n'token':\n  \"q\n[[\n\"\n}\nx {\n\"secret\":\n  \"SYNTHR6002204T0\"\n}\n","canaries":["SYNTHR6002204T0"]},
+{"name":"fuzz6-62.json closed batch error 19","input":"x '{\"a\": 1'\n\"secret\":\n\t'q\n[[\n'\n}\nx '{\"a\": 1'\n\"password\":\n \"q\n[[\n\"\n}\n'\n password': v\n SYNTHR6002216T0\n","canaries":["SYNTHR6002216T0"]},
+{"name":"fuzz6-62.json closed batch error 20","input":"mirrors=[http://a/x http://b/y]\n{]\n'token':\n  \"q\n[[[\n\"\n]\n\"token\":\n\"SYNTHR6002217T0\"\nsee http://h/y[\n\"token\":\n\"SYNTHR6002217T1\"\n]\nafter\n","canaries":["SYNTHR6002217T0","SYNTHR6002217T1"]},
+{"name":"fuzz6-62.json closed batch error 21","input":"{ \"u\": [ http://h/x] }\nx '{\"a\": 1'\n\"secret\":\n \"q\n[[\n\"\n}\n'\n password': v\n SYNTHR6002235T0\nsee http://h/y[\n\"password\": {\n\"inner\": \"SYNTHR6002235T1\"\n}\n]\nafter\n","canaries":["SYNTHR6002235T0","SYNTHR6002235T1"]},
+{"name":"fuzz6-62.json closed batch error 22","input":"x http://h/[a\n\"api_key\":\n  'q\n[[[\n'\n]\nx '{\"a\": 1'\n\"api_key\":\n \"q\n[[\n\"\n}\n'\n password': v\n SYNTHR6002254T0\nsee http://h/y[\n\"token\":\n\"SYNTHR6002254T1\"\n]\nafter\n","canaries":["SYNTHR6002254T0","SYNTHR6002254T1"]},
+{"name":"fuzz6-62.json closed batch error 23","input":"see http://h/x[\n\"password\": [\n  'q\n[[[\n'\n]\n]\nx http://h/[a\n\"token\":\n \"q\n[[[\n\"\n]\n\"token\":\n\"SYNTHR6002268T0\"\n","canaries":["SYNTHR6002268T0"]},
+{"name":"fuzz6-62.json closed batch error 24","input":"x '{\"a\": 1'\n\"secret\":\n 'q\n[[\n'\n}\nx '{\"a\": 1'\n\"password\":\n \"q\n[[\n\"\n}\nx {\n\"secret\":\n  \"SYNTHR6002487T0\"\n}\n","canaries":["SYNTHR6002487T0"]},
+{"name":"fuzz6-62.json closed batch error 25","input":"see http://h/x[\n'api_key': [\n\t'q\n[[[\n'\n]\n]\nx '{\"a\": 1'\n\"secret\":\n  \"q\n[[\n\"\n}\nsee http://h/y[\n\"token\":\n\"SYNTHR6002647T0\"\n]\nafter\nx {\n\"secret\":\n  \"SYNTHR6002647T1\"\n}\n","canaries":["SYNTHR6002647T0","SYNTHR6002647T1"]},
+{"name":"fuzz6-62.json closed batch error 26","input":"[}\n\"password\":\n 'q\n[[[\n'\n]\n[}\n'token':\n  \"q\n[[[\n\"\n]\n\"token\":\n\"SYNTHR6002694T0\"\n","canaries":["SYNTHR6002694T0"]},
+{"name":"fuzz6-62.json closed batch error 27","input":"x '{\"a\": 1'\n\"password\":\n\t'q\n[[\n'\n}\nx http://h/[a\n'token':\n\t\"q\n[[[\n\"\n]\n\"token\":\n\"SYNTHR6002753T0\"\n","canaries":["SYNTHR6002753T0"]},
+{"name":"fuzz6-62.json closed batch error 28","input":"[ https://h/p] tail\n{]\n'api_key':\n \"q\n[[[\n\"\n]\nx {\n\"secret\":\n  \"SYNTHR6002947T0\"\n}\n","canaries":["SYNTHR6002947T0"]}
+]"###).must()
+}
+
+#[test]
+fn sixth_review_context_depth_and_continuation_paths_preserve_pinned_batch_spans() {
+    for case in sixth_review_records() {
+        assert_pinned_review_record(&case);
+    }
+}
+
+#[test]
+fn sixth_review_context_carry_failures_stay_closed_at_every_boundary() {
+    for case in sixth_review_failures() {
+        assert_review_failure(&case);
+    }
+}
+
+fn sixth_review_poison(
+    variant: usize,
+    eol: &str,
+    name: &str,
+    quote: char,
+    indentation: &str,
+    header: &str,
+    layout: usize,
+) -> String {
+    let qn = format!("{quote}{name}{quote}");
+    let pb = "-----BEGIN RSA PRIVATE KEY-----";
+    let pe = "-----END RSA PRIVATE KEY-----";
+    let input = match variant {
+        0 => [
+            "[ http://h/x]",
+            "targets=[http://a/x http://b/y]",
+            "{ \"a\": [ http://h/x] }",
+            "[p://]a",
+        ][layout]
+            .to_owned(),
+        1 => format!("[}}\n{qn}:\n{indentation}{quote}q\n[[\n{quote}\n]\n"),
+        2 => format!("see http://h/x[\n{qn}: [\n{indentation}{quote}q\n[[[\n{quote}\n]\n]\n"),
+        3 => {
+            let body = if layout.is_multiple_of(2) {
+                format!("{pb}MII synthetic{pe}")
+            } else {
+                format!("{pb}\n{indentation}MII synthetic\n{indentation}{pe}")
+            };
+            let tail = ["]", " ]", " 'x", " ["][layout];
+            format!("[\n{name}: {header}\n{indentation}{body}{tail}\nx\n")
+        }
+        4 => format!("x '{{\"a\": 1'\n{qn}:\n{indentation}{quote}q\n[[\n{quote}\n}}\n"),
+        5 => {
+            let closing_name = [
+                format!("{name}'"),
+                format!("{name}\""),
+                format!("{name}\\'"),
+                format!("{name}\\\""),
+            ][layout]
+                .clone();
+            format!("[\n{closing_name}:\n{header}\n{indentation}]\n")
+        }
+        6 => "see http://h/x[\n]\n".to_owned(),
+        7 => format!("see http://h/x[\n{qn}: a] 'x\n'\n"),
+        8 => [
+            "password=\\\"a [x\\\" host=h dbname=d",
+            "AccountKey=\\\"a;[x\\\";AccountName=n",
+            "PASSWORD=\\\"a [x\\\" HOST=h SSLMODE=r",
+            "x password=\\\"a ]\\\" user=u port=1",
+        ][layout]
+            .to_owned(),
+        _ => format!("[\n{name}={pb}\nMII synthetic\n{pe} 'token': \\\"a ]\\\"\nx\n"),
+    };
+    input.replace('\n', eol)
+}
+
+fn sixth_review_grammar() -> impl Strategy<Value = (String, String)> {
+    (
+        prop::collection::vec(0usize..10, 1..4),
+        prop::sample::select(vec!["\n", "\r\n", "\r"]),
+        prop::sample::select(vec!["token", "api_key", "password", "client_secret"]),
+        prop::sample::select(vec!['\'', '"']),
+        prop::sample::select(vec![" ", "  ", "\t"]),
+        prop::sample::select(vec!["a", "|", ">", "# synthetic"]),
+        0usize..4,
+        0usize..4,
+        "[a-z0-9秘密é_-]{1,16}",
+    )
+        .prop_map(
+            |(variants, eol, name, quote, indentation, header, layout, tail, suffix)| {
+                let canary = format!("{CANARY}_{suffix}");
+                let mut input = variants
+                    .into_iter()
+                    .map(|variant| {
+                        sixth_review_poison(variant, eol, name, quote, indentation, header, layout)
+                    })
+                    .collect::<Vec<_>>()
+                    .join(eol);
+                input.push_str(eol);
+                input.push_str(&match tail {
+                    0 => format!(
+                        "see http://h/y[{eol}\"token\":{eol}\"{canary}\"{eol}]{eol}after{eol}"
+                    ),
+                    1 => format!("\"token\":{eol}\"{canary}\"{eol}"),
+                    2 => format!("x \"token\":{eol}{indentation}\"{canary}\"{eol}"),
+                    _ => format!("password: v{eol}{indentation}{canary}{eol}"),
+                });
+                (input, canary)
+            },
+        )
+}
+
+struct InterruptedPrefix<'a> {
+    remaining: &'a [u8],
+}
+
+impl Read for InterruptedPrefix<'_> {
+    fn read(&mut self, output: &mut [u8]) -> io::Result<usize> {
+        if self.remaining.is_empty() {
+            return Err(io::Error::other("synthetic stream interruption"));
+        }
+        let count = self.remaining.len().min(output.len());
+        output[..count].copy_from_slice(&self.remaining[..count]);
+        self.remaining = &self.remaining[count..];
+        Ok(count)
+    }
+}
+
+fn assert_emitted_boundaries_are_stable_with_supported_probes(input: &str) {
+    let probes = [
+        format!("\"token\":\n\"{CANARY}_BOUNDARY\"\n"),
+        format!("x \"token\":\n  \"{CANARY}_BOUNDARY\"\n"),
+        format!(" {CANARY}_BOUNDARY\n"),
+    ];
+    for end in line_ends(input.as_bytes()) {
+        let prefix = &input[..end];
+        let Ok(filtered_prefix) = filter(prefix.as_bytes()) else {
+            continue;
+        };
+        let mut emitted = Vec::new();
+        let error = filter_to_writer(
+            InterruptedPrefix {
+                remaining: prefix.as_bytes(),
+            },
+            &mut emitted,
+        )
+        .must_err();
+        assert!(!format!("{error:?} {error}").contains(CANARY));
+        if error.kind != redact::error::ErrorKind::Input {
+            assert!(emitted.is_empty(), "failed synthetic prefix emitted input");
+            continue;
+        }
+        assert!(
+            filtered_prefix.as_bytes().starts_with(&emitted),
+            "interrupted synthetic prefix emitted inconsistent bytes"
+        );
+        if emitted != filtered_prefix.as_bytes() || emitted.is_empty() {
+            continue;
+        }
+        for probe in &probes {
+            let expected = format!("{filtered_prefix}{}", filter(probe.as_bytes()).must());
+            assert!(
+                filter(format!("{prefix}{probe}").as_bytes())
+                    .is_ok_and(|output| output == expected),
+                "emitted synthetic boundary retained detector context"
+            );
+        }
+    }
+}
+
+#[test]
+fn ordinary_emitted_boundaries_are_stable_with_context_sensitive_probes() {
+    for input in [
+        "status=200 request=synthetic\n",
+        "Server listening on http://localhost:3000\n",
+        "INFO {\"password\":\"synthetic-secret\",\"status\":200}\n",
+        "password=\\\"synthetic bracket [\\\"\n",
+        "{\"token\":\"synthetic-secret\",\"password\":\"synthetic-secret\"}\n",
+    ] {
+        assert_emitted_boundaries_are_stable_with_supported_probes(input);
+    }
+}
+
+#[test]
+fn sixth_review_emitted_boundaries_are_stable_with_context_sensitive_probes() {
+    for case in sixth_review_records() {
+        assert_emitted_boundaries_are_stable_with_supported_probes(&case.input);
+    }
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig { cases: 256, failure_persistence: None, ..ProptestConfig::default() })]
+    #[test]
+    fn generated_context_overlap_records_match_batch_and_read_schedules(
+        fixture in sixth_review_grammar(),
+        size in 1usize..128,
+        cuts in prop::collection::vec(0usize..4096, 0..12),
+    ) {
+        let (input, canary) = fixture;
+        let whole = assert_batch_outcome(&input, &[&canary]);
+        for result in [streamed(input.as_bytes(), Vec::new(), 1), streamed(input.as_bytes(), line_ends(input.as_bytes()), usize::MAX), streamed(input.as_bytes(), schedule(input.as_bytes(), &cuts), size)] {
+            prop_assert!(result == whole, "generated overlap changed stdout, report, or safe error with reads");
+        }
+    }
+
+    #[test]
+    fn generated_supported_contexts_emit_only_probe_stable_boundaries(
+        fixture in sixth_review_grammar(),
+    ) {
+        // Authentication-header quote pairing across records is a separate input contract.
+        assert_emitted_boundaries_are_stable_with_supported_probes(&fixture.0);
+    }
+
+    #[test]
+    fn sixth_review_successes_and_failures_preserve_generated_read_schedules(
+        index in 0usize..131,
+        size in 1usize..128,
+        cuts in prop::collection::vec(0usize..4096, 0..12),
+    ) {
+        let input = if index < 76 {
+            sixth_review_records().into_iter().nth(index).must().input
+        } else {
+            sixth_review_failures().into_iter().nth(index - 76).must().input
+        };
+        let whole = streamed(input.as_bytes(), Vec::new(), usize::MAX);
+        prop_assert!(streamed(input.as_bytes(), schedule(input.as_bytes(), &cuts), size) == whole, "sixth-review pinned record changed under generated schedules");
+    }
+}
+
+fn sixth_review_invalid_records() -> Vec<(String, Vec<u8>, usize)> {
+    let mut cases = Vec::new();
+    for name in ["E-eof", "F-eof", "G-eof", "H-eof", "I-closing-quote-eof"] {
+        let case = sixth_review_records()
+            .into_iter()
+            .find(|case| case.name.split_whitespace().last() == Some(name))
+            .must();
+        for invalid in [0, 0xff] {
+            let mut input = b"ok\n".to_vec();
+            input.extend_from_slice(case.input.as_bytes());
+            let line = input.iter().filter(|byte| **byte == b'\n').count() + 1;
+            input.extend_from_slice(&[invalid, b'\n']);
+            cases.push((format!("{name} byte {invalid}"), input, line));
+        }
+    }
+    cases
+}
+
+#[test]
+fn sixth_review_invalid_records_keep_global_locations_and_only_prior_filtered_output() {
+    for (name, input, line) in sixth_review_invalid_records() {
+        let whole = streamed(&input, Vec::new(), usize::MAX);
+        let error = whole.error.as_ref().must();
+        assert!(
+            whole.output == b"ok\n" && whole.report.is_empty(),
+            "{name} emitted an unfinished record"
+        );
+        assert_eq!(
+            error.line,
+            Some(line),
+            "{name} changed its global input line"
+        );
+        assert!(error.earlier_output_emitted);
+        assert!(!format!("{error:?} {error}").contains("SYNCAN"));
+        for split in 0..=input.len() {
+            assert!(
+                streamed(&input, vec![split], usize::MAX) == whole,
+                "{name} changed at split {split}"
+            );
+        }
+        for size in [1, 2, 7, 31] {
+            assert!(
+                streamed(&input, Vec::new(), size) == whole,
+                "{name} changed at size {size}"
+            );
+        }
+        assert!(
+            streamed(&input, line_ends(&input), usize::MAX) == whole,
+            "{name} changed with line reads"
+        );
+    }
+}
+
+#[test]
+fn sixth_review_cli_failures_match_safe_library_bytes_and_exit_two() {
+    let mut cases: Vec<_> = sixth_review_failures()
+        .into_iter()
+        .map(|case| {
+            let whole = streamed(case.input.as_bytes(), Vec::new(), usize::MAX);
+            let error = whole.error.must();
+            serde_json::json!({
+                "input": case.input.into_bytes(),
+                "stdout": String::from_utf8(whole.output).must(),
+                "stderr": format!("rstr: {error}\n"),
+                "canaries": case.canaries
+            })
+        })
+        .collect();
+    cases.extend(
+        sixth_review_invalid_records()
+            .into_iter()
+            .map(|(_, input, _)| {
+                let whole = streamed(&input, Vec::new(), usize::MAX);
+                let error = whole.error.must();
+                serde_json::json!({
+                    "input": input,
+                    "stdout": String::from_utf8(whole.output).must(),
+                    "stderr": format!("rstr: {error}\n"),
+                    "canaries": ["SYNCAN"]
+                })
+            }),
+    );
+    let output = Command::new("python3")
+        .env_clear()
+        .env("PATH", "/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin")
+        .args(["-c", r#"
+import json, subprocess, sys
+for case in json.loads(sys.argv[2]):
+    p = subprocess.run([sys.argv[1]], input=bytes(case['input']), capture_output=True, env={}, timeout=5)
+    assert p.returncode == 2, 'detector/input failure did not exit with code 2'
+    assert p.stdout == case['stdout'].encode(), 'failed stdout differed from library'
+    assert p.stderr == case['stderr'].encode(), 'safe error differed from library'
+    assert b'retry' in p.stderr or b'synthetic reproduction' in p.stderr, 'failure omitted recovery guidance'
+    for canary in case['canaries']:
+        assert canary.encode() not in p.stdout + p.stderr, 'failure disclosed a canary'
+"#, env!("CARGO_BIN_EXE_rstr"), &serde_json::to_string(&cases).must()])
+        .output()
+        .must();
+    assert!(
+        output.status.success(),
+        "sixth-review failure subprocess failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+#[test]
+fn go_url_slices_with_non_neutral_detector_depth_wait_for_eof() {
+    let input = "targets=[http://a/x http://b/y]\nGET /a 200\nGET /b 200\n";
+    let expected = filter(input.as_bytes()).must();
+    let output = Command::new("python3")
+        .env_clear()
+        .env("PATH", "/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin")
+        .args(["-c", r#"
+import select, subprocess, sys
+p = subprocess.Popen([sys.argv[1]], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env={})
+try:
+    for line in sys.argv[2].splitlines(keepends=True):
+        p.stdin.write(line.encode()); p.stdin.flush()
+        assert not select.select([p.stdout], [], [], .02)[0], 'URL slice released non-neutral detector state'
+        assert p.poll() is None, 'URL slice filter exited before EOF'
+    p.stdin.close(); p.stdin = None
+    out, err = p.communicate(timeout=5)
+    assert p.returncode == 0 and out == sys.argv[3].encode() and err == b'', 'held URL slice changed bytes'
+finally:
+    if p.poll() is None: p.kill(); p.wait()
+"#, env!("CARGO_BIN_EXE_rstr"), input, &expected])
+        .output()
+        .must();
+    assert!(
+        output.status.success(),
+        "Go URL slice subprocess failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
 fn schedule(input: &[u8], cuts: &[usize]) -> Vec<usize> {
     let mut ends: Vec<_> = cuts.iter().map(|cut| cut % (input.len() + 1)).collect();
     ends.sort_unstable();
@@ -1206,6 +1705,7 @@ fn live_staged_pipes_never_release_a_prefix_inconsistent_with_batch() {
         })
         .chain(fourth_review_records().into_iter().map(|case| serde_json::json!({"input": case.input, "expected": case.expected, "protected": case.protected})))
         .chain(fifth_review_records().into_iter().map(|case| serde_json::json!({"input": case.record.input, "expected": case.record.expected, "protected": case.record.protected})))
+        .chain(sixth_review_records().into_iter().map(|case| serde_json::json!({"input": case.input, "expected": case.expected, "protected": case.protected})))
         .collect();
     let output = Command::new("python3").env_clear().env("PATH", "/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin")
         .args(["-c", r#"

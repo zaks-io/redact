@@ -20,6 +20,7 @@ pub(super) struct Framer {
     yaml: bool,
     private: HashSet<String>,
     syntax: Syntax,
+    detector_hold: bool,
 }
 
 impl Framer {
@@ -29,6 +30,7 @@ impl Framer {
             yaml: false,
             private: HashSet::new(),
             syntax: Syntax::default(),
+            detector_hold: false,
         }
     }
 
@@ -36,8 +38,14 @@ impl Framer {
         self.syntax.discard_prefix(end);
     }
 
+    pub(super) fn hold_until_eof(&mut self) {
+        self.detector_hold = true;
+    }
+
     pub(super) fn pending_limit_diagnostic(&self) -> &'static str {
-        if !self.private.is_empty() {
+        if self.detector_hold {
+            HoldReason::Ambiguous
+        } else if !self.private.is_empty() {
             HoldReason::PrivateKey
         } else if self.yaml && !matches!(self.syntax.hold_reason(), HoldReason::Ambiguous) {
             HoldReason::Yaml
@@ -53,6 +61,9 @@ impl Framer {
         record: &[u8],
         start: usize,
     ) -> Result<Boundary, SafeError> {
+        if self.detector_hold {
+            return Ok(Boundary::Hold);
+        }
         if let Some(first_subline) = line.split_inclusive(['\r', '\n']).next() {
             self.syntax.advance_continuation(first_subline);
         }

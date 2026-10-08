@@ -70,6 +70,11 @@ more quote or bracket syntax on the same line can wait too. Escaped quoted value
 with ambiguous URL or connection-string context require EOF, even when the
 connection string starts the line. Their delimiters can change the interpretation
 of later lines.
+Before releasing a record, the detector also checks that its own quote, container
+and continuation state is complete. If that check is uncertain, the record and
+later input stay buffered through EOF. A Go-style URL list such as
+`targets=[http://a/x http://b/y]` can trigger this hold because its closing bracket
+belongs to the URL context. Ordinary logs and complete quoted JSON still stream.
 
 `rstr` reads no environment values or `.env` files. No matches means unchanged
 output, not proof that no secret was present. Use `rprintenv` directly for

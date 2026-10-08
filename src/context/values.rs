@@ -2,6 +2,16 @@ use crate::error::SafeError;
 
 const VALUE_LIMIT: usize = 1_048_576;
 
+pub(super) struct BlockEnd {
+    pub end: usize,
+    pub open: bool,
+}
+
+pub(super) struct IndentedValue {
+    pub span: Option<crate::Span>,
+    pub open: bool,
+}
+
 pub(super) fn balanced_end(input: &str, start: usize) -> Result<usize, SafeError> {
     let bytes = input.as_bytes();
     let mut stack = Vec::new();
@@ -45,7 +55,7 @@ pub(super) fn yaml_block_end(
     input: &str,
     name: usize,
     value: usize,
-) -> Result<Option<usize>, SafeError> {
+) -> Result<Option<BlockEnd>, SafeError> {
     let bytes = input.as_bytes();
     if !matches!(bytes[value], b'|' | b'>') {
         return Ok(None);
@@ -88,14 +98,17 @@ pub(super) fn yaml_block_end(
     if end > value && bytes[end - 1] == b'\r' {
         end -= 1;
     }
-    Ok(Some(end))
+    Ok(Some(BlockEnd {
+        end,
+        open: cursor == input.len(),
+    }))
 }
 
 pub(super) fn yaml_indented_value(
     input: &str,
     name: usize,
     value: usize,
-) -> Result<Option<crate::Span>, SafeError> {
+) -> Result<Option<IndentedValue>, SafeError> {
     let bytes = input.as_bytes();
     let Some(indentation) = yaml_indentation(bytes, name) else {
         return Ok(None);
@@ -132,7 +145,10 @@ pub(super) fn yaml_indented_value(
     if end > header_end && bytes[end - 1] == b'\r' {
         end -= 1;
     }
-    Ok(start.map(|start| start..end))
+    Ok(Some(IndentedValue {
+        span: start.map(|start| start..end),
+        open: cursor == input.len(),
+    }))
 }
 
 pub(crate) fn yaml_indentation(bytes: &[u8], name: usize) -> Option<usize> {

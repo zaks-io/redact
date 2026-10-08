@@ -11,18 +11,50 @@ pub(crate) use assignment::{
 pub(crate) use names::sensitive_name;
 pub(crate) use values::{continues_value, yaml_indentation};
 
+pub(crate) enum RecordEnd {
+    Newline,
+    NonDelimiter,
+    Document,
+}
+
+pub(crate) struct Detection {
+    pub spans: Vec<Span>,
+    pub end: EndState,
+}
+
+// Detector continuation metadata contains no input or secret-bearing labels.
+#[derive(Default)]
+pub(crate) struct EndState {
+    containers: usize,
+    unmatched_quote: bool,
+    pending_value: bool,
+    pending_delimiter: bool,
+    yaml_continuation: bool,
+}
+
+impl EndState {
+    pub(crate) fn settled(&self, end: RecordEnd) -> bool {
+        self.containers == 0
+            && !self.unmatched_quote
+            && !self.pending_value
+            && (!self.pending_delimiter || !matches!(end, RecordEnd::Newline))
+            && (!self.yaml_continuation || matches!(end, RecordEnd::Document))
+    }
+}
+
 /// Sensitive-name assignments outside `structured` framing; quoted text recurses via `embedded`.
-pub(crate) fn detect(
+pub(crate) fn detect_with_state(
     input: &str,
     structured: &[Span],
     depth: usize,
-) -> Result<Vec<Span>, SafeError> {
+) -> Result<Detection, SafeError> {
     let structured = crate::merge_spans(input, structured)?;
     let bytes = input.as_bytes();
     let mut spans = Vec::new();
     let mut at = 0;
     let mut quoted_names_available = [true, true];
     let mut container_depth = 0usize;
+    let mut end_state = EndState::default();
     while at < bytes.len() {
         let framing = structured.get(structured.partition_point(|span| span.end <= at));
         if let Some(framing) = framing.filter(|span| span.start <= at && at < span.end) {
@@ -51,6 +83,7 @@ pub(crate) fn detect(
                 delimiter += 1;
             }
             if delimiter == bytes.len() || !matches!(bytes[delimiter], b'=' | b':') {
+                end_state.pending_delimiter |= delimiter == bytes.len();
                 spans.extend(embedded::detect(input, at, end, depth)?);
                 at = end + 1;
                 continue;
@@ -89,16 +122,23 @@ pub(crate) fn detect(
         {
             value += 1;
         }
-        if !sensitive_name(&name) || value == bytes.len() {
+        if !sensitive_name(&name) {
+            continue;
+        }
+        if value == bytes.len() {
+            end_state.pending_value = true;
             continue;
         }
         if bytes[delimiter] == b':'
             && matches!(bytes[value], b'\n' | b'\r' | b'#')
-            && let Some(span) = values::yaml_indented_value(input, name_start, value)?
+            && let Some(continuation) = values::yaml_indented_value(input, name_start, value)?
         {
-            at = span.end;
-            spans.push(span);
-            continue;
+            end_state.yaml_continuation |= continuation.open;
+            if let Some(span) = continuation.span {
+                at = span.end;
+                spans.push(span);
+                continue;
+            }
         }
         if matches!(bytes[value], b'\n' | b'\r') {
             continue;
@@ -140,10 +180,11 @@ pub(crate) fn detect(
             spans.push(value..end);
             at = end;
         } else if bytes[delimiter] == b':'
-            && let Some(end) = values::yaml_block_end(input, name_start, value)?
+            && let Some(block) = values::yaml_block_end(input, name_start, value)?
         {
-            spans.push(value..end);
-            at = end;
+            end_state.yaml_continuation |= block.open;
+            spans.push(value..block.end);
+            at = block.end;
         } else {
             let mut end = value;
             while end < bytes.len()
@@ -156,7 +197,10 @@ pub(crate) fn detect(
                 && bytes[delimiter] == b':'
                 && let Some(continuation) = values::yaml_indented_value(input, name_start, value)?
             {
-                end = continuation.end;
+                end_state.yaml_continuation |= continuation.open;
+                if let Some(span) = continuation.span {
+                    end = span.end;
+                }
             }
             if end > value {
                 spans.push(value..end);
@@ -164,7 +208,12 @@ pub(crate) fn detect(
             at = end;
         }
     }
-    Ok(spans)
+    end_state.containers = container_depth;
+    end_state.unmatched_quote = quoted_names_available.contains(&false);
+    Ok(Detection {
+        spans,
+        end: end_state,
+    })
 }
 
 pub(crate) fn quoted_end(
@@ -194,3 +243,6 @@ pub(crate) fn quoted_end(
         crate::error::line_number(input.as_bytes(), start),
     ))
 }
+
+#[cfg(test)]
+mod tests;

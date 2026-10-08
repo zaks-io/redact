@@ -59,25 +59,25 @@ pub fn detect(input: &str) -> Result<Vec<Span>, SafeError> {
 
 /// Every detector family over one input; quoted text re-enters at a greater depth.
 pub(crate) fn detect_at_depth(input: &str, depth: usize) -> Result<Vec<Span>, SafeError> {
-    Ok(merge_findings(input, &detect_findings(input, depth)?)?
+    Ok(merge_findings(input, &detect_findings(input, depth)?.0)?
         .into_iter()
         .map(|finding| finding.span)
         .collect())
 }
 
-fn detect_findings(input: &str, depth: usize) -> Result<Vec<Finding>, SafeError> {
+fn detect_findings(
+    input: &str,
+    depth: usize,
+) -> Result<(Vec<Finding>, context::EndState), SafeError> {
     let detection = structured::detect_with_contexts(input)?;
     let mut findings = detection.findings;
-    findings.extend(
-        context::detect(input, &detection.contexts, depth)?
-            .into_iter()
-            .map(|span| Finding {
-                span,
-                label: Evidence::SensitiveFieldOrQuotedCredential,
-            }),
-    );
+    let context = context::detect_with_state(input, &detection.contexts, depth)?;
+    findings.extend(context.spans.into_iter().map(|span| Finding {
+        span,
+        label: Evidence::SensitiveFieldOrQuotedCredential,
+    }));
     findings.extend(providers::detect(input)?);
-    Ok(findings)
+    Ok((findings, context.end))
 }
 
 struct MergedFinding {
@@ -142,7 +142,23 @@ pub fn filter(bytes: &[u8]) -> Result<String, SafeError> {
 
 pub fn filter_with_evidence(bytes: &[u8]) -> Result<Filtered, SafeError> {
     let input = validate_input(bytes)?;
-    let findings = merge_findings(input, &detect_findings(input, 0)?)?;
+    render_findings(input, bytes, &detect_findings(input, 0)?.0)
+}
+
+pub(crate) fn filter_candidate(
+    bytes: &[u8],
+    boundary: context::RecordEnd,
+) -> Result<Option<Filtered>, SafeError> {
+    let input = validate_input(bytes)?;
+    let (findings, end) = detect_findings(input, 0)?;
+    if !end.settled(boundary) {
+        return Ok(None);
+    }
+    render_findings(input, bytes, &findings).map(Some)
+}
+
+fn render_findings(input: &str, bytes: &[u8], findings: &[Finding]) -> Result<Filtered, SafeError> {
+    let findings = merge_findings(input, findings)?;
     let mut output = String::new();
     let mut redactions = Vec::with_capacity(findings.len());
     let mut cursor = 0;

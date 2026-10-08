@@ -149,6 +149,16 @@ their delimiters. Standalone completed escaped quoted assignments without that
 overlap still stream. Multiline quoted mapping names retain the document from
 the name's opening line.
 
+The context detector certifies each candidate boundary using its own remaining
+container depth, quote state, pending sensitive values and continuation extent.
+Only certified candidates reach rendering and reporting. A non-neutral candidate
+retains the remaining stream through EOF without repeating detection over growing
+prefixes. An observed non-delimiter lookahead can close quoted-name lookahead;
+a verified document separator can close YAML continuation state. Neither clears
+container depth, unmatched quotes or a pending sensitive value.
+This check can also hold Go-style URL lists such as
+`targets=[http://a/x http://b/y]`, whose closing bracket belongs to URL context.
+
 Require UTF-8 input and reject NUL bytes. Preserve valid unmatched line endings,
 whitespace, and other characters. This filter removes matched secrets; it does
 not neutralize terminal escape sequences or embedded instructions.

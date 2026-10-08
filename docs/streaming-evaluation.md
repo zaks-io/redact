@@ -14,6 +14,10 @@ bytes, read-boundary invariance, live output before EOF, late failures, and
 bounded evidence reports. Use cleared subprocess environments and synthetic
 fixtures. Standalone release acceptance must run after the production binary
 build so test dependencies cannot supply missing runtime features.
+The boundary regressions interrupt input without EOF and test emitted prefixes
+with additional detector-sensitive lines. This verifies that a boundary cannot
+discard quote, container or continuation context needed by later input. The fuzz
+oracle composes syntax fragments independently of the fixed review reproductions.
 
 ```sh
 cargo test --locked --jobs 2 -- --test-threads=2

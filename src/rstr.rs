@@ -2,6 +2,7 @@
 
 use std::io::{Read, Write};
 
+use crate::context::RecordEnd;
 use crate::error::{ErrorKind, SafeError};
 use crate::{MAX_INPUT_BYTES, RedactionReport, filter_with_evidence};
 
@@ -105,7 +106,10 @@ impl Stream {
                 .line(line, &self.pending, self.line_start)
                 .map_err(|error| error.in_stream(self.first_line, self.emitted))?;
             if matches!(boundary, Boundary::Previous) {
-                self.emit(self.line_start)?;
+                if !self.try_emit(self.line_start, RecordEnd::NonDelimiter)? {
+                    self.line_start = self.pending.len();
+                    continue;
+                }
                 let line = crate::validate_input(&self.pending)
                     .map_err(|error| error.in_stream(self.first_line, self.emitted))?;
                 boundary = self
@@ -114,9 +118,13 @@ impl Stream {
                     .map_err(|error| error.in_stream(self.first_line, self.emitted))?;
             }
             match boundary {
-                Boundary::Complete => self.emit(self.pending.len())?,
+                Boundary::Complete => {
+                    self.try_emit(self.pending.len(), RecordEnd::Newline)?;
+                }
                 Boundary::Hold => {}
-                Boundary::Document => self.emit(self.line_start)?,
+                Boundary::Document => {
+                    self.try_emit(self.line_start, RecordEnd::Document)?;
+                }
                 Boundary::Previous => {
                     return Err(self.error("stream framing did not settle. Report the version and a synthetic reproduction."));
                 }
@@ -132,6 +140,25 @@ impl Stream {
         }
         let filtered = filter_with_evidence(&self.pending[..end])
             .map_err(|error| error.in_stream(self.first_line, self.emitted))?;
+        self.commit(end, filtered)
+    }
+
+    fn try_emit(&mut self, end: usize, boundary: RecordEnd) -> Result<bool, SafeError> {
+        if end == 0 {
+            return Ok(true);
+        }
+        let filtered = crate::text::filter_candidate(&self.pending[..end], boundary)
+            .map_err(|error| error.in_stream(self.first_line, self.emitted))?;
+        let Some(filtered) = filtered else {
+            // A disagreement must retain context once, rather than re-detect growing prefixes.
+            self.framer.hold_until_eof();
+            return Ok(false);
+        };
+        self.commit(end, filtered)?;
+        Ok(true)
+    }
+
+    fn commit(&mut self, end: usize, filtered: crate::Filtered) -> Result<(), SafeError> {
         self.report
             .observe(&filtered.redactions, self.first_line)
             .map_err(|error| error.in_stream(self.first_line, self.emitted))?;
