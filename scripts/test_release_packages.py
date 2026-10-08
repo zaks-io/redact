@@ -11,7 +11,7 @@ import unittest
 
 from release_packages import BINARIES, ReleaseError, TARGETS, digest, prepare, verify_package
 
-VERSION = "0.1.0"
+VERSION = "0.2.0"
 SHA = "a" * 40
 RUN_ID = 123
 CANARY = "SYNTHETIC_SECRET_CANARY_RELEASE_FAILURE"

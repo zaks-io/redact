@@ -12,9 +12,8 @@ and command output without copying secrets into transcripts, logs, or chat.
 Both run locally on macOS and Linux. They make no network requests, keep no
 configuration, and record no telemetry.
 
-Streaming, detection-evidence reports, and JSON schema 2 describe the current
-source. Published v0.1.0 binaries retain the earlier behavior; build from source
-to use these changes until a new release is published.
+Version 0.2.0 adds streaming, detection-evidence reports, and JSON schema 2.
+The v0.1.0 binaries retain the earlier behavior.
 
 ## Install
 

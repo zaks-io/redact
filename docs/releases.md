@@ -17,7 +17,7 @@ version. For Apple Silicon, change the target to `aarch64-apple-darwin`.
 ```sh
 (
 set -euo pipefail
-version=0.1.0
+version=0.2.0
 target=x86_64-unknown-linux-gnu
 archive="redact-v${version}-${target}.tar.gz"
 release_url="https://github.com/zaks-io/redact/releases/download/v${version}"
@@ -78,7 +78,7 @@ Start the workflow from GitHub Actions with branch `main` and the exact Cargo
 version without a `v` prefix, or run:
 
 ```sh
-gh workflow run release.yml --repo zaks-io/redact --ref main -f version=0.1.0
+gh workflow run release.yml --repo zaks-io/redact --ref main -f version=0.2.0
 ```
 
 The selected `main` revision is fixed for the entire run. The workflow:
@@ -155,7 +155,7 @@ python3 scripts/release.py package --target x86_64-unknown-linux-gnu \
   --output-dir dist/local-packages --run-id 1 --attempt 1
 python3 scripts/release.py extract --target x86_64-unknown-linux-gnu \
   --input-dir dist/local-packages --output-dir dist/local-acceptance \
-  --version 0.1.0 --source-sha "$(git rev-parse HEAD)" --run-id 1 --attempt 1
+  --version 0.2.0 --source-sha "$(git rev-parse HEAD)" --run-id 1 --attempt 1
 python3 scripts/acceptance.py --bin-dir dist/local-acceptance
 ```
 
