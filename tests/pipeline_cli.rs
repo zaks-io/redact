@@ -42,10 +42,13 @@ output = subprocess.run([sys.argv[1]], stdin=producer.stdout, capture_output=Tru
 producer.stdout.close()
 assert producer.wait(timeout=5) == 0
 assert output.returncode == 0
-assert output.stderr == b''
 marker = '[REDACTED sha256=' + hashlib.sha256(b'SYNTHETIC_PIPE_CANARY').hexdigest()[:16] + ']'
+digest = hashlib.sha256(b'SYNTHETIC_PIPE_CANARY').hexdigest()[:16]
+assert output.stderr.decode() == ('rstr: 2 redactions; labels describe local syntax evidence, not credential validity.\n'
+    f'rstr: line 1: sha256={digest}; sensitive field or quoted credential\n'
+    f'rstr: line 2: sha256={digest}; authorization header\n')
 assert output.stdout.decode() == 'status=401 password=' + marker + '\nAuthorization: Bearer ' + marker + '\n'
-assert b'SYNTHETIC_PIPE_CANARY' not in output.stdout
+assert b'SYNTHETIC_PIPE_CANARY' not in output.stdout + output.stderr
 "#;
     let output = Command::new("python3")
         .env_clear()

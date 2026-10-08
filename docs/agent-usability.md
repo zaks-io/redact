@@ -37,8 +37,11 @@ merge sources. `stable_text_fingerprint` must produce byte-identical output in
 separate processes. For identical removed bytes, the `rstr` JSON/password fixture
 must contain that same fingerprint.
 
-JSON consumers must get the documented stable schema without extra prose. Text
-consumers must get deterministic records. Successful commands have empty stderr.
+JSON consumers must get the documented versioned schema without extra prose.
+Text consumers must get deterministic records. Successful `rprintenv` commands
+have empty stderr. Successful `rstr` commands with matches supply the bounded
+evidence report specified in [text redaction](text-redaction.md); zero matches
+produce no diagnostic banner or safety claim.
 
 ## Preserve detection context
 
@@ -85,8 +88,10 @@ context already understood by a structured detector.
 
 For each tool, pair `malformed_*_recovery` with `malformed_*_corrected`:
 
-1. The first command fails with exit `2`, empty stdout, and safe stderr naming
-   the unterminated quote, its line, and the recovery instruction.
+1. The first command fails with exit `2` and safe stderr naming the unterminated
+   quote, its global line, and the recovery instruction. `rprintenv` produces no
+   records. Streaming `rstr` can retain earlier filtered records, but withholds
+   the unfinished record and identifies partial output.
 2. The synthetic fixture is corrected by closing the quote.
 3. The second command succeeds and redacts the synthetic secret.
 
@@ -115,6 +120,10 @@ Run these scenarios with real binaries on Blacksmith Linux and macOS:
   `pipefail` is enabled, even when `rstr` itself succeeds.
 - Both malformed/corrected pairs complete with the two invocations above.
 - `rstr` rejects interactive stdin promptly instead of waiting for input.
+- Ordinary log records appear before producer exit. Multiline JSON/private-key
+  records and YAML documents stay withheld until their boundaries settle.
+- A stream of completed records can exceed 16 MiB, while undecided input cannot.
+- Chunk boundaries preserve removed bytes, fingerprints, UTF-8, and newline framing.
 
 Count user-facing commands, not harness setup or Rust test-process launches.
 Record fixed-fixture latency and output size for regression investigation, with

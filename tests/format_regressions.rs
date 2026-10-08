@@ -1,3 +1,6 @@
+#[path = "support/redaction_report.rs"]
+mod report;
+
 #[allow(dead_code, reason = "shared synthetic assertions across test suites")]
 #[path = "support/synthetic.rs"]
 mod synthetic;
@@ -210,7 +213,7 @@ fn researched_formats_pass_real_rstr_subprocesses() {
             ));
         }
         if case.expected_exit == 0 {
-            assert!(output.stderr.is_empty(), "{} success diagnostics", case.id);
+            report::assert_report(&output.stdout, &output.stderr);
         } else {
             assert!(
                 !output.stderr.is_empty(),
@@ -289,8 +292,8 @@ fn all_format_spans_remain_hidden_by_rprintenv_independent_of_family() {
             );
             let actual: serde_json::Value = serde_json::from_slice(&output.stdout).must();
             let expected = serde_json::json!({
-                "schema_version": 1,
-                "records": [{"source":{"kind":"environment"}, "name":"SYNTHETIC_FORMAT_VALUE", "state":"redacted", "value":null, "fingerprint":span.fingerprint}]
+                "schema_version": 2,
+                "records": [{"source":{"kind":"environment"}, "name":"SYNTHETIC_FORMAT_VALUE", "state":"redacted", "value":null, "fingerprint":span.fingerprint, "redaction_reason":"default-policy"}]
             });
             assert_eq!(actual, expected, "{} default environment hiding", case.id);
         }

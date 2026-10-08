@@ -5,6 +5,9 @@ property tests, fuzz targets, and hosted CI on Linux and macOS. See the
 [project README](../README.md), [implementation summary](implementation.md),
 [rule coverage](rules.md), and [format ledger](secret-formats/coverage.md).
 
+These contracts describe the current source. Published v0.1.0 binaries precede
+streaming, bounded evidence reports, and JSON schema 2.
+
 `rprintenv` is a Rust command line tool that lets agents inspect environment
 variables and `.env` files without accidentally copying full secrets into logs
 or chat history. It shows ordinary values under narrow disclosure rules and

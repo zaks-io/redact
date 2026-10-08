@@ -1,6 +1,16 @@
-use crate::error::SafeError;
+use crate::error::{ErrorKind, SafeError};
 
 const VALUE_LIMIT: usize = 1_048_576;
+
+pub(super) struct BlockEnd {
+    pub end: usize,
+    pub open: bool,
+}
+
+pub(super) struct IndentedValue {
+    pub span: Option<crate::Span>,
+    pub open: bool,
+}
 
 pub(super) fn balanced_end(input: &str, start: usize) -> Result<usize, SafeError> {
     let bytes = input.as_bytes();
@@ -36,16 +46,14 @@ pub(super) fn balanced_end(input: &str, start: usize) -> Result<usize, SafeError
         }
         at += 1;
     }
-    Err(SafeError::new(
-        "unterminated sensitive container. Close its delimiters and retry.",
-    ))
+    Err(SafeError::new(ErrorKind::UnterminatedSensitiveContainer))
 }
 
 pub(super) fn yaml_block_end(
     input: &str,
     name: usize,
     value: usize,
-) -> Result<Option<usize>, SafeError> {
+) -> Result<Option<BlockEnd>, SafeError> {
     let bytes = input.as_bytes();
     if !matches!(bytes[value], b'|' | b'>') {
         return Ok(None);
@@ -74,11 +82,7 @@ pub(super) fn yaml_block_end(
             .find(['\r', '\n'])
             .map_or(input.len(), |at| cursor + at);
         let line = &input[cursor..line_end];
-        let leading = line
-            .bytes()
-            .take_while(|byte| matches!(byte, b' ' | b'\t'))
-            .count();
-        if !line.trim().is_empty() && leading <= indentation {
+        if !continues_value(line, indentation) {
             break;
         }
         end = line_end;
@@ -92,14 +96,17 @@ pub(super) fn yaml_block_end(
     if end > value && bytes[end - 1] == b'\r' {
         end -= 1;
     }
-    Ok(Some(end))
+    Ok(Some(BlockEnd {
+        end,
+        open: cursor == input.len(),
+    }))
 }
 
 pub(super) fn yaml_indented_value(
     input: &str,
     name: usize,
     value: usize,
-) -> Result<Option<crate::Span>, SafeError> {
+) -> Result<Option<IndentedValue>, SafeError> {
     let bytes = input.as_bytes();
     let Some(indentation) = yaml_indentation(bytes, name) else {
         return Ok(None);
@@ -120,7 +127,7 @@ pub(super) fn yaml_indented_value(
             .take_while(|byte| matches!(byte, b' ' | b'\t'))
             .count();
         if !line.trim().is_empty() {
-            if leading <= indentation {
+            if !continues_value(line, indentation) {
                 break;
             }
             start.get_or_insert(cursor + leading);
@@ -136,10 +143,13 @@ pub(super) fn yaml_indented_value(
     if end > header_end && bytes[end - 1] == b'\r' {
         end -= 1;
     }
-    Ok(start.map(|start| start..end))
+    Ok(Some(IndentedValue {
+        span: start.map(|start| start..end),
+        open: cursor == input.len(),
+    }))
 }
 
-fn yaml_indentation(bytes: &[u8], name: usize) -> Option<usize> {
+pub(crate) fn yaml_indentation(bytes: &[u8], name: usize) -> Option<usize> {
     let mut at = name;
     loop {
         let before_spaces = at;
@@ -158,6 +168,15 @@ fn yaml_indentation(bytes: &[u8], name: usize) -> Option<usize> {
             return None;
         }
     }
+}
+
+pub(crate) fn continues_value(line: &str, indentation: usize) -> bool {
+    line.trim().is_empty()
+        || line
+            .bytes()
+            .take_while(|byte| matches!(byte, b' ' | b'\t'))
+            .count()
+            > indentation
 }
 
 fn next_line(bytes: &[u8], end: usize) -> usize {
@@ -188,7 +207,5 @@ pub(super) fn escaped_quoted_end(input: &str, start: usize) -> Result<usize, Saf
             at += 1;
         }
     }
-    Err(SafeError::new(
-        "unterminated escaped quoted value. Close its escaped quote and retry.",
-    ))
+    Err(SafeError::new(ErrorKind::UnterminatedEscapedQuote))
 }

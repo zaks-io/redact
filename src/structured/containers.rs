@@ -1,15 +1,57 @@
 use super::STRUCTURE_LIMIT;
-use crate::{Span, error::SafeError};
+use crate::{
+    Span,
+    error::{DetectorError, ErrorKind, SafeError},
+};
 use serde_json::Value;
 
-pub(super) fn json_containers(input: &str, spans: &mut Vec<Span>) -> Result<(), SafeError> {
+pub(crate) struct JsonEndState {
+    open_objects: usize,
+    unmatched_quote: bool,
+}
+
+impl JsonEndState {
+    pub(crate) fn settled(&self) -> bool {
+        self.open_objects == 0 && !self.unmatched_quote
+    }
+
+    pub(crate) fn provisional_quote(&self) -> bool {
+        self.unmatched_quote
+    }
+}
+
+pub(super) fn json_containers(
+    input: &str,
+    private_spans: &[Span],
+    spans: &mut Vec<Span>,
+) -> Result<JsonEndState, DetectorError> {
     let bytes = input.as_bytes();
+    let private_spans = crate::merge_spans(input, private_spans)?;
+    let mut private_at = 0;
     let mut stack = Vec::new();
     let mut at = 0;
     let mut quoted_regions_available = true;
+    let mut escaped_outside = false;
     while at < bytes.len() {
+        while private_spans
+            .get(private_at)
+            .is_some_and(|span| span.end <= at)
+        {
+            private_at += 1;
+        }
+        if let Some(span) = private_spans.get(private_at)
+            && span.start <= at
+        {
+            // Private block contents are already hidden, not JSON quotation context.
+            at = span.end;
+            escaped_outside = false;
+            continue;
+        }
+        let quote_starts = super::json_quote_starts_string(bytes[at], escaped_outside);
+        // A wire-escaped quote outside JSON cannot hide a later credential object.
+        escaped_outside = bytes[at] == b'\\' && !escaped_outside;
         match bytes[at] {
-            b'"' if quoted_regions_available => {
+            b'"' if quoted_regions_available && quote_starts => {
                 match crate::context::quoted_end(input, at, b'"', false) {
                     Ok(end) => at = end,
                     Err(_) => quoted_regions_available = false,
@@ -30,9 +72,10 @@ pub(super) fn json_containers(input: &str, spans: &mut Vec<Span>) -> Result<(), 
                     }
                 }
                 if stack.len() >= 64 {
-                    return Err(SafeError::new(
+                    return Err(DetectorError::input(SafeError::new(
                         "structured input exceeds nesting limit. Reduce nesting and retry.",
-                    ));
+                    ))
+                    .in_context(0, !quoted_regions_available));
                 }
                 stack.push(at);
             }
@@ -41,9 +84,10 @@ pub(super) fn json_containers(input: &str, spans: &mut Vec<Span>) -> Result<(), 
                     let object = &input[start..=at];
                     if object.len() > STRUCTURE_LIMIT {
                         if credential_object_hint(object) {
-                            return Err(SafeError::new(
+                            return Err(DetectorError::input(SafeError::new(
                                 "credential container exceeds parsing limit. Split input and retry.",
-                            ));
+                            ))
+                            .in_context(0, !quoted_regions_available));
                         }
                     } else {
                         match parse_object(object) {
@@ -53,9 +97,10 @@ pub(super) fn json_containers(input: &str, spans: &mut Vec<Span>) -> Result<(), 
                                 }
                             }
                             Err(_) if credential_object_hint(object) => {
-                                return Err(SafeError::new(
+                                return Err(DetectorError::input(SafeError::new(
                                     "malformed credential container. Correct its JSON structure and retry.",
-                                ));
+                                ))
+                                .in_context(0, !quoted_regions_available));
                             }
                             Err(_) => {}
                         }
@@ -69,11 +114,15 @@ pub(super) fn json_containers(input: &str, spans: &mut Vec<Span>) -> Result<(), 
     if let Some(start) = stack.first()
         && credential_object_hint(&input[*start..])
     {
-        return Err(SafeError::new(
-            "unterminated credential container. Close the JSON object and retry.",
-        ));
+        return Err(DetectorError::input(SafeError::new(
+            ErrorKind::UnterminatedCredentialContainer,
+        ))
+        .in_context(0, !quoted_regions_available));
     }
-    Ok(())
+    Ok(JsonEndState {
+        open_objects: stack.len(),
+        unmatched_quote: !quoted_regions_available,
+    })
 }
 
 fn parse_object(input: &str) -> Result<Value, serde_json::Error> {
@@ -165,10 +214,9 @@ fn private_object(value: &Value) -> bool {
 }
 
 pub(super) fn kubernetes_yaml(input: &str, spans: &mut Vec<Span>) -> Result<(), SafeError> {
-    let kind =
-        pattern!(r#"(?m)^[ \t]*["']?kind["']?[ \t]*:[ \t]*["']?Secret["']?[ \t]*(?:#.*)?\r?$"#)?;
+    let kind = super::yaml_secret_kind()?;
     let data = pattern!(r#"(?m)^[ \t]*["']?(?:data|stringData)["']?[ \t]*:[ \t]*"#)?;
-    let separators = pattern!(r"(?m)^---[ \t]*(?:#.*)?\r?$")?;
+    let separators = super::yaml_document_separators()?;
     let mut start = 0;
     for end in separators
         .find_iter(input)

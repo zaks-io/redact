@@ -12,6 +12,10 @@ and command output without copying secrets into transcripts, logs, or chat.
 Both run locally on macOS and Linux. They make no network requests, keep no
 configuration, and record no telemetry.
 
+Streaming, detection-evidence reports, and JSON schema 2 describe the current
+source. Published v0.1.0 binaries retain the earlier behavior; build from source
+to use these changes until a new release is published.
+
 ## Install
 
 Prebuilt binaries for Linux x86-64 and Apple Silicon macOS are attached to each
@@ -59,7 +63,8 @@ no variable expansion and no shell execution.
 Exit status is `0` on success, `1` when a requested variable is missing from a
 selected source, and `2` for usage, input, or parse errors. `--exists` counts
 empty values as present; use `--json` to see whether a value is empty. A
-populated value does not prove a provider will accept it.
+populated value does not prove a provider will accept it. JSON schema 2 includes
+`redaction_reason`: `default-policy`, `explicit-redact`, or null.
 
 ## rstr
 
@@ -80,7 +85,18 @@ done
 
 `rstr` recognizes provider token formats, authentication headers, sensitive
 assignments, URL credentials, private key blocks, and JWTs. Unmatched text
-passes through byte for byte. Input is limited to 16 MiB of UTF-8.
+passes through byte for byte. Completed ordinary records appear before EOF;
+uncertain quotes, containers, private keys, and YAML-like documents stay buffered.
+Colon-style messages such as `ERROR: retry later` may resemble YAML and wait for a
+document separator or EOF. Input must be UTF-8; the 16 MiB limit applies to
+pending input, so longer completed streams are supported.
+The detector checks each proposed boundary too. Uncertain quote, container or
+continuation state holds the remaining stream through EOF; Go-style URL lists
+can trigger this conservative hold.
+
+Successful filtering writes a bounded stderr report with fingerprints, first
+input lines, and detector evidence. Zero matches stay quiet. Failures identify
+the global line and explain whether earlier filtered output exists.
 
 Detection needs recognizable structure or context. An arbitrary standalone
 password can pass through unchanged, so exit `0` or zero replacements does not
@@ -122,7 +138,7 @@ cargo clippy --locked --all-targets --all-features -- -D warnings
 cargo test --locked -- --test-threads=2
 cargo build --locked --release --bins
 python3 scripts/acceptance.py
-cargo test --locked --release --test workflows --test rstr --test rstr_regressions -- --test-threads=2
+cargo test --locked --release --test workflows --test rstr --test rstr_regressions --test streaming --test streaming_review --test streaming_detector_state -- --test-threads=2
 cargo install cargo-deny --version 0.18.9 --locked
 cargo deny --locked check
 cargo deny --manifest-path fuzz/Cargo.toml --locked check --config ../deny.toml

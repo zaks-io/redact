@@ -2,6 +2,8 @@ pub mod inventory;
 pub mod jwt;
 pub mod policy;
 pub mod providers;
+pub mod streaming;
+mod streaming_boundaries;
 pub mod text;
 
 use redact::error::SafeError;

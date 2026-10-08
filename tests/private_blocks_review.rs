@@ -1,3 +1,6 @@
+#[path = "support/redaction_report.rs"]
+mod report;
+
 #[allow(dead_code, reason = "shared synthetic assertions across test suites")]
 #[path = "support/synthetic.rs"]
 mod synthetic;
@@ -31,6 +34,6 @@ fn escaped_certificate_and_private_key_have_separate_boundaries() {
         let output = child.wait_with_output().must();
         assert_eq!(output.status.code(), Some(0));
         assert_eq!(output.stdout, expected.as_bytes());
-        assert!(output.stderr.is_empty());
+        report::assert_report(&output.stdout, &output.stderr);
     }
 }

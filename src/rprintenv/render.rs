@@ -12,7 +12,7 @@ pub fn render(
         let records: Vec<Value> = records.iter().map(json_record).collect();
         serde_json::to_writer(
             &mut *output,
-            &json!({ "schema_version": 1, "records": records }),
+            &json!({ "schema_version": 2, "records": records }),
         )
         .map_err(|_| SafeError::new(ErrorKind::Output))?;
         writeln!(output).map_err(|_| SafeError::new(ErrorKind::Output))?;
@@ -52,6 +52,7 @@ fn json_record(record: &Record) -> Value {
         "state": state,
         "value": value,
         "fingerprint": fingerprint,
+        "redaction_reason": record.redaction_reason,
     })
 }
 

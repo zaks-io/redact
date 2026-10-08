@@ -8,14 +8,91 @@ pub enum ErrorKind {
     Nul,
     Input,
     Output,
+    SourceNotFound,
+    SourcePermissionDenied,
+    SourceNotRegular,
     InvalidAssignment,
     DuplicateName,
     UnterminatedQuote,
+    UnterminatedEscapedQuote,
+    UnterminatedSensitiveContainer,
+    UnterminatedCredentialContainer,
+    UnterminatedPrivateKey,
     InvalidEscape,
     TrailingText,
     TooLarge,
     Interactive,
     Detector,
+    PendingDetectorContext,
+}
+
+impl ErrorKind {
+    pub(crate) fn can_complete(self) -> bool {
+        matches!(
+            self,
+            Self::UnterminatedQuote
+                | Self::UnterminatedEscapedQuote
+                | Self::UnterminatedSensitiveContainer
+                | Self::UnterminatedCredentialContainer
+                | Self::UnterminatedPrivateKey
+        )
+    }
+}
+
+// Only detector parsing failures can be reinterpreted by later quoted text.
+pub(crate) struct DetectorError {
+    error: SafeError,
+    input_dependent: bool,
+    can_complete: bool,
+}
+
+impl DetectorError {
+    pub(crate) fn input(error: SafeError) -> Self {
+        Self {
+            can_complete: error.kind.can_complete(),
+            error,
+            input_dependent: true,
+        }
+    }
+
+    pub(crate) fn unfinished(error: SafeError) -> Self {
+        if error.kind.can_complete() {
+            Self::input(error)
+        } else {
+            error.into()
+        }
+    }
+
+    pub(crate) fn in_context(mut self, depth: usize, provisional_quote: bool) -> Self {
+        // Closed nested strings cannot grow, but their enclosing provisional quote can change.
+        self.can_complete =
+            depth == 0 && (self.can_complete || self.input_dependent && provisional_quote);
+        self
+    }
+
+    pub(crate) fn can_complete(&self) -> bool {
+        self.can_complete
+    }
+
+    pub(crate) fn into_safe(self) -> SafeError {
+        self.error
+    }
+}
+
+impl From<SafeError> for DetectorError {
+    fn from(error: SafeError) -> Self {
+        Self {
+            error,
+            input_dependent: false,
+            can_complete: false,
+        }
+    }
+}
+
+impl fmt::Debug for DetectorError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("DetectorError").finish_non_exhaustive()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -23,6 +100,7 @@ pub struct SafeError {
     pub kind: ErrorKind,
     pub line: Option<usize>,
     pub previous_line: Option<usize>,
+    pub earlier_output_emitted: bool,
 }
 
 impl SafeError {
@@ -31,6 +109,7 @@ impl SafeError {
             kind: kind.into(),
             line: None,
             previous_line: None,
+            earlier_output_emitted: false,
         }
     }
 
@@ -39,6 +118,24 @@ impl SafeError {
             line: Some(line),
             ..Self::new(kind)
         }
+    }
+
+    /// Locate a record-local failure in the stream using a one-based first line.
+    pub fn in_stream(mut self, first_line: usize, earlier_output_emitted: bool) -> Self {
+        let offset = first_line.checked_sub(1);
+        let line = offset.and_then(|offset| self.line.unwrap_or(1).checked_add(offset));
+        let previous_line = match (self.previous_line, offset) {
+            (Some(line), Some(offset)) => line.checked_add(offset),
+            _ => None,
+        };
+        if line.is_none() || (self.previous_line.is_some() && previous_line.is_none()) {
+            self = Self::new("stream line count overflow. Split the input and retry safely.");
+        } else {
+            self.line = line;
+            self.previous_line = previous_line;
+        }
+        self.earlier_output_emitted |= earlier_output_emitted;
+        self
     }
 }
 
@@ -66,12 +163,33 @@ impl fmt::Display for SafeError {
             ErrorKind::Output => {
                 "could not write output: output write failed. Check the destination; do not retry with raw input."
             }
+            ErrorKind::SourceNotFound => {
+                "file not found. Check that the explicit path exists and retry with --file PATH."
+            }
+            ErrorKind::SourcePermissionDenied => {
+                "permission denied while reading file. Check read permissions on the file and its parent directories, then retry."
+            }
+            ErrorKind::SourceNotRegular => {
+                "source is not a regular file. Supply an explicit UTF-8 .env file and retry."
+            }
             ErrorKind::InvalidAssignment => "invalid assignment. Use NAME=VALUE syntax and retry.",
             ErrorKind::DuplicateName => {
                 "duplicate variable name. Keep one definition per source and retry."
             }
             ErrorKind::UnterminatedQuote => {
                 "unterminated quoted value. Close the quoted value and retry."
+            }
+            ErrorKind::UnterminatedEscapedQuote => {
+                "unterminated escaped quoted value. Close its escaped quote and retry."
+            }
+            ErrorKind::UnterminatedSensitiveContainer => {
+                "unterminated sensitive container. Close its delimiters and retry."
+            }
+            ErrorKind::UnterminatedCredentialContainer => {
+                "unterminated credential container. Close the JSON object and retry."
+            }
+            ErrorKind::UnterminatedPrivateKey => {
+                "unterminated private-key block. Add its matching END marker and retry."
             }
             ErrorKind::InvalidEscape => "unsupported escape. Use a documented escape and retry.",
             ErrorKind::TrailingText => {
@@ -86,7 +204,20 @@ impl fmt::Display for SafeError {
             ErrorKind::Detector => {
                 "detector failed. Report the version and a synthetic reproduction."
             }
-        })
+            ErrorKind::PendingDetectorContext => {
+                "unfinished record exceeds 16 MiB while holding uncertain detector context. The retained record must remain together through EOF; use smaller complete input and retry."
+            }
+        })?;
+        if self.kind == ErrorKind::Output && self.earlier_output_emitted {
+            f.write_str(
+                " Some filtered output may already have been written. Treat stdout as incomplete.",
+            )?;
+        } else if self.earlier_output_emitted {
+            f.write_str(
+                " Earlier filtered output was emitted; the unfinished record was withheld.",
+            )?;
+        }
+        Ok(())
     }
 }
 
@@ -95,5 +226,46 @@ impl std::error::Error for SafeError {}
 impl From<&'static str> for ErrorKind {
     fn from(category: &'static str) -> Self {
         Self::Category(category)
+    }
+}
+
+#[cfg(test)]
+mod detector_tests {
+    use super::{DetectorError, ErrorKind, SafeError};
+
+    #[test]
+    fn provisional_context_only_reinterprets_detector_input_failures() {
+        let unfinished = DetectorError::input(SafeError::new(ErrorKind::UnterminatedQuote));
+        assert!(unfinished.can_complete());
+        let nested = unfinished.in_context(1, true);
+        assert!(!nested.can_complete());
+        assert!(nested.in_context(0, true).can_complete());
+
+        let malformed = DetectorError::input(SafeError::new("malformed sensitive container"));
+        assert!(!malformed.can_complete());
+        assert!(malformed.in_context(0, true).can_complete());
+        for kind in [
+            ErrorKind::Detector,
+            ErrorKind::Encoding,
+            ErrorKind::Nul,
+            ErrorKind::TooLarge,
+            ErrorKind::Category("structured detector initialization failed"),
+            ErrorKind::Category("detector span validation failed"),
+            ErrorKind::Category("quoted input mapping failed"),
+        ] {
+            let error = DetectorError::from(SafeError::new(kind)).in_context(0, true);
+            assert!(!error.can_complete());
+            assert_eq!(error.into_safe().kind, kind);
+        }
+    }
+
+    #[test]
+    fn detector_failure_formatting_is_opaque() {
+        let failure = DetectorError::input(SafeError::at(ErrorKind::UnterminatedQuote, 4));
+        assert_eq!(format!("{failure:?}"), "DetectorError { .. }");
+        assert_eq!(
+            format!("{:?}", Some(vec![failure])),
+            "Some([DetectorError { .. }])"
+        );
     }
 }

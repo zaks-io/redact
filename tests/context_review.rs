@@ -1,3 +1,6 @@
+#[path = "support/redaction_report.rs"]
+mod report;
+
 #[allow(dead_code, reason = "shared synthetic assertions across test suites")]
 #[path = "support/synthetic.rs"]
 mod synthetic;
@@ -78,7 +81,7 @@ fn prose_apostrophes_inch_marks_and_wire_escaped_quotes_do_not_hide_fields() {
         let output = run(input.as_bytes());
         assert_eq!(output.status.code(), Some(0));
         assert_eq!(output.stdout, expected.as_bytes());
-        assert!(output.stderr.is_empty());
+        report::assert_report(&output.stdout, &output.stderr);
     }
 }
 
@@ -160,7 +163,7 @@ fn yaml_prefix_checks_and_failed_quote_candidates_make_linear_progress() {
     ] {
         let output = run(input.as_bytes());
         assert_eq!(output.status.code(), Some(0));
-        assert!(output.stderr.is_empty());
+        report::assert_report(&output.stdout, &output.stderr);
         assert!(!String::from_utf8(output.stdout).must().contains(CANARY));
     }
 }

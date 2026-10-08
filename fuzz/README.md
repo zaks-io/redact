@@ -53,6 +53,28 @@ and safe errors beyond the documented nesting budget.
 The text filter also uses arbitrary structured spans and an independent
 endpoint-count union oracle. It checks Unicode boundaries, overlapping unions,
 separate adjacency, exact original-byte hashing, and preserved unmatched bytes.
+It compares streaming output, evidence and errors across read sizes on up to
+4 KiB of arbitrary input per iteration. Generated complete records compare
+streaming with batch filtering for connection-string escaped values, sensitive
+continuations, differing container syntax and assignments beside private-key
+blocks. These records use synthetic canaries and retain their whole detection
+context. Arbitrary mixed streams have record-local context, so the harness does
+not require their output to equal whole-input batch filtering.
+An independent boundary oracle composes names, delimiters, quotes, URL contexts,
+private-key markers and line endings. It interrupts the reader instead of closing
+stdin, then checks fully emitted prefixes against batch filtering with additional
+probe lines. Later input must not change the prefix or the detection of those
+probes. JSON-parity probes cover JWK, registry-auth and Kubernetes JSON objects.
+The vocabulary includes bare backslashes, overlapping private-marker labels,
+quoted connection strings, deep containers, malformed sensitive containers and
+raw tabs inside quoted JSON values. It also combines quoted private-key labels
+with later quote completion, which can resolve a provisional parse error.
+Complete inputs accepted by batch filtering must also
+succeed in streaming mode, including prefixes withheld until EOF.
+Authentication-header quote pairing and cross-record Kubernetes scope are excluded by
+the generated vocabulary because those contexts are documented as record-local.
+The oracle's normal tests reject a deliberately unsafe early emission. Each
+iteration samples up to eight newline boundaries to bound campaign cost.
 All corpus fixtures contain synthetic data; never add host environment snapshots
 or real credential material.
 

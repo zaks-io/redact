@@ -1,4 +1,7 @@
-use crate::{Span, error::SafeError};
+use crate::{
+    Span,
+    error::{DetectorError, SafeError},
+};
 
 /// Map detected decoded string spans back to their exact source escape bytes.
 pub(super) fn detect(
@@ -6,7 +9,7 @@ pub(super) fn detect(
     start: usize,
     end: usize,
     depth: usize,
-) -> Result<Vec<Span>, SafeError> {
+) -> Result<Vec<Span>, DetectorError> {
     let quoted = &input[start..=end];
     if input.as_bytes()[start] != b'"' {
         return raw_contents(input, start, end, depth);
@@ -39,7 +42,7 @@ pub(super) fn detect(
         offsets[at + character.len_utf8()] = raw;
     }
     if raw != end {
-        return Err(mapping_error());
+        return Err(mapping_error().into());
     }
     spans
         .into_iter()
@@ -55,18 +58,18 @@ fn raw_contents(
     start: usize,
     end: usize,
     depth: usize,
-) -> Result<Vec<Span>, SafeError> {
+) -> Result<Vec<Span>, DetectorError> {
     Ok(nested(&input[start + 1..end], depth)?
         .into_iter()
         .map(|span| start + 1 + span.start..start + 1 + span.end)
         .collect())
 }
 
-fn nested(input: &str, depth: usize) -> Result<Vec<Span>, SafeError> {
+fn nested(input: &str, depth: usize) -> Result<Vec<Span>, DetectorError> {
     if depth >= 32 {
-        return Err(SafeError::new(
+        return Err(DetectorError::input(SafeError::new(
             "quoted input exceeds nesting limit. Reduce nested quoting and retry.",
-        ));
+        )));
     }
     crate::text::detect_at_depth(input, depth + 1)
 }

@@ -1,0 +1,6 @@
+-----BEGIN A PRIVATE KEY-----BEGIN B PRIVATE KEY-----
+MII
+-----END A PRIVATE KEY-----x"
+-----END B PRIVATE KEY-----
+x" {"kty":"oct","k":"SYNTHETIC_R7_FINDING_CANARY"}x"
+after

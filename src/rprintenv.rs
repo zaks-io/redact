@@ -2,6 +2,7 @@ pub mod parser;
 pub mod policy;
 pub mod render;
 
+use crate::cli::{CommandKind, parse_arguments_for};
 use crate::error::{ErrorKind, SafeError};
 use crate::secret::SecretString;
 use clap::Parser;
@@ -37,7 +38,7 @@ struct Arguments {
     /// Check that every requested name exists in every source, including empty values
     #[arg(long)]
     exists: bool,
-    /// Emit schema_version 1 JSON instead of text records
+    /// Emit schema_version 2 JSON instead of text records
     #[arg(long)]
     json: bool,
     /// Exact case-sensitive variable names; omit to list each selected source
@@ -84,10 +85,18 @@ fn environment_snapshot(
         .map(|(name, value)| {
             let name = name
                 .into_string()
-                .map_err(|_| SafeError::new(ErrorKind::Encoding))?;
+                .map_err(|_| {
+                    SafeError::new(
+                        "environment contains a non-UTF-8 variable name. Supply UTF-8 environment names and retry.",
+                    )
+                })?;
             let value = value
                 .into_string()
-                .map_err(|_| SafeError::new(ErrorKind::Encoding))?;
+                .map_err(|_| {
+                    SafeError::new(
+                        "environment contains a non-UTF-8 variable value. Supply UTF-8 environment values and retry.",
+                    )
+                })?;
             Ok((name, SecretString::new(value)))
         })
         .collect()
@@ -97,19 +106,10 @@ pub fn run(
     args: impl IntoIterator<Item = OsString>,
     output: &mut impl Write,
 ) -> Result<u8, Failure> {
-    let Some(args) = crate::parse_arguments::<Arguments>(args, output)? else {
+    let Some(args) = parse_arguments_for::<Arguments>(args, output, CommandKind::Rprintenv)? else {
         return Ok(0);
     };
-    if (args.exists
-        && (args.names.is_empty()
-            || args.json
-            || !args.allow.is_empty()
-            || !args.redact.is_empty()))
-        || args.file.iter().any(|path| path == "-")
-        || args.file.iter().collect::<BTreeSet<_>>().len() != args.file.len()
-    {
-        return Err(SafeError::new(ErrorKind::Usage).into());
-    }
+    validate_arguments(&args)?;
     let mut sources = Vec::new();
     if args.environment || args.file.is_empty() {
         let source = Source::Environment;
@@ -159,28 +159,18 @@ pub fn run(
 }
 
 fn read_file(path: &str) -> Result<Vec<u8>, SafeError> {
-    let read_error = || {
-        SafeError::new(
-            "file read failed. Check the explicit path and read permissions, then retry.",
-        )
-    };
-    let regular_file_error = || {
-        SafeError::new(
-            "source is not a regular file. Supply an explicit UTF-8 .env file and retry.",
-        )
-    };
-    let metadata = std::fs::metadata(path).map_err(|_| read_error())?;
+    let metadata = std::fs::metadata(path).map_err(file_read_error)?;
     if !metadata.is_file() {
-        return Err(regular_file_error());
+        return Err(SafeError::new(ErrorKind::SourceNotRegular));
     }
-    let file = std::fs::File::open(path).map_err(|_| read_error())?;
-    if !file.metadata().map_err(|_| read_error())?.is_file() {
-        return Err(regular_file_error());
+    let file = std::fs::File::open(path).map_err(file_read_error)?;
+    if !file.metadata().map_err(file_read_error)?.is_file() {
+        return Err(SafeError::new(ErrorKind::SourceNotRegular));
     }
     let mut bytes = Vec::new();
     file.take((MAX_FILE_BYTES + 1) as u64)
         .read_to_end(&mut bytes)
-        .map_err(|_| read_error())?;
+        .map_err(file_read_error)?;
     if bytes.len() > MAX_FILE_BYTES {
         return Err(SafeError::new(
             "file exceeds 16 MiB. Supply a smaller .env file and retry.",
@@ -189,9 +179,82 @@ fn read_file(path: &str) -> Result<Vec<u8>, SafeError> {
     Ok(bytes)
 }
 
+fn file_read_error(error: std::io::Error) -> SafeError {
+    match error.kind() {
+        std::io::ErrorKind::NotFound => SafeError::new(ErrorKind::SourceNotFound),
+        std::io::ErrorKind::PermissionDenied => SafeError::new(ErrorKind::SourcePermissionDenied),
+        _ => SafeError::new(
+            "file read failed. Check the explicit path and read permissions, then retry.",
+        ),
+    }
+}
+
+fn validate_arguments(args: &Arguments) -> Result<(), SafeError> {
+    let message = if args.exists && args.names.is_empty() {
+        Some(
+            "--exists requires at least one NAME. Use rprintenv --exists NAME [NAME...] to check presence, including empty values. Use --help for supported syntax.",
+        )
+    } else if args.exists && args.json {
+        Some(
+            "--exists cannot be combined with --json because presence checks write no records. Remove --json for an exit-status check, or remove --exists for state records. Use --help for supported syntax.",
+        )
+    } else if args.exists && (!args.allow.is_empty() || !args.redact.is_empty()) {
+        Some(
+            "--exists cannot be combined with --allow or --redact because presence checks write no values. Remove disclosure flags, or remove --exists to inspect values. Use --help for supported syntax.",
+        )
+    } else if args.file.iter().any(|path| path == "-") {
+        Some(
+            "--file - is unsupported because rprintenv does not read stdin. Supply --file PATH for an explicit .env file, or use rstr to filter piped text. Use --help for supported syntax.",
+        )
+    } else if args.file.iter().collect::<BTreeSet<_>>().len() != args.file.len() {
+        Some(
+            "duplicate --file source. Supply each explicit path once to inspect or compare sources. Use --help for supported syntax.",
+        )
+    } else {
+        None
+    };
+    match message {
+        Some(message) => Err(SafeError::new(message)),
+        None => Ok(()),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn nested_io_diagnostics_are_discarded() {
+        for (kind, expected) in [
+            (std::io::ErrorKind::NotFound, ErrorKind::SourceNotFound),
+            (
+                std::io::ErrorKind::PermissionDenied,
+                ErrorKind::SourcePermissionDenied,
+            ),
+            (
+                std::io::ErrorKind::Other,
+                ErrorKind::Category(
+                    "file read failed. Check the explicit path and read permissions, then retry.",
+                ),
+            ),
+        ] {
+            let error = file_read_error(std::io::Error::new(
+                kind,
+                "synthetic-secret-nested-io-canary-1849",
+            ));
+            assert_eq!(error.kind, expected);
+            assert!(std::error::Error::source(&error).is_none());
+            assert!(
+                !error
+                    .to_string()
+                    .contains("synthetic-secret-nested-io-canary-1849")
+            );
+            assert!(
+                !format!("{:?}", Some(vec![error]))
+                    .contains("synthetic-secret-nested-io-canary-1849")
+            );
+        }
+    }
 
     #[test]
     fn failures_escape_source_paths_to_one_line() {

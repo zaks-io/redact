@@ -7,12 +7,16 @@ launches a scanner, downloads rules, or records telemetry.
 
 `rprintenv` implements explicit source selection, full-source validation, the
 literal dotenv dialect, exact-name disclosure overrides, the narrow built-in
-allowlist, presence checks, sorted text records, and schema-version-1 JSON.
+allowlist, presence checks, sorted text records, and schema-version-2 JSON with
+policy reasons for hidden values.
 Renderers receive policy-approved records. Raw values have opaque Debug output.
 Errors retain fixed categories and approved source/line metadata.
 
-`rstr` implements all v1 detector categories, validates bounded UTF-8 stdin, and
-renders the union of original secret spans. See the [rule ledger](rules.md) and
+`rstr` implements all v1 detector categories, validates bounded pending UTF-8
+stdin records, and renders the union of original secret spans. Completed records
+are filtered independently before EOF; only filtered output is batched for I/O.
+A bounded stderr report preserves safe detector evidence and fingerprints.
+See the [rule ledger](rules.md) and
 [machine-readable coverage](../rules/coverage.json) for exact provider and
 container coverage. Researched formats beyond those rules remain explicitly
 deferred or context-only. Standalone arbitrary passwords and recursive encoded

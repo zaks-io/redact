@@ -36,12 +36,17 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("bin_dirs", nargs="+", type=pathlib.Path)
     parser.add_argument("--repeats", type=int, default=7)
+    parser.add_argument("--legacy-bin-dir", action="append", type=pathlib.Path, default=[],
+                        help="Previously released builds with quiet matching rstr output")
     options = parser.parse_args()
     if options.repeats < 1:
         parser.error("repeats must be positive")
     builds = [directory.resolve(strict=True) for directory in options.bin_dirs]
     if len(set(builds)) != len(builds):
         parser.error("build directories must be distinct")
+    legacy = {directory.resolve(strict=True) for directory in options.legacy_bin_dir}
+    if not legacy.issubset(builds):
+        parser.error("legacy build directories must also appear in bin_dirs")
     results = {}
     for directory in builds:
         results[str(directory)] = {
@@ -61,7 +66,17 @@ def main():
                     cwd=directory, capture_output=True, check=False, timeout=30,
                 )
                 elapsed = (time.perf_counter() - started) * 1000
-                if output.returncode != 0 or output.stderr or output.stdout != expected:
+                expected_stderr = b""
+                if name in ("small_filter", "mixed_4mib") and directory not in legacy:
+                    count = input_bytes.count(b'"password"')
+                    digest = hashlib.sha256(b"synthetic-benchmark-canary").hexdigest()[:16]
+                    occurrences = f" ({count} occurrences)" if count > 1 else ""
+                    noun = "redaction" if count == 1 else "redactions"
+                    expected_stderr = (
+                        f"rstr: {count} {noun}; labels describe local syntax evidence, not credential validity.\n"
+                        f"rstr: line 1: sha256={digest}; sensitive field or quoted credential{occurrences}\n"
+                    ).encode()
+                if output.returncode != 0 or output.stderr != expected_stderr or output.stdout != expected:
                     raise RuntimeError(f"synthetic benchmark failed: {name}, {str(directory)!r}")
                 if iteration:
                     samples[directory].append(elapsed)
