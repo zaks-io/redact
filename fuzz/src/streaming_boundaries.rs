@@ -61,63 +61,73 @@ fn check_boundary(prefix: &[u8], probes: &[String]) {
     }
 }
 
+// Authentication quote pairing and Kubernetes scope are record-local contracts.
+const TOKENS: &[&str] = &[
+    "[",
+    "]",
+    "{",
+    "}",
+    "'",
+    "\"",
+    "\\\"",
+    "\\'",
+    ":",
+    "=",
+    ",",
+    " ",
+    "\t",
+    "\n",
+    "\n ",
+    "\n\t",
+    "token",
+    "password",
+    "api_key",
+    "secret",
+    "token'",
+    "token\"",
+    "\"token\"",
+    "'password'",
+    "ordinary",
+    "x",
+    "a",
+    "é",
+    "|",
+    ">",
+    "# n",
+    "http://h/x]",
+    "http://h/y[",
+    "p://]a",
+    "http://a/x",
+    "http://b/y]",
+    "host=h dbname=d",
+    "AccountName=n;",
+    "AccountKey=",
+    "MII",
+    "-----BEGIN RSA PRIVATE KEY-----",
+    "-----END RSA PRIVATE KEY-----",
+    "\\",
+    "-----BEGIN A PRIVATE KEY-----",
+    "-----END A PRIVATE KEY-----",
+    "-----BEGIN B PRIVATE KEY-----",
+    "-----END B PRIVATE KEY-----",
+    "BEGIN B PRIVATE KEY-----",
+    "END A PRIVATE KEY-----",
+    "{\"conn\":\"AccountName=dev;AccountKey=\"}",
+    "dsn=\"host=db dbname=app user=app password=\"",
+    "INFO started \"ok\"",
+    "{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{",
+    "}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}",
+    "{\"password\": {\"a\": ]}}",
+    "\"password\": \"a\tb\"}",
+    "'-----BEGIN A PRIVATE KEY-----':",
+    "\"password\": [",
+    "[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[",
+    "]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]",
+    "\"a\":'",
+];
+
 pub fn exercise(data: &[u8]) {
     // Token composition varies syntax rather than selecting known failing layouts.
-    // Authentication quote pairing and Kubernetes scope are record-local contracts.
-    const TOKENS: &[&str] = &[
-        "[",
-        "]",
-        "{",
-        "}",
-        "'",
-        "\"",
-        "\\\"",
-        "\\'",
-        ":",
-        "=",
-        ",",
-        " ",
-        "\t",
-        "\n",
-        "\n ",
-        "\n\t",
-        "token",
-        "password",
-        "api_key",
-        "secret",
-        "token'",
-        "token\"",
-        "\"token\"",
-        "'password'",
-        "ordinary",
-        "x",
-        "a",
-        "é",
-        "|",
-        ">",
-        "# n",
-        "http://h/x]",
-        "http://h/y[",
-        "p://]a",
-        "http://a/x",
-        "http://b/y]",
-        "host=h dbname=d",
-        "AccountName=n;",
-        "AccountKey=",
-        "MII",
-        "-----BEGIN RSA PRIVATE KEY-----",
-        "-----END RSA PRIVATE KEY-----",
-        "\\",
-        "-----BEGIN A PRIVATE KEY-----",
-        "-----END A PRIVATE KEY-----",
-        "-----BEGIN B PRIVATE KEY-----",
-        "-----END B PRIVATE KEY-----",
-        "BEGIN B PRIVATE KEY-----",
-        "END A PRIVATE KEY-----",
-        "{\"conn\":\"AccountName=dev;AccountKey=\"}",
-        "dsn=\"host=db dbname=app user=app password=\"",
-        "INFO started \"ok\"",
-    ];
     let selector = usize::from(data.first().copied().unwrap_or_default());
     let mut input = String::new();
     for byte in data.iter().skip(1).take(48) {
@@ -187,8 +197,38 @@ mod tests {
     #[test]
     fn token_composition_covers_every_fragment_and_line_ending() {
         for selector in 0..=1 {
-            for byte in 0..52 {
+            for index in 0..TOKENS.len() {
+                let byte =
+                    u8::try_from(index).expect("synthetic vocabulary exceeds selector range");
                 exercise(&[selector, byte, 13, 22, 8, 13, 4, 25, 13]);
+            }
+        }
+    }
+
+    #[test]
+    fn composed_quote_completion_can_change_an_apparent_parse_error() {
+        let nesting = format!("{}{}", "{".repeat(64), "}".repeat(65));
+        let head = "{'-----BEGIN A PRIVATE KEY-----':\nM\n-----END A PRIVATE KEY-----' ";
+        for input in [
+            format!("{{\"a\":'\\-----END A PRIVATE KEY-----\"'{nesting}\nx\"\n"),
+            format!("{head}\"password\": {{\"a\": ]}}}}\n'\n"),
+            format!("{head}\"password\": \"a\tb\"}}\n'\n"),
+            format!(
+                "{head}\"password\": {}{}}}\n'\n",
+                "[".repeat(65),
+                "]".repeat(65)
+            ),
+        ] {
+            assert!(
+                filter(input.as_bytes()).is_ok(),
+                "complete synthetic fixture must succeed"
+            );
+            assert!(
+                filter_to_writer(input.as_bytes(), Vec::new()).is_ok(),
+                "completed quote must resolve provisional parse errors"
+            );
+            for (at, _) in input.match_indices('\n') {
+                check_boundary(&input.as_bytes()[..at + 1], &probes());
             }
         }
     }

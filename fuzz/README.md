@@ -65,8 +65,11 @@ private-key markers and line endings. It interrupts the reader instead of closin
 stdin, then checks fully emitted prefixes against batch filtering with additional
 probe lines. Later input must not change the prefix or the detection of those
 probes. JSON-parity probes cover JWK, registry-auth and Kubernetes JSON objects.
-The vocabulary includes bare backslashes, overlapping private-marker labels and
-quoted connection strings. Complete inputs accepted by batch filtering must also
+The vocabulary includes bare backslashes, overlapping private-marker labels,
+quoted connection strings, deep containers, malformed sensitive containers and
+raw tabs inside quoted JSON values. It also combines quoted private-key labels
+with later quote completion, which can resolve a provisional parse error.
+Complete inputs accepted by batch filtering must also
 succeed in streaming mode, including prefixes withheld until EOF.
 Authentication-header quote pairing and cross-record Kubernetes scope are excluded by
 the generated vocabulary because those contexts are documented as record-local.

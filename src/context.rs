@@ -1,6 +1,6 @@
 use crate::{
     Span,
-    error::{ErrorKind, SafeError},
+    error::{DetectorError, ErrorKind, SafeError},
 };
 
 mod assignment;
@@ -50,14 +50,28 @@ pub(crate) fn detect_with_state(
     input: &str,
     structured: &[Span],
     depth: usize,
-) -> Result<Detection, SafeError> {
+) -> Result<Detection, DetectorError> {
     let structured = crate::merge_spans(input, structured)?;
+    let mut end_state = EndState::default();
+    let spans = detect_assignments(input, &structured, depth, &mut end_state)
+        .map_err(|error| error.in_context(depth, end_state.unmatched_quote))?;
+    Ok(Detection {
+        spans,
+        end: end_state,
+    })
+}
+
+fn detect_assignments(
+    input: &str,
+    structured: &[Span],
+    depth: usize,
+    end_state: &mut EndState,
+) -> Result<Vec<Span>, DetectorError> {
     let bytes = input.as_bytes();
     let mut spans = Vec::new();
     let mut at = 0;
     let mut quoted_names_available = [true, true];
     let mut container_depth = 0usize;
-    let mut end_state = EndState::default();
     while at < bytes.len() {
         let framing = structured.get(structured.partition_point(|span| span.end <= at));
         if let Some(framing) = framing.filter(|span| span.start <= at && at < span.end) {
@@ -75,6 +89,7 @@ pub(crate) fn detect_with_state(
                 Ok(end) => end,
                 Err(_) => {
                     quoted_names_available[usize::from(quote == b'\'')] = false;
+                    end_state.unmatched_quote = true;
                     at += 1;
                     continue;
                 }
@@ -134,7 +149,8 @@ pub(crate) fn detect_with_state(
         }
         if bytes[delimiter] == b':'
             && matches!(bytes[value], b'\n' | b'\r' | b'#')
-            && let Some(continuation) = values::yaml_indented_value(input, name_start, value)?
+            && let Some(continuation) = values::yaml_indented_value(input, name_start, value)
+                .map_err(DetectorError::input)?
         {
             end_state.yaml_continuation |= continuation.open;
             if let Some(span) = continuation.span {
@@ -147,18 +163,18 @@ pub(crate) fn detect_with_state(
             continue;
         }
         if bytes[value] == b'\\' && matches!(bytes.get(value + 1), Some(b'"' | b'\'')) {
-            let end = values::escaped_quoted_end(input, value)?;
+            let end = values::escaped_quoted_end(input, value).map_err(DetectorError::input)?;
             if end > value + 2 {
                 spans.push(value + 2..end);
             }
             at = end + 2;
         } else if matches!(bytes[value], b'"' | b'\'') {
-            let end = quoted_end(input, value, bytes[value], true)?;
+            let end = quoted_end(input, value, bytes[value], true).map_err(DetectorError::input)?;
             if json && bytes[value] == b'"' {
                 serde_json::from_str::<String>(&input[value..=end]).map_err(|_| {
-                    SafeError::new(
+                    DetectorError::input(SafeError::new(
                         "invalid quoted JSON value. Correct its string escapes and retry.",
-                    )
+                    ))
                 })?;
             } else if bytes[value] == b'"' {
                 let mut cursor = value + 1;
@@ -166,9 +182,9 @@ pub(crate) fn detect_with_state(
                     if bytes[cursor] == b'\\' {
                         cursor += 1;
                         if !matches!(bytes[cursor], b'\\' | b'"' | b'n' | b'r' | b't') {
-                            return Err(SafeError::new(
+                            return Err(DetectorError::input(SafeError::new(
                                 "unsupported quoted-value escape. Use documented escapes and retry.",
-                            ));
+                            )));
                         }
                     }
                     cursor += 1;
@@ -179,11 +195,12 @@ pub(crate) fn detect_with_state(
             }
             at = end + 1;
         } else if json && matches!(bytes[value], b'{' | b'[') {
-            let end = values::balanced_end(input, value)?;
+            let end = values::balanced_end(input, value).map_err(DetectorError::input)?;
             spans.push(value..end);
             at = end;
         } else if bytes[delimiter] == b':'
-            && let Some(block) = values::yaml_block_end(input, name_start, value)?
+            && let Some(block) =
+                values::yaml_block_end(input, name_start, value).map_err(DetectorError::input)?
         {
             end_state.yaml_continuation |= block.open;
             spans.push(value..block.end);
@@ -198,7 +215,8 @@ pub(crate) fn detect_with_state(
             }
             if !json
                 && bytes[delimiter] == b':'
-                && let Some(continuation) = values::yaml_indented_value(input, name_start, value)?
+                && let Some(continuation) = values::yaml_indented_value(input, name_start, value)
+                    .map_err(DetectorError::input)?
             {
                 end_state.yaml_continuation |= continuation.open;
                 if let Some(span) = continuation.span {
@@ -212,11 +230,7 @@ pub(crate) fn detect_with_state(
         }
     }
     end_state.containers = container_depth;
-    end_state.unmatched_quote = quoted_names_available.contains(&false);
-    Ok(Detection {
-        spans,
-        end: end_state,
-    })
+    Ok(spans)
 }
 
 pub(crate) fn quoted_end(

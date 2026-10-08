@@ -160,9 +160,13 @@ container depth, unmatched quotes or a pending sensitive value.
 This check can also hold Go-style URL lists such as
 `targets=[http://a/x http://b/y]`, whose closing bracket belongs to URL context.
 An incomplete quoted value, private-key block or credential container found at a
-candidate boundary waits through EOF so later input can complete it. EOF applies
-the normal detector and reports any remaining error. Invalid escapes, input
-encoding errors and limits still fail without releasing unchecked text.
+candidate boundary waits through EOF so later input can complete it. A parse
+error after an unmatched top-level quote also waits, because closing that quote
+can change how the detector interprets the intervening text. EOF applies the
+normal detector and reports any remaining error. Errors inside already-closed
+quoted text are final unless earlier top-level context is still uncertain.
+Definite parse errors, input encoding errors and pending-input limits still fail
+without releasing unchecked text.
 
 Require UTF-8 input and reject NUL bytes. Preserve valid unmatched line endings,
 whitespace, and other characters. This filter removes matched secrets; it does

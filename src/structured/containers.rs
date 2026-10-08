@@ -1,7 +1,7 @@
 use super::STRUCTURE_LIMIT;
 use crate::{
     Span,
-    error::{ErrorKind, SafeError},
+    error::{DetectorError, ErrorKind, SafeError},
 };
 use serde_json::Value;
 
@@ -14,13 +14,17 @@ impl JsonEndState {
     pub(crate) fn settled(&self) -> bool {
         self.open_objects == 0 && !self.unmatched_quote
     }
+
+    pub(crate) fn provisional_quote(&self) -> bool {
+        self.unmatched_quote
+    }
 }
 
 pub(super) fn json_containers(
     input: &str,
     private_spans: &[Span],
     spans: &mut Vec<Span>,
-) -> Result<JsonEndState, SafeError> {
+) -> Result<JsonEndState, DetectorError> {
     let bytes = input.as_bytes();
     let private_spans = crate::merge_spans(input, private_spans)?;
     let mut private_at = 0;
@@ -68,9 +72,10 @@ pub(super) fn json_containers(
                     }
                 }
                 if stack.len() >= 64 {
-                    return Err(SafeError::new(
+                    return Err(DetectorError::input(SafeError::new(
                         "structured input exceeds nesting limit. Reduce nesting and retry.",
-                    ));
+                    ))
+                    .in_context(0, !quoted_regions_available));
                 }
                 stack.push(at);
             }
@@ -79,9 +84,10 @@ pub(super) fn json_containers(
                     let object = &input[start..=at];
                     if object.len() > STRUCTURE_LIMIT {
                         if credential_object_hint(object) {
-                            return Err(SafeError::new(
+                            return Err(DetectorError::input(SafeError::new(
                                 "credential container exceeds parsing limit. Split input and retry.",
-                            ));
+                            ))
+                            .in_context(0, !quoted_regions_available));
                         }
                     } else {
                         match parse_object(object) {
@@ -91,9 +97,10 @@ pub(super) fn json_containers(
                                 }
                             }
                             Err(_) if credential_object_hint(object) => {
-                                return Err(SafeError::new(
+                                return Err(DetectorError::input(SafeError::new(
                                     "malformed credential container. Correct its JSON structure and retry.",
-                                ));
+                                ))
+                                .in_context(0, !quoted_regions_available));
                             }
                             Err(_) => {}
                         }
@@ -107,7 +114,10 @@ pub(super) fn json_containers(
     if let Some(start) = stack.first()
         && credential_object_hint(&input[*start..])
     {
-        return Err(SafeError::new(ErrorKind::UnterminatedCredentialContainer));
+        return Err(DetectorError::input(SafeError::new(
+            ErrorKind::UnterminatedCredentialContainer,
+        ))
+        .in_context(0, !quoted_regions_available));
     }
     Ok(JsonEndState {
         open_objects: stack.len(),

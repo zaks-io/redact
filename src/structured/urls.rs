@@ -1,4 +1,7 @@
-use crate::{Span, error::SafeError};
+use crate::{
+    Span,
+    error::{DetectorError, SafeError},
+};
 
 mod parameters;
 
@@ -178,7 +181,7 @@ pub(super) fn connections(
     input: &str,
     spans: &mut Vec<Span>,
     contexts: &mut Vec<Span>,
-) -> Result<(), SafeError> {
+) -> Result<(), DetectorError> {
     let fields = pattern!(r"(?i)\b(accountkey|sharedaccesssignature|password)[ \t]*=[ \t]*")?;
     let mut offset = 0;
     for line in input.split_inclusive('\n') {
@@ -197,7 +200,8 @@ pub(super) fn connections(
             }
             let bytes = input.as_bytes();
             if matches!(bytes[value], b'\'' | b'"') {
-                let end = crate::context::quoted_end(input, value, bytes[value], true)?;
+                let end = crate::context::quoted_end(input, value, bytes[value], true)
+                    .map_err(DetectorError::input)?;
                 if end > value + 1 {
                     spans.push(value + 1..end);
                     contexts.push(offset + field.start()..end + 1);

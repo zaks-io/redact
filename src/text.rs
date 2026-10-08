@@ -1,4 +1,4 @@
-use crate::error::{ErrorKind, SafeError};
+use crate::error::{DetectorError, ErrorKind, SafeError};
 use crate::evidence::{Evidence, Filtered, Finding, Redaction};
 use crate::{context, fingerprint, providers, structured};
 
@@ -54,11 +54,11 @@ pub fn merge_spans(input: &str, spans: &[Span]) -> Result<Vec<Span>, SafeError> 
 }
 
 pub fn detect(input: &str) -> Result<Vec<Span>, SafeError> {
-    detect_at_depth(input, 0)
+    detect_at_depth(input, 0).map_err(DetectorError::into_safe)
 }
 
 /// Every detector family over one input; quoted text re-enters at a greater depth.
-pub(crate) fn detect_at_depth(input: &str, depth: usize) -> Result<Vec<Span>, SafeError> {
+pub(crate) fn detect_at_depth(input: &str, depth: usize) -> Result<Vec<Span>, DetectorError> {
     Ok(
         merge_findings(input, &detect_findings(input, depth)?.findings)?
             .into_iter()
@@ -73,10 +73,12 @@ struct Detection {
     json_end: structured::JsonEndState,
 }
 
-fn detect_findings(input: &str, depth: usize) -> Result<Detection, SafeError> {
-    let detection = structured::detect_with_contexts(input)?;
+fn detect_findings(input: &str, depth: usize) -> Result<Detection, DetectorError> {
+    let detection =
+        structured::detect_with_contexts(input).map_err(|error| error.in_context(depth, false))?;
     let mut findings = detection.findings;
-    let context = context::detect_with_state(input, &detection.contexts, depth)?;
+    let context = context::detect_with_state(input, &detection.contexts, depth)
+        .map_err(|error| error.in_context(depth, detection.json_end.provisional_quote()))?;
     findings.extend(context.spans.into_iter().map(|span| Finding {
         span,
         label: Evidence::SensitiveFieldOrQuotedCredential,
@@ -151,7 +153,13 @@ pub fn filter(bytes: &[u8]) -> Result<String, SafeError> {
 
 pub fn filter_with_evidence(bytes: &[u8]) -> Result<Filtered, SafeError> {
     let input = validate_input(bytes)?;
-    render_findings(input, bytes, &detect_findings(input, 0)?.findings)
+    render_findings(
+        input,
+        bytes,
+        &detect_findings(input, 0)
+            .map_err(DetectorError::into_safe)?
+            .findings,
+    )
 }
 
 pub(crate) fn filter_candidate(
@@ -161,8 +169,8 @@ pub(crate) fn filter_candidate(
     let input = validate_input(bytes)?;
     let detection = match detect_findings(input, 0) {
         Ok(detection) => detection,
-        Err(error) if error.kind.can_complete() => return Ok(None),
-        Err(error) => return Err(error),
+        Err(error) if error.can_complete() => return Ok(None),
+        Err(error) => return Err(error.into_safe()),
     };
     if !detection.context_end.settled(boundary) || !detection.json_end.settled() {
         return Ok(None);

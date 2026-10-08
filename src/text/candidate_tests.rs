@@ -2,7 +2,7 @@ use super::{MAX_INPUT_BYTES, filter_candidate, filter_with_evidence};
 use crate::{context::RecordEnd, error::ErrorKind, synthetic::*};
 
 #[test]
-fn only_semantic_unfinished_failures_can_defer_candidate_detection() {
+fn top_level_semantic_unfinished_failures_defer_candidate_detection() {
     let cases = [
         ("password=\"SYNTHETIC\n", ErrorKind::UnterminatedQuote),
         (
@@ -42,6 +42,89 @@ fn only_semantic_unfinished_failures_can_defer_candidate_detection() {
     assert!(!ErrorKind::Detector.can_complete());
     assert!(!ErrorKind::InvalidEscape.can_complete());
     assert!(!ErrorKind::TooLarge.can_complete());
+}
+
+#[test]
+fn errors_after_actual_provisional_quotes_wait_for_complete_detection() {
+    let json_prefix = format!(
+        "{{\"a\":'\\-----END A PRIVATE KEY-----\"'{}{}}}\n",
+        "{".repeat(64),
+        "}".repeat(64)
+    );
+    let context_prefix = "{'-----BEGIN A PRIVATE KEY-----':\nM\n-----END A PRIVATE KEY-----' ";
+    let inputs = [
+        (json_prefix, "x\"\n"),
+        (
+            format!("{context_prefix}\"password\": {{\"a\": ]}}}}\n"),
+            "'\n",
+        ),
+        (format!("{context_prefix}\"password\": \"a\tb\"}}\n"), "'\n"),
+        (
+            format!(
+                "{context_prefix}\"password\": {}{}}}\n",
+                "[".repeat(65),
+                "]".repeat(65)
+            ),
+            "'\n",
+        ),
+    ];
+    for (prefix, suffix) in inputs {
+        let error = filter_with_evidence(prefix.as_bytes()).must_err();
+        assert!(!error.kind.can_complete());
+        for boundary in [
+            RecordEnd::Newline,
+            RecordEnd::NonDelimiter,
+            RecordEnd::Document,
+        ] {
+            assert!(
+                filter_candidate(prefix.as_bytes(), boundary)
+                    .must()
+                    .is_none()
+            );
+        }
+        filter_with_evidence(format!("{prefix}{suffix}").as_bytes()).must();
+    }
+
+    let no_quote_after_begin = "{'-----BEGIN A PRIVATE KEY-----:\nM\n-----END A PRIVATE KEY-----' \"password\": {\"a\": ]}}\n";
+    let batch = filter_with_evidence(no_quote_after_begin.as_bytes()).must_err();
+    let candidate =
+        filter_candidate(no_quote_after_begin.as_bytes(), RecordEnd::Newline).must_err();
+    assert_eq!(candidate, batch);
+}
+
+#[test]
+fn json_quote_uncertainty_survives_a_later_contextual_failure() {
+    let input = "'\\-----END A PRIVATE KEY-----\"'\npassword=\"\\qSYNTHETIC\"\n";
+    let structured = crate::structured::detect_with_contexts(input).must();
+    assert!(structured.json_end.provisional_quote());
+    let failure = crate::context::detect_with_state(input, &structured.contexts, 0).must_err();
+    assert!(!failure.can_complete());
+    assert!(
+        filter_candidate(input.as_bytes(), RecordEnd::Newline)
+            .must()
+            .is_none()
+    );
+    let batch = filter_with_evidence(input.as_bytes()).must_err();
+    assert!(!batch.kind.can_complete());
+    assert!(!format!("{batch:?} {batch}").contains("SYNTHETIC"));
+}
+
+#[test]
+fn unfinished_errors_inside_closed_quoted_text_are_final() {
+    for nested in [
+        "bad line: password=\"SYNTHETIC",
+        "bad line: password=\\\"SYNTHETIC",
+        "{\"password\":[\"SYNTHETIC\"",
+        "{\"kty\":\"oct\",\"k\":\"SYNTHETIC\"",
+    ] {
+        let quoted = serde_json::to_string(nested).must();
+        let input = format!("level=error msg={quoted} code=1\n");
+        let batch = filter_with_evidence(input.as_bytes()).must_err();
+        assert!(batch.kind.can_complete());
+        let candidate = filter_candidate(input.as_bytes(), RecordEnd::Newline).must_err();
+        assert_eq!(candidate, batch);
+        assert!(!format!("{candidate:?} {candidate}").contains("SYNTHETIC"));
+    }
 }
 
 #[test]

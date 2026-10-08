@@ -39,6 +39,62 @@ impl ErrorKind {
     }
 }
 
+// Only detector parsing failures can be reinterpreted by later quoted text.
+pub(crate) struct DetectorError {
+    error: SafeError,
+    input_dependent: bool,
+    can_complete: bool,
+}
+
+impl DetectorError {
+    pub(crate) fn input(error: SafeError) -> Self {
+        Self {
+            can_complete: error.kind.can_complete(),
+            error,
+            input_dependent: true,
+        }
+    }
+
+    pub(crate) fn unfinished(error: SafeError) -> Self {
+        if error.kind.can_complete() {
+            Self::input(error)
+        } else {
+            error.into()
+        }
+    }
+
+    pub(crate) fn in_context(mut self, depth: usize, provisional_quote: bool) -> Self {
+        // Closed nested strings cannot grow, but their enclosing provisional quote can change.
+        self.can_complete =
+            depth == 0 && (self.can_complete || self.input_dependent && provisional_quote);
+        self
+    }
+
+    pub(crate) fn can_complete(&self) -> bool {
+        self.can_complete
+    }
+
+    pub(crate) fn into_safe(self) -> SafeError {
+        self.error
+    }
+}
+
+impl From<SafeError> for DetectorError {
+    fn from(error: SafeError) -> Self {
+        Self {
+            error,
+            input_dependent: false,
+            can_complete: false,
+        }
+    }
+}
+
+impl fmt::Debug for DetectorError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("DetectorError").finish_non_exhaustive()
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SafeError {
     pub kind: ErrorKind,
@@ -170,5 +226,46 @@ impl std::error::Error for SafeError {}
 impl From<&'static str> for ErrorKind {
     fn from(category: &'static str) -> Self {
         Self::Category(category)
+    }
+}
+
+#[cfg(test)]
+mod detector_tests {
+    use super::{DetectorError, ErrorKind, SafeError};
+
+    #[test]
+    fn provisional_context_only_reinterprets_detector_input_failures() {
+        let unfinished = DetectorError::input(SafeError::new(ErrorKind::UnterminatedQuote));
+        assert!(unfinished.can_complete());
+        let nested = unfinished.in_context(1, true);
+        assert!(!nested.can_complete());
+        assert!(nested.in_context(0, true).can_complete());
+
+        let malformed = DetectorError::input(SafeError::new("malformed sensitive container"));
+        assert!(!malformed.can_complete());
+        assert!(malformed.in_context(0, true).can_complete());
+        for kind in [
+            ErrorKind::Detector,
+            ErrorKind::Encoding,
+            ErrorKind::Nul,
+            ErrorKind::TooLarge,
+            ErrorKind::Category("structured detector initialization failed"),
+            ErrorKind::Category("detector span validation failed"),
+            ErrorKind::Category("quoted input mapping failed"),
+        ] {
+            let error = DetectorError::from(SafeError::new(kind)).in_context(0, true);
+            assert!(!error.can_complete());
+            assert_eq!(error.into_safe().kind, kind);
+        }
+    }
+
+    #[test]
+    fn detector_failure_formatting_is_opaque() {
+        let failure = DetectorError::input(SafeError::at(ErrorKind::UnterminatedQuote, 4));
+        assert_eq!(format!("{failure:?}"), "DetectorError { .. }");
+        assert_eq!(
+            format!("{:?}", Some(vec![failure])),
+            "Some([DetectorError { .. }])"
+        );
     }
 }

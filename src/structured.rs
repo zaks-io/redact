@@ -1,7 +1,7 @@
 use crate::evidence::{Evidence, Finding};
 use crate::{
     Span,
-    error::{ErrorKind, SafeError},
+    error::{DetectorError, ErrorKind, SafeError},
 };
 
 const STRUCTURE_LIMIT: usize = 1_048_576;
@@ -48,14 +48,14 @@ pub(crate) struct Detection {
     pub json_end: JsonEndState,
 }
 
-pub(crate) fn detect_with_contexts(input: &str) -> Result<Detection, SafeError> {
+pub(crate) fn detect_with_contexts(input: &str) -> Result<Detection, DetectorError> {
     let mut spans = Vec::new();
     let mut findings = Vec::new();
     let mut contexts = Vec::new();
     authentication(input, &mut spans, &mut contexts)?;
     let mut start = tag(&spans, 0, Evidence::AuthHeader, &mut findings);
     let mut private_spans = Vec::new();
-    private_blocks(input, &mut private_spans)?;
+    private_blocks(input, &mut private_spans).map_err(DetectorError::unfinished)?;
     spans.extend_from_slice(&private_spans);
     start = tag(&spans, start, Evidence::PrivateKey, &mut findings);
     contexts.extend_from_slice(&private_spans);
